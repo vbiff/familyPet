@@ -26,17 +26,25 @@ class _TaskListState extends ConsumerState<TaskList> {
 
   void _loadTasks() {
     final user = ref.read(currentUserProvider);
-    if (user?.familyId != null) {
-      ref.read(taskNotifierProvider.notifier).loadTasks(
-            familyId: user!.familyId!,
-          );
-    }
+    // Use test family ID as fallback until proper family management is implemented
+    final familyId = user?.familyId ?? '88888888-8888-8888-8888-888888888888';
+
+    ref.read(taskNotifierProvider.notifier).loadTasks(
+          familyId: familyId,
+        );
   }
 
   @override
   Widget build(BuildContext context) {
     final taskState = ref.watch(taskNotifierProvider);
     final tasks = taskState.tasks;
+
+    // Listen for auth changes and reload tasks when user profile is updated
+    ref.listen(currentUserProvider, (previous, next) {
+      if (previous?.familyId != next?.familyId) {
+        _loadTasks();
+      }
+    });
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -72,13 +80,13 @@ class _TaskListState extends ConsumerState<TaskList> {
         ),
         const SizedBox(height: 16),
         Expanded(
-          child: _buildTaskContent(context, taskState, tasks),
+          child: buildTaskContent(context, taskState, tasks),
         ),
       ],
     );
   }
 
-  Widget _buildTaskContent(
+  Widget buildTaskContent(
       BuildContext context, TaskState taskState, List<Task> tasks) {
     if (taskState.status == TaskStateStatus.loading) {
       return const Center(
@@ -162,13 +170,13 @@ class _TaskListState extends ConsumerState<TaskList> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: _getTaskStatusColor(context, task.status)
-                    .withValues(alpha: 0.1),
+                color:
+                    _getTaskDisplayColor(context, task).withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                _getTaskStatusIcon(task.status),
-                color: _getTaskStatusColor(context, task.status),
+                _getTaskDisplayIcon(task),
+                color: _getTaskDisplayColor(context, task),
               ),
             ),
             title: Text(
@@ -201,7 +209,7 @@ class _TaskListState extends ConsumerState<TaskList> {
                     const SizedBox(width: 4),
                     Flexible(
                       child: Text(
-                        _formatDueDate(task.dueDate),
+                        formatDueDate(task.dueDate),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: task.isOverdue
                                   ? Theme.of(context).colorScheme.error
@@ -233,27 +241,27 @@ class _TaskListState extends ConsumerState<TaskList> {
             trailing: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: _getTaskStatusColor(context, task.status)
-                    .withValues(alpha: 0.1),
+                color:
+                    _getTaskDisplayColor(context, task).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
-                _getTaskStatusText(task.status),
+                _getTaskDisplayText(task),
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: _getTaskStatusColor(context, task.status),
+                  color: _getTaskDisplayColor(context, task),
                 ),
               ),
             ),
-            onTap: () => _onTaskTap(task),
+            onTap: () => onTaskTap(task),
           ),
         );
       },
     );
   }
 
-  Color _getTaskStatusColor(BuildContext context, TaskStatus status) {
+  Color getTaskStatusColor(BuildContext context, TaskStatus status) {
     switch (status) {
       case TaskStatus.pending:
         return Theme.of(context).colorScheme.primary;
@@ -266,7 +274,7 @@ class _TaskListState extends ConsumerState<TaskList> {
     }
   }
 
-  IconData _getTaskStatusIcon(TaskStatus status) {
+  IconData getTaskStatusIcon(TaskStatus status) {
     switch (status) {
       case TaskStatus.pending:
         return Icons.schedule;
@@ -279,7 +287,7 @@ class _TaskListState extends ConsumerState<TaskList> {
     }
   }
 
-  String _getTaskStatusText(TaskStatus status) {
+  String getTaskStatusText(TaskStatus status) {
     switch (status) {
       case TaskStatus.pending:
         return 'Pending';
@@ -292,7 +300,29 @@ class _TaskListState extends ConsumerState<TaskList> {
     }
   }
 
-  String _formatDueDate(DateTime dueDate) {
+  // Helper methods that consider verification status
+  Color _getTaskDisplayColor(BuildContext context, Task task) {
+    if (task.status == TaskStatus.completed && task.isVerifiedByParent) {
+      return Theme.of(context).colorScheme.primary; // Green for verified
+    }
+    return getTaskStatusColor(context, task.status);
+  }
+
+  IconData _getTaskDisplayIcon(Task task) {
+    if (task.status == TaskStatus.completed && task.isVerifiedByParent) {
+      return Icons.verified; // Verified icon
+    }
+    return getTaskStatusIcon(task.status);
+  }
+
+  String _getTaskDisplayText(Task task) {
+    if (task.status == TaskStatus.completed && task.isVerifiedByParent) {
+      return 'Verified';
+    }
+    return getTaskStatusText(task.status);
+  }
+
+  String formatDueDate(DateTime dueDate) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final taskDate = DateTime(dueDate.year, dueDate.month, dueDate.day);
@@ -308,7 +338,7 @@ class _TaskListState extends ConsumerState<TaskList> {
     }
   }
 
-  void _onTaskTap(Task task) {
+  void onTaskTap(Task task) {
     ref.read(taskNotifierProvider.notifier).selectTask(task);
     Navigator.of(context).push(
       MaterialPageRoute(

@@ -138,13 +138,12 @@ class SupabaseTaskRemoteDataSource implements TaskRemoteDataSource {
         updates['completed_at'] = completedAt.toIso8601String();
       }
 
-      if (verifiedById != null) {
-        updates['verified_by_id'] = verifiedById;
-      }
+      // Handle verification fields - explicitly set to null when unverifying
+      updates['verified_by_id'] = verifiedById;
+      updates['verified_at'] = verifiedAt?.toIso8601String();
 
-      if (verifiedAt != null) {
-        updates['verified_at'] = verifiedAt.toIso8601String();
-      }
+      print('🔧 Database update - Task ID: $taskId');
+      print('🔧 Database update - Updates: $updates');
 
       final data = await _client
           .from(_tableName)
@@ -153,8 +152,12 @@ class SupabaseTaskRemoteDataSource implements TaskRemoteDataSource {
           .select()
           .single();
 
+      print('✅ Database update successful');
+      print('🔧 Updated task data: $data');
+
       return TaskModel.fromJson(data);
     } catch (e) {
+      print('❌ Database update failed: $e');
       throw Exception('Failed to update task status: $e');
     }
   }
