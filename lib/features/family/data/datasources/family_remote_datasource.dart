@@ -197,32 +197,48 @@ class SupabaseFamilyRemoteDataSource implements FamilyRemoteDataSource {
       // Get all profiles that belong to this family
       final response = await _client.from('profiles').select('''
             id, display_name, email, role, avatar_url, family_id, 
-            created_at, last_login_at, metadata
+            created_at, last_login_at
           ''').eq('family_id', familyId);
 
       // Get task statistics for each member
       final List<FamilyMemberModel> members = [];
 
       for (final profile in response) {
-        // Get task stats for this member
-        final taskStatsResponse =
-            await _client.rpc('get_member_task_stats', params: {
-          'member_id': profile['id'],
-        });
+        // Temporarily bypass task stats to debug member loading
+        try {
+          final taskStatsResponse =
+              await _client.rpc('get_member_task_stats', params: {
+            'member_id': profile['id'],
+          });
 
-        final taskStats =
-            taskStatsResponse.isNotEmpty ? taskStatsResponse[0] : {};
+          final taskStats =
+              taskStatsResponse.isNotEmpty ? taskStatsResponse[0] : {};
 
-        // Create member model with task stats
-        final memberData = Map<String, dynamic>.from(profile);
-        memberData.addAll({
-          'tasks_completed': taskStats['tasks_completed'] ?? 0,
-          'total_points': taskStats['total_points'] ?? 0,
-          'current_streak': taskStats['current_streak'] ?? 0,
-          'last_task_completed_at': taskStats['last_task_completed_at'],
-        });
+          // Create member model with task stats
+          final memberData = Map<String, dynamic>.from(profile);
+          memberData.addAll({
+            'tasks_completed': taskStats['tasks_completed'] ?? 0,
+            'total_points': taskStats['total_points'] ?? 0,
+            'current_streak': taskStats['current_streak'] ?? 0,
+            'last_task_completed_at': taskStats['last_task_completed_at'],
+            'metadata': null, // Default value since column doesn't exist
+          });
 
-        members.add(FamilyMemberModel.fromJson(memberData));
+          members.add(FamilyMemberModel.fromJson(memberData));
+        } catch (statsError) {
+          // If task stats fail, create member without stats
+          print('Task stats failed for member ${profile['id']}: $statsError');
+          final memberData = Map<String, dynamic>.from(profile);
+          memberData.addAll({
+            'tasks_completed': 0,
+            'total_points': 0,
+            'current_streak': 0,
+            'last_task_completed_at': null,
+            'metadata': null, // Default value since column doesn't exist
+          });
+
+          members.add(FamilyMemberModel.fromJson(memberData));
+        }
       }
 
       return members;

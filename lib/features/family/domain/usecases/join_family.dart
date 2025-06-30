@@ -40,7 +40,14 @@ class JoinFamily {
         await _repository.getCurrentUserFamily(params.userId);
 
     return existingFamilyResult.fold(
-      (failure) => left(failure),
+      (failure) {
+        // If checking existing family fails, still try to join
+        // but the repository will handle duplicate membership
+        return _repository.joinFamily(
+          inviteCode: params.inviteCode.trim().toUpperCase(),
+          userId: params.userId,
+        );
+      },
       (existingFamily) {
         if (existingFamily != null) {
           return left(const ValidationFailure(

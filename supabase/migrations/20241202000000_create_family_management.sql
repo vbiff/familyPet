@@ -79,10 +79,10 @@ RETURNS TABLE (
 BEGIN
     RETURN QUERY
     SELECT 
-        COALESCE(COUNT(CASE WHEN t.status = 'completed' AND t.verified_by IS NOT NULL THEN 1 END)::INT, 0) as tasks_completed,
-        COALESCE(SUM(CASE WHEN t.status = 'completed' AND t.verified_by IS NOT NULL THEN t.points ELSE 0 END)::INT, 0) as total_points,
+        COALESCE(COUNT(CASE WHEN t.status = 'completed' AND t.verified_by_id IS NOT NULL THEN 1 END)::INT, 0) as tasks_completed,
+        COALESCE(SUM(CASE WHEN t.status = 'completed' AND t.verified_by_id IS NOT NULL THEN t.points ELSE 0 END)::INT, 0) as total_points,
         COALESCE(calculate_current_streak(member_id), 0) as current_streak,
-        MAX(CASE WHEN t.status = 'completed' AND t.verified_by IS NOT NULL THEN t.verified_at END) as last_task_completed_at
+        MAX(CASE WHEN t.status = 'completed' AND t.verified_by_id IS NOT NULL THEN t.verified_at END) as last_task_completed_at
     FROM tasks t
     WHERE t.assigned_to_id = member_id;
 END;
@@ -106,7 +106,7 @@ BEGIN
             SELECT 1 FROM tasks t
             WHERE t.assigned_to_id = user_id
             AND t.status = 'completed'
-            AND t.verified_by IS NOT NULL
+            AND t.verified_by_id IS NOT NULL
             AND DATE(t.verified_at) = check_date
         ) THEN
             streak_count := streak_count + 1;

@@ -142,226 +142,235 @@ class _FamilyListState extends ConsumerState<FamilyList> {
     final family = familyState.family!;
     final members = familyState.members;
 
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Family overview card
-          Card(
-            elevation: 0,
-            color: Theme.of(context).colorScheme.primaryContainer,
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+    return Stack(
+      children: [
+        SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Family overview card
+              Card(
+                elevation: 0,
+                color: Theme.of(context).colorScheme.primaryContainer,
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.home,
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
-                        size: 32,
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              family.name,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .headlineSmall
-                                  ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onPrimaryContainer,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                            ),
-                            Text(
-                              '${members.length} members • Invite: ${family.inviteCode}',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onPrimaryContainer
-                                        .withValues(alpha: 0.8),
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildFamilyStat(
-                          context,
-                          'Total Points',
-                          '${members.fold(0, (sum, member) => sum + member.totalPoints)}',
-                          Icons.stars,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildFamilyStat(
-                          context,
-                          'Tasks Done',
-                          '${members.fold(0, (sum, member) => sum + member.tasksCompleted)}',
-                          Icons.task_alt,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          Text(
-            'Family Members',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-          const SizedBox(height: 16),
-
-          if (familyState.isLoadingMembers)
-            const Center(child: CircularProgressIndicator())
-          else if (members.isEmpty)
-            Card(
-              elevation: 0,
-              color: Theme.of(context).colorScheme.surfaceContainerLow,
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Center(
-                  child: Text(
-                    'No family members found',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withValues(alpha: 0.7),
-                        ),
-                  ),
-                ),
-              ),
-            )
-          else
-            // Family members list
-            ...members.map((member) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Card(
-                    elevation: 0,
-                    color: Theme.of(context).colorScheme.surfaceContainerLow,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
+                      Row(
                         children: [
-                          // Avatar
-                          CircleAvatar(
-                            radius: 28,
-                            backgroundColor: member.role.name == 'parent'
-                                ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).colorScheme.tertiary,
-                            child: Text(
-                              member.displayName.isNotEmpty
-                                  ? member.displayName[0].toUpperCase()
-                                  : '?',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                          Icon(
+                            Icons.home,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onPrimaryContainer,
+                            size: 32,
                           ),
                           const SizedBox(width: 16),
-
-                          // Member info
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  children: [
-                                    Text(
-                                      member.displayName,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleMedium
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      width: 8,
-                                      height: 8,
-                                      decoration: BoxDecoration(
-                                        color: member.isOnline
-                                            ? Colors.green
-                                            : Colors.orange,
-                                        shape: BoxShape.circle,
+                                Text(
+                                  family.name,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .headlineSmall
+                                      ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onPrimaryContainer,
+                                        fontWeight: FontWeight.bold,
                                       ),
-                                    ),
-                                  ],
                                 ),
                                 Text(
-                                  '${member.roleDisplayName} • ${member.statusText}',
+                                  '${members.length} members • Invite: ${family.inviteCode}',
                                   style: Theme.of(context)
                                       .textTheme
                                       .bodyMedium
                                       ?.copyWith(
                                         color: Theme.of(context)
                                             .colorScheme
-                                            .onSurface
-                                            .withValues(alpha: 0.7),
+                                            .onPrimaryContainer
+                                            .withValues(alpha: 0.8),
                                       ),
-                                ),
-                                const SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    _buildMemberBadge(
-                                      context,
-                                      '${member.tasksCompleted} tasks',
-                                      Icons.task_alt,
-                                      Theme.of(context).colorScheme.primary,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    _buildMemberBadge(
-                                      context,
-                                      '${member.totalPoints} pts',
-                                      Icons.stars,
-                                      Theme.of(context).colorScheme.tertiary,
-                                    ),
-                                    if (member.hasActiveStreak) ...[
-                                      const SizedBox(width: 8),
-                                      _buildMemberBadge(
-                                        context,
-                                        '${member.currentStreak}🔥',
-                                        Icons.local_fire_department,
-                                        Colors.orange,
-                                      ),
-                                    ],
-                                  ],
                                 ),
                               ],
                             ),
                           ),
                         ],
                       ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildFamilyStat(
+                              context,
+                              'Total Points',
+                              '${members.fold(0, (sum, member) => sum + member.totalPoints)}',
+                              Icons.stars,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildFamilyStat(
+                              context,
+                              'Tasks Done',
+                              '${members.fold(0, (sum, member) => sum + member.tasksCompleted)}',
+                              Icons.task_alt,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              Text(
+                'Family Members',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 16),
+
+              if (familyState.isLoadingMembers)
+                const Center(child: CircularProgressIndicator())
+              else if (members.isEmpty)
+                Card(
+                  elevation: 0,
+                  color: Theme.of(context).colorScheme.surfaceContainerLow,
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Center(
+                      child: Text(
+                        'No family members found',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withValues(alpha: 0.7),
+                            ),
+                      ),
                     ),
                   ),
-                )),
-        ],
-      ),
+                )
+              else
+                // Family members list
+                ...members.map((member) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Card(
+                        elevation: 0,
+                        color:
+                            Theme.of(context).colorScheme.surfaceContainerLow,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              // Avatar
+                              CircleAvatar(
+                                radius: 28,
+                                backgroundColor: member.role.name == 'parent'
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Theme.of(context).colorScheme.tertiary,
+                                child: Text(
+                                  member.displayName.isNotEmpty
+                                      ? member.displayName[0].toUpperCase()
+                                      : '?',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+
+                              // Member info
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text(
+                                          member.displayName,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          width: 8,
+                                          height: 8,
+                                          decoration: BoxDecoration(
+                                            color: member.isOnline
+                                                ? Colors.green
+                                                : Colors.orange,
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    Text(
+                                      '${member.roleDisplayName} • ${member.statusText}',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                                .withValues(alpha: 0.7),
+                                          ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        _buildMemberBadge(
+                                          context,
+                                          '${member.tasksCompleted} tasks',
+                                          Icons.task_alt,
+                                          Theme.of(context).colorScheme.primary,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        _buildMemberBadge(
+                                          context,
+                                          '${member.totalPoints} pts',
+                                          Icons.stars,
+                                          Theme.of(context)
+                                              .colorScheme
+                                              .tertiary,
+                                        ),
+                                        if (member.hasActiveStreak) ...[
+                                          const SizedBox(width: 8),
+                                          _buildMemberBadge(
+                                            context,
+                                            '${member.currentStreak}🔥',
+                                            Icons.local_fire_department,
+                                            Colors.orange,
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    )),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

@@ -50,6 +50,19 @@ class SupabaseFamilyRepository implements FamilyRepository {
     required String userId,
   }) async {
     try {
+      // Double-check if user already has a family at repository level
+      final existingFamilyResult = await getCurrentUserFamily(userId);
+
+      final hasExistingFamily = existingFamilyResult.fold(
+        (failure) => false, // If we can't check, proceed cautiously
+        (family) => family != null,
+      );
+
+      if (hasExistingFamily) {
+        return left(const ValidationFailure(
+            message: 'You are already a member of a family'));
+      }
+
       // First, find the family with this invite code
       final family = await _remoteDataSource.getFamilyByInviteCode(inviteCode);
 
@@ -60,10 +73,22 @@ class SupabaseFamilyRepository implements FamilyRepository {
       final updatedFamily = await _remoteDataSource.getFamilyById(family.id);
       return right(updatedFamily.toEntity());
     } catch (e) {
-      if (e.toString().contains('Family not found')) {
-        return left(const ValidationFailure(message: 'Invalid invite code'));
+      final errorMessage = e.toString();
+
+      if (errorMessage.contains('Family not found') ||
+          errorMessage.contains('invite code')) {
+        return left(const ValidationFailure(
+            message:
+                'Invalid invite code. Please check the code and try again.'));
       }
-      return left(ServerFailure(message: e.toString()));
+
+      if (errorMessage.contains('already') || errorMessage.contains('member')) {
+        return left(const ValidationFailure(
+            message: 'You are already a member of a family'));
+      }
+
+      return left(
+          ServerFailure(message: 'Failed to join family: $errorMessage'));
     }
   }
 

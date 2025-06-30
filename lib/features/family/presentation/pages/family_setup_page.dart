@@ -38,6 +38,11 @@ class _FamilySetupPageState extends ConsumerState<FamilySetupPage>
   Widget build(BuildContext context) {
     final familyState = ref.watch(familyProvider);
 
+    // If user already has a family, show different UI
+    if (familyState.hasFamily) {
+      return _buildAlreadyHasFamilyScreen(context, familyState);
+    }
+
     // Listen for state changes to show feedback
     ref.listen<FamilyState>(familyNotifierProvider, (previous, next) {
       if (next.hasError) {
@@ -408,6 +413,106 @@ class _FamilySetupPageState extends ConsumerState<FamilySetupPage>
         content: Text(message),
         backgroundColor: Colors.green,
         behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Widget _buildAlreadyHasFamilyScreen(
+      BuildContext context, FamilyState familyState) {
+    final family = familyState.family!;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Family Setup'),
+        elevation: 0,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.family_restroom,
+              size: 80,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'You\'re Already Part of a Family!',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            Card(
+              elevation: 0,
+              color: Theme.of(context).colorScheme.primaryContainer,
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    Text(
+                      family.name,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onPrimaryContainer,
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Invite Code: ${family.inviteCode}',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onPrimaryContainer
+                                .withValues(alpha: 0.8),
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${family.totalMembers} members',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onPrimaryContainer
+                                .withValues(alpha: 0.8),
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.of(context).pop(),
+              icon: const Icon(Icons.home),
+              label: const Text('Go to Family'),
+              style: ElevatedButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () {
+                // TODO: Implement leave family functionality
+                _showErrorSnackBar(
+                    context, 'Leave family feature coming soon!');
+              },
+              child: Text(
+                'Leave Current Family',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

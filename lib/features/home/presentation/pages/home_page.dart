@@ -5,6 +5,7 @@ import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_state.dart';
 import 'package:jhonny/features/family/presentation/pages/family_setup_page.dart';
 import 'package:jhonny/features/family/presentation/providers/family_provider.dart';
+import 'package:jhonny/features/family/presentation/providers/family_state.dart';
 import 'package:jhonny/features/family/presentation/widgets/family_list.dart';
 import 'package:jhonny/features/home/presentation/providers/home_provider.dart';
 import 'package:jhonny/features/pet/presentation/widgets/virtual_pet.dart';
@@ -19,8 +20,9 @@ class HomePage extends ConsumerWidget {
     final authState = ref.watch(authNotifierProvider);
     final selectedTab = ref.watch(selectedTabProvider);
     final hasFamily = ref.watch(hasFamilyProvider);
+    final familyState = ref.watch(familyProvider);
 
-    // Load family data when user is authenticated
+    // Load family data when user is authenticated and available
     ref.listen(authNotifierProvider, (previous, next) {
       if (next.status == AuthStatus.unauthenticated) {
         Navigator.of(context).pushReplacement(
@@ -30,6 +32,16 @@ class HomePage extends ConsumerWidget {
         );
       }
     });
+
+    // Auto-load family data when user becomes available
+    if (user != null &&
+        authState.status == AuthStatus.authenticated &&
+        familyState.status == FamilyStatus.initial &&
+        !familyState.isLoading) {
+      Future.microtask(() {
+        ref.read(familyNotifierProvider.notifier).loadCurrentFamily(user.id);
+      });
+    }
 
     return Scaffold(
       body: CustomScrollView(
@@ -133,7 +145,7 @@ class HomePage extends ConsumerWidget {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-              child: _buildQuickStatsSection(context),
+              child: _buildQuickStatsSection(context, ref),
             ),
           ),
 
@@ -203,7 +215,10 @@ class HomePage extends ConsumerWidget {
     return '$greeting, ${name.split(' ').first}!';
   }
 
-  Widget _buildQuickStatsSection(BuildContext context) {
+  Widget _buildQuickStatsSection(BuildContext context, WidgetRef ref) {
+    final familyMembers = ref.watch(familyMembersProvider);
+    final hasFamily = ref.watch(hasFamilyProvider);
+
     return Card(
       elevation: 0,
       color: Theme.of(context).colorScheme.surfaceContainerLow,
@@ -248,7 +263,7 @@ class HomePage extends ConsumerWidget {
                 context,
                 icon: Icons.family_restroom,
                 label: 'Family',
-                value: '4',
+                value: hasFamily ? '${familyMembers.length}' : '0',
                 subtitle: 'Members',
                 color: Theme.of(context).colorScheme.secondary,
               ),
