@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jhonny/features/auth/presentation/pages/login_page.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_state.dart';
+import 'package:jhonny/features/family/presentation/pages/family_setup_page.dart';
+import 'package:jhonny/features/family/presentation/providers/family_provider.dart';
 import 'package:jhonny/features/family/presentation/widgets/family_list.dart';
 import 'package:jhonny/features/home/presentation/providers/home_provider.dart';
 import 'package:jhonny/features/pet/presentation/widgets/virtual_pet.dart';
@@ -16,7 +18,9 @@ class HomePage extends ConsumerWidget {
     final user = ref.watch(currentUserProvider);
     final authState = ref.watch(authNotifierProvider);
     final selectedTab = ref.watch(selectedTabProvider);
+    final hasFamily = ref.watch(hasFamilyProvider);
 
+    // Load family data when user is authenticated
     ref.listen(authNotifierProvider, (previous, next) {
       if (next.status == AuthStatus.unauthenticated) {
         Navigator.of(context).pushReplacement(
@@ -24,6 +28,15 @@ class HomePage extends ConsumerWidget {
             builder: (context) => const LoginPage(),
           ),
         );
+      } else if (next.status == AuthStatus.authenticated &&
+          previous?.status != AuthStatus.authenticated &&
+          next.user != null) {
+        // Delay family loading until after widget tree is built
+        Future(() {
+          ref
+              .read(familyNotifierProvider.notifier)
+              .loadCurrentFamily(next.user!.id);
+        });
       }
     });
 
@@ -155,6 +168,31 @@ class HomePage extends ConsumerWidget {
             label: tab.label,
           );
         }).toList(),
+      ),
+      floatingActionButton:
+          _buildFloatingActionButton(context, ref, selectedTab, hasFamily),
+    );
+  }
+
+  Widget? _buildFloatingActionButton(
+      BuildContext context, WidgetRef ref, int selectedTab, bool hasFamily) {
+    // Show family setup FAB only when on family tab and user has no family
+    if (selectedTab == HomeTab.family.index && !hasFamily) {
+      return FloatingActionButton.extended(
+        onPressed: () => _navigateToFamilySetup(context),
+        icon: const Icon(Icons.family_restroom),
+        label: const Text('Setup Family'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+      );
+    }
+    return null;
+  }
+
+  void _navigateToFamilySetup(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const FamilySetupPage(),
       ),
     );
   }

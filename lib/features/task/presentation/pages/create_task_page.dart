@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jhonny/features/task/domain/entities/task.dart';
 import 'package:jhonny/features/task/presentation/providers/task_provider.dart';
+import 'package:jhonny/features/family/presentation/providers/family_provider.dart';
+import 'package:jhonny/features/family/data/models/family_member_model.dart';
 
 class CreateTaskPage extends ConsumerStatefulWidget {
   const CreateTaskPage({super.key});
@@ -20,12 +22,11 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
   DateTime _dueDate = DateTime.now().add(const Duration(days: 1));
   TaskFrequency _frequency = TaskFrequency.once;
   String? _assignedTo;
-  List<String> _familyMembers = [];
 
   @override
   void initState() {
     super.initState();
-    _loadFamilyMembers();
+    _loadFamilyData();
   }
 
   @override
@@ -36,22 +37,31 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
     super.dispose();
   }
 
-  void _loadFamilyMembers() {
-    // TODO: Load family members from family provider
-    // For now, using mock UUIDs (temporary for testing)
-    _familyMembers = [
-      '11111111-1111-1111-1111-111111111111', // child1
-      '22222222-2222-2222-2222-222222222222', // child2
-      '33333333-3333-3333-3333-333333333333', // parent1
-    ];
-    if (_familyMembers.isNotEmpty) {
-      _assignedTo = _familyMembers.first;
-    }
+  void _loadFamilyData() {
+    // Load family data when the widget is initialized
+    Future(() {
+      final user = ref.read(authNotifierProvider).user;
+      if (user != null) {
+        ref.read(familyNotifierProvider.notifier).loadCurrentFamily(user.id);
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final isCreating = ref.watch(taskCreatingProvider);
+    final familyMembers = ref.watch(familyMembersProvider);
+
+    // Set initial assigned member if not set and family members are available
+    if (_assignedTo == null && familyMembers.isNotEmpty) {
+      Future(() {
+        if (mounted) {
+          setState(() {
+            _assignedTo = familyMembers.first.id;
+          });
+        }
+      });
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -135,6 +145,9 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
   }
 
   Widget _buildAssignmentSection() {
+    final familyMembers = ref.watch(familyMembersProvider);
+    final hasFamily = ref.watch(hasFamilyProvider);
+
     return Card(
       elevation: 0,
       color: Theme.of(context).colorScheme.surfaceContainerLow,
@@ -150,45 +163,110 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
                   ),
             ),
             const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              value: _assignedTo,
-              decoration: const InputDecoration(
-                labelText: 'Assign to',
-                border: OutlineInputBorder(),
+            if (!hasFamily)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.errorContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.warning,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'You need to create or join a family first',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else if (familyMembers.isEmpty)
+              const Center(
+                child: CircularProgressIndicator(),
+              )
+            else
+              DropdownButtonFormField<String>(
+                value: _assignedTo,
+                decoration: const InputDecoration(
+                  labelText: 'Assign to',
+                  border: OutlineInputBorder(),
+                ),
+                items: familyMembers.map((member) {
+                  return DropdownMenuItem(
+                    value: member.id,
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 12,
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
+                          child: Text(
+                            member.displayName.isNotEmpty
+                                ? member.displayName[0].toUpperCase()
+                                : '?',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                member.displayName,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w500),
+                              ),
+                              Text(
+                                member.roleDisplayName,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.6),
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+                onChanged: hasFamily
+                    ? (value) {
+                        setState(() {
+                          _assignedTo = value;
+                        });
+                      }
+                    : null,
+                validator: (value) {
+                  if (!hasFamily) {
+                    return 'Please create or join a family first';
+                  }
+                  if (value == null) {
+                    return 'Please select who to assign this task to';
+                  }
+                  return null;
+                },
               ),
-              items: _familyMembers.map((member) {
-                // TODO: Replace with actual family member names
-                String displayName;
-                switch (member) {
-                  case '11111111-1111-1111-1111-111111111111':
-                    displayName = 'Child 1';
-                    break;
-                  case '22222222-2222-2222-2222-222222222222':
-                    displayName = 'Child 2';
-                    break;
-                  case '33333333-3333-3333-3333-333333333333':
-                    displayName = 'Parent 1';
-                    break;
-                  default:
-                    displayName = 'Unknown';
-                }
-                return DropdownMenuItem(
-                  value: member,
-                  child: Text(displayName),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _assignedTo = value;
-                });
-              },
-              validator: (value) {
-                if (value == null) {
-                  return 'Please select who to assign this task to';
-                }
-                return null;
-              },
-            ),
           ],
         ),
       ),
