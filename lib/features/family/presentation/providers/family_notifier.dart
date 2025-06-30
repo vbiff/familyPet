@@ -123,24 +123,29 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
   }
 
   Future<void> _loadFamilyMembers(String familyId) async {
-    state = state.copyWith(isLoadingMembers: true);
+    try {
+      state = state.copyWith(isLoadingMembers: true);
 
-    final result = await _getFamilyMembers(GetFamilyMembersParams(
-      familyId: familyId,
-    ));
+      final result = await _getFamilyMembers(GetFamilyMembersParams(
+        familyId: familyId,
+      ));
 
-    result.fold(
-      (failure) {
-        // Don't change state if members fail to load, just log it
-        state = state.copyWith(isLoadingMembers: false);
-      },
-      (members) {
-        state = state.copyWith(
-          members: members,
-          isLoadingMembers: false,
-        );
-      },
-    );
+      result.fold(
+        (failure) {
+          // Don't change state if members fail to load, just log it
+          state = state.copyWith(isLoadingMembers: false);
+        },
+        (members) {
+          state = state.copyWith(
+            members: members,
+            isLoadingMembers: false,
+          );
+        },
+      );
+    } catch (e) {
+      // Silently fail for member loading to not break the main flow
+      state = state.copyWith(isLoadingMembers: false);
+    }
   }
 
   void clearError() {

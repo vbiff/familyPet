@@ -1,25 +1,72 @@
--- Create families table
-CREATE TABLE families (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(50) NOT NULL CHECK (LENGTH(TRIM(name)) >= 2),
-    invite_code VARCHAR(6) NOT NULL UNIQUE CHECK (LENGTH(invite_code) = 6),
-    created_by_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-    parent_ids UUID[] DEFAULT '{}',
-    child_ids UUID[] DEFAULT '{}',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    last_activity_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    settings JSONB DEFAULT '{}',
-    metadata JSONB DEFAULT '{}'
-);
+-- Create families table if it doesn't exist, or add missing columns
+DO $$ 
+BEGIN
+    -- Create table if it doesn't exist
+    CREATE TABLE IF NOT EXISTS families (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name VARCHAR(50) NOT NULL,
+        invite_code VARCHAR(6) NOT NULL UNIQUE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+    
+    -- Add missing columns if they don't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'families' AND column_name = 'created_by_id') THEN
+        ALTER TABLE families ADD COLUMN created_by_id UUID REFERENCES profiles(id) ON DELETE CASCADE;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'families' AND column_name = 'parent_ids') THEN
+        ALTER TABLE families ADD COLUMN parent_ids UUID[] DEFAULT '{}';
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'families' AND column_name = 'child_ids') THEN
+        ALTER TABLE families ADD COLUMN child_ids UUID[] DEFAULT '{}';
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'families' AND column_name = 'last_activity_at') THEN
+        ALTER TABLE families ADD COLUMN last_activity_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'families' AND column_name = 'settings') THEN
+        ALTER TABLE families ADD COLUMN settings JSONB DEFAULT '{}';
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'families' AND column_name = 'metadata') THEN
+        ALTER TABLE families ADD COLUMN metadata JSONB DEFAULT '{}';
+    END IF;
+    
+    -- Fix existing data before adding constraints
+    -- Update any invalid invite codes to be 6 characters
+    UPDATE families SET invite_code = UPPER(SUBSTR(MD5(RANDOM()::TEXT), 1, 6)) 
+    WHERE LENGTH(invite_code) != 6;
+    
+    -- Add constraints if they don't exist
+    BEGIN
+        ALTER TABLE families ADD CONSTRAINT families_name_length_check CHECK (LENGTH(TRIM(name)) >= 2);
+    EXCEPTION
+        WHEN duplicate_object THEN NULL;
+    END;
+    
+    BEGIN
+        ALTER TABLE families ADD CONSTRAINT families_invite_code_length_check CHECK (LENGTH(invite_code) = 6);
+    EXCEPTION
+        WHEN duplicate_object THEN NULL;
+    END;
+END $$;
 
--- Add family_id to profiles table
-ALTER TABLE profiles ADD COLUMN family_id UUID REFERENCES families(id) ON DELETE SET NULL;
+-- Add family_id to profiles table if it doesn't exist
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'family_id') THEN
+        ALTER TABLE profiles ADD COLUMN family_id UUID REFERENCES families(id) ON DELETE SET NULL;
+    END IF;
+END $$;
 
 -- Create indexes for performance
-CREATE INDEX idx_families_invite_code ON families(invite_code);
-CREATE INDEX idx_families_created_by_id ON families(created_by_id);
-CREATE INDEX idx_families_created_at ON families(created_at);
-CREATE INDEX idx_profiles_family_id ON profiles(family_id);
+CREATE INDEX IF NOT EXISTS idx_families_invite_code ON families(invite_code);
+CREATE INDEX IF NOT EXISTS idx_families_created_by_id ON families(created_by_id);
+CREATE INDEX IF NOT EXISTS idx_families_created_at ON families(created_at);
+CREATE INDEX IF NOT EXISTS idx_profiles_family_id ON profiles(family_id);
 
 -- Create function to get member task statistics
 CREATE OR REPLACE FUNCTION get_member_task_stats(member_id UUID)

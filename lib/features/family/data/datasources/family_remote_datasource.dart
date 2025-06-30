@@ -33,10 +33,10 @@ class SupabaseFamilyRemoteDataSource implements FamilyRemoteDataSource {
           .select()
           .single();
 
-      // Update the user's profile to link them to this family
-      await _client.from('profiles').update({
-        'family_id': response['id'],
-      }).eq('id', family.createdById);
+      final familyId = response['id'];
+
+      // Add the creator to the family as a member (this also updates their profile)
+      await addMemberToFamily(familyId, family.createdById);
 
       return FamilyModel.fromJson(response);
     } catch (e) {

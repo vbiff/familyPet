@@ -26,7 +26,12 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
   @override
   void initState() {
     super.initState();
-    _loadFamilyData();
+
+    // Set initial assignment to current user without triggering provider changes
+    final user = ref.read(currentUserProvider);
+    if (user != null) {
+      _assignedTo = user.id;
+    }
   }
 
   @override
@@ -37,31 +42,10 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
     super.dispose();
   }
 
-  void _loadFamilyData() {
-    // Load family data when the widget is initialized
-    Future(() {
-      final user = ref.read(authNotifierProvider).user;
-      if (user != null) {
-        ref.read(familyNotifierProvider.notifier).loadCurrentFamily(user.id);
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final isCreating = ref.watch(taskCreatingProvider);
     final familyMembers = ref.watch(familyMembersProvider);
-
-    // Set initial assigned member if not set and family members are available
-    if (_assignedTo == null && familyMembers.isNotEmpty) {
-      Future(() {
-        if (mounted) {
-          setState(() {
-            _assignedTo = familyMembers.first.id;
-          });
-        }
-      });
-    }
 
     return Scaffold(
       appBar: AppBar(
@@ -69,24 +53,34 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
       ),
-      body: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildTaskInfoSection(),
-              const SizedBox(height: 24),
-              _buildAssignmentSection(),
-              const SizedBox(height: 24),
-              _buildSchedulingSection(),
-              const SizedBox(height: 24),
-              _buildPointsSection(),
-              const SizedBox(height: 32),
-              _buildActionButtons(isCreating),
-            ],
-          ),
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return Form(
+              key: _formKey,
+              child: CustomScrollView(
+                slivers: [
+                  SliverPadding(
+                    padding: const EdgeInsets.all(16),
+                    sliver: SliverList(
+                      delegate: SliverChildListDelegate([
+                        _buildTaskInfoSection(),
+                        const SizedBox(height: 24),
+                        _buildAssignmentSection(),
+                        const SizedBox(height: 24),
+                        _buildSchedulingSection(),
+                        const SizedBox(height: 24),
+                        _buildPointsSection(),
+                        const SizedBox(height: 32),
+                        _buildActionButtons(isCreating),
+                        const SizedBox(height: 16), // Extra bottom padding
+                      ]),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
@@ -144,9 +138,66 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
     );
   }
 
+  List<Map<String, dynamic>> _getAssignmentOptions() {
+    try {
+      final familyMembers = ref.read(familyMembersProvider);
+      final currentUser = ref.read(currentUserProvider);
+      final assignmentOptions = <Map<String, dynamic>>[];
+
+      if (currentUser != null) {
+        // Always include current user as first option
+        assignmentOptions.add({
+          'id': currentUser.id,
+          'displayName': currentUser.displayName.isNotEmpty
+              ? currentUser.displayName
+              : 'Me',
+          'role': currentUser.role.name,
+        });
+      }
+
+      // Add other family members (avoiding duplicates)
+      for (final member in familyMembers) {
+        if (currentUser == null || member.id != currentUser.id) {
+          assignmentOptions.add({
+            'id': member.id,
+            'displayName': member.displayName.isNotEmpty
+                ? member.displayName
+                : 'Family Member',
+            'role': member.role.name,
+          });
+        }
+      }
+
+      return assignmentOptions;
+    } catch (e) {
+      // Fallback to ensure we always have valid options
+      final currentUser = ref.read(currentUserProvider);
+      if (currentUser != null) {
+        return [
+          {
+            'id': currentUser.id,
+            'displayName': currentUser.displayName.isNotEmpty
+                ? currentUser.displayName
+                : 'Me',
+            'role': currentUser.role.name,
+          }
+        ];
+      }
+      return [];
+    }
+  }
+
   Widget _buildAssignmentSection() {
-    final familyMembers = ref.watch(familyMembersProvider);
     final hasFamily = ref.watch(hasFamilyProvider);
+    final currentUser = ref.watch(currentUserProvider);
+
+    // Get assignment options safely
+    List<Map<String, dynamic>> assignmentOptions = [];
+    try {
+      assignmentOptions = _getAssignmentOptions();
+    } catch (e) {
+      assignmentOptions = [];
+    }
 
     return Card(
       elevation: 0,
@@ -189,64 +240,39 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
                   ],
                 ),
               )
-            else if (familyMembers.isEmpty)
+            else if (assignmentOptions.isEmpty)
               const Center(
                 child: CircularProgressIndicator(),
               )
             else
               DropdownButtonFormField<String>(
-                value: _assignedTo,
+                value: assignmentOptions
+                        .any((option) => option['id'] == _assignedTo)
+                    ? _assignedTo
+                    : null,
                 decoration: const InputDecoration(
                   labelText: 'Assign to',
                   border: OutlineInputBorder(),
                 ),
-                items: familyMembers.map((member) {
-                  return DropdownMenuItem(
-                    value: member.id,
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 12,
-                          backgroundColor:
-                              Theme.of(context).colorScheme.primary,
-                          child: Text(
-                            member.displayName.isNotEmpty
-                                ? member.displayName[0].toUpperCase()
-                                : '?',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                member.displayName,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w500),
-                              ),
-                              Text(
-                                member.roleDisplayName,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface
-                                          .withValues(alpha: 0.6),
-                                    ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                isExpanded: true,
+                items:
+                    assignmentOptions.map<DropdownMenuItem<String>>((option) {
+                  final isCurrentUser = currentUser?.id == option['id'];
+                  final displayText = isCurrentUser
+                      ? '${option['displayName']} (You)'
+                      : option['displayName'];
+
+                  return DropdownMenuItem<String>(
+                    value: option['id'] as String,
+                    child: Text(
+                      displayText,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        color: isCurrentUser
+                            ? Theme.of(context).colorScheme.primary
+                            : null,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   );
                 }).toList(),
@@ -364,6 +390,7 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
 
   Widget _buildActionButtons(bool isCreating) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         FilledButton.icon(
           onPressed: isCreating ? null : _createTask,
@@ -376,14 +403,14 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
               : const Icon(Icons.add_task),
           label: Text(isCreating ? 'Creating...' : 'Create Task'),
           style: FilledButton.styleFrom(
-            minimumSize: const Size.fromHeight(52),
+            minimumSize: const Size(double.infinity, 48),
           ),
         ),
         const SizedBox(height: 12),
         OutlinedButton(
           onPressed: isCreating ? null : () => Navigator.of(context).pop(),
           style: OutlinedButton.styleFrom(
-            minimumSize: const Size.fromHeight(52),
+            minimumSize: const Size(double.infinity, 48),
           ),
           child: const Text('Cancel'),
         ),

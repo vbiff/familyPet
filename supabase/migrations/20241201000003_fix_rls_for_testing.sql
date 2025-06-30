@@ -8,6 +8,7 @@ DROP POLICY IF EXISTS "Parents can update tasks" ON tasks;
 -- Create more permissive policies for testing
 
 -- Allow authenticated users to create tasks (with basic validation)
+DROP POLICY IF EXISTS "Authenticated users can create tasks" ON tasks;
 CREATE POLICY "Authenticated users can create tasks"
   ON tasks FOR INSERT
   WITH CHECK (
@@ -16,42 +17,50 @@ CREATE POLICY "Authenticated users can create tasks"
   );
 
 -- Allow task creators and assigned users to update tasks
+DROP POLICY IF EXISTS "Task creators and assignees can update tasks" ON tasks;
 CREATE POLICY "Task creators and assignees can update tasks"
   ON tasks FOR UPDATE
   USING (
     auth.uid() = created_by_id 
-    OR auth.uid()::text = assigned_to_id
+    OR auth.uid() = assigned_to_id
   )
   WITH CHECK (
     auth.uid() = created_by_id 
-    OR auth.uid()::text = assigned_to_id
+    OR auth.uid() = assigned_to_id
   );
 
 -- Allow authenticated users to create profiles
 DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON profiles;
+DROP POLICY IF EXISTS "Authenticated users can create profiles" ON profiles;
 CREATE POLICY "Authenticated users can create profiles"
   ON profiles FOR INSERT
   WITH CHECK (auth.uid() = id);
 
 -- Allow users to update their own profiles
 DROP POLICY IF EXISTS "Enable update for users based on id" ON profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
 CREATE POLICY "Users can update own profile"
   ON profiles FOR UPDATE
   USING (auth.uid() = id)
   WITH CHECK (auth.uid() = id);
 
--- Allow authenticated users to create families
-DROP POLICY IF EXISTS "Parents can create families" ON families;
-CREATE POLICY "Authenticated users can create families"
-  ON families FOR INSERT
-  WITH CHECK (auth.uid() IS NOT NULL);
+-- Family policies will be created in the family management migration
+-- Commenting out for now to avoid column reference errors
 
--- Allow family creators to update families
-DROP POLICY IF EXISTS "Parents can update their family" ON families;
-CREATE POLICY "Family creators can update their family"
-  ON families FOR UPDATE
-  USING (parent_id = auth.uid())
-  WITH CHECK (parent_id = auth.uid());
+-- -- Allow authenticated users to create families
+-- DROP POLICY IF EXISTS "Parents can create families" ON families;
+-- DROP POLICY IF EXISTS "Authenticated users can create families" ON families;
+-- CREATE POLICY "Authenticated users can create families"
+--   ON families FOR INSERT
+--   WITH CHECK (auth.uid() IS NOT NULL);
+
+-- -- Allow family creators to update families
+-- DROP POLICY IF EXISTS "Parents can update their family" ON families;
+-- DROP POLICY IF EXISTS "Family creators can update their family" ON families;
+-- CREATE POLICY "Family creators can update their family"
+--   ON families FOR UPDATE
+--   USING (created_by_id = auth.uid())
+--   WITH CHECK (created_by_id = auth.uid());
 
 -- Add a helper function to ensure user has basic profile
 CREATE OR REPLACE FUNCTION ensure_user_profile()
@@ -60,9 +69,9 @@ BEGIN
   -- Auto-create profile if user doesn't have one
   INSERT INTO profiles (id, email, display_name, role)
   VALUES (
-    auth.uid(),
-    COALESCE(auth.jwt() ->> 'email', 'user@example.com'),
-    COALESCE(auth.jwt() ->> 'display_name', 'User'),
+    NEW.created_by_id,
+    COALESCE((SELECT email FROM auth.users WHERE id = NEW.created_by_id), 'user@example.com'),
+    COALESCE((SELECT raw_user_meta_data ->> 'display_name' FROM auth.users WHERE id = NEW.created_by_id), 'User'),
     'parent'::user_role
   )
   ON CONFLICT (id) DO NOTHING;

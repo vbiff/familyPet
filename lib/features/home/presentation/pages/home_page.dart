@@ -28,15 +28,6 @@ class HomePage extends ConsumerWidget {
             builder: (context) => const LoginPage(),
           ),
         );
-      } else if (next.status == AuthStatus.authenticated &&
-          previous?.status != AuthStatus.authenticated &&
-          next.user != null) {
-        // Delay family loading until after widget tree is built
-        Future(() {
-          ref
-              .read(familyNotifierProvider.notifier)
-              .loadCurrentFamily(next.user!.id);
-        });
       }
     });
 
