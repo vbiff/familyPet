@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jhonny/features/task/domain/entities/task.dart';
+import 'package:jhonny/features/task/presentation/pages/create_task_page.dart';
+import 'package:jhonny/features/task/presentation/pages/task_detail_page.dart';
 import 'package:jhonny/features/task/presentation/providers/task_provider.dart';
 import 'package:jhonny/features/task/presentation/providers/task_state.dart';
 
@@ -48,9 +50,23 @@ class _TaskListState extends ConsumerState<TaskList> {
                     fontWeight: FontWeight.bold,
                   ),
             ),
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: _loadTasks,
+            Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.add),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const CreateTaskPage(),
+                    ),
+                  ),
+                  tooltip: 'Create Task',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: _loadTasks,
+                  tooltip: 'Refresh',
+                ),
+              ],
             ),
           ],
         ),
@@ -171,6 +187,8 @@ class _TaskListState extends ConsumerState<TaskList> {
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Row(
@@ -181,17 +199,20 @@ class _TaskListState extends ConsumerState<TaskList> {
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: 4),
-                    Text(
-                      _formatDueDate(task.dueDate),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: task.isOverdue
-                                ? Theme.of(context).colorScheme.error
-                                : Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
-                          ),
+                    Flexible(
+                      child: Text(
+                        _formatDueDate(task.dueDate),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: task.isOverdue
+                                  ? Theme.of(context).colorScheme.error
+                                  : Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                            ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 8),
                     Icon(
                       Icons.stars,
                       size: 14,
@@ -199,7 +220,7 @@ class _TaskListState extends ConsumerState<TaskList> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      '${task.points} points',
+                      '${task.points}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color:
                                 Theme.of(context).colorScheme.onSurfaceVariant,
@@ -289,11 +310,9 @@ class _TaskListState extends ConsumerState<TaskList> {
 
   void _onTaskTap(Task task) {
     ref.read(taskNotifierProvider.notifier).selectTask(task);
-    // TODO: Navigate to task detail page
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Selected task: ${task.title}'),
-        duration: const Duration(seconds: 2),
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => TaskDetailPage(task: task),
       ),
     );
   }

@@ -1,6 +1,36 @@
 import 'package:jhonny/features/task/domain/entities/task.dart';
 
 class TaskModel extends Task {
+  // Helper methods for status conversion between Dart enum and database values
+  static String _statusToDb(TaskStatus status) {
+    switch (status) {
+      case TaskStatus.pending:
+        return 'pending';
+      case TaskStatus.inProgress:
+        return 'inProgress'; // Use camelCase for existing database
+      case TaskStatus.completed:
+        return 'completed';
+      case TaskStatus.expired:
+        return 'expired';
+    }
+  }
+
+  static TaskStatus _statusFromDb(String dbStatus) {
+    switch (dbStatus) {
+      case 'pending':
+        return TaskStatus.pending;
+      case 'inProgress': // Handle existing camelCase
+      case 'in_progress': // Handle snake_case if it exists
+        return TaskStatus.inProgress;
+      case 'completed':
+        return TaskStatus.completed;
+      case 'expired':
+        return TaskStatus.expired;
+      default:
+        return TaskStatus.pending; // fallback
+    }
+  }
+
   const TaskModel({
     required super.id,
     required super.title,
@@ -26,10 +56,7 @@ class TaskModel extends Task {
       title: json['title'] as String,
       description: json['description'] as String,
       points: json['points'] as int,
-      status: TaskStatus.values.firstWhere(
-        (status) => status.name == json['status'],
-        orElse: () => TaskStatus.pending,
-      ),
+      status: _statusFromDb(json['status'] as String),
       assignedTo: json['assigned_to_id'] as String,
       createdBy: json['created_by_id'] as String,
       dueDate: DateTime.parse(json['due_date'] as String),
@@ -59,7 +86,7 @@ class TaskModel extends Task {
       'title': title,
       'description': description,
       'points': points,
-      'status': status.name,
+      'status': _statusToDb(status),
       'assigned_to_id': assignedTo,
       'created_by_id': createdBy,
       'due_date': dueDate.toIso8601String(),
@@ -79,7 +106,7 @@ class TaskModel extends Task {
       'title': title,
       'description': description,
       'points': points,
-      'status': status.name,
+      'status': _statusToDb(status),
       'assigned_to_id': assignedTo,
       'created_by_id': createdBy,
       'due_date': dueDate.toIso8601String(),
