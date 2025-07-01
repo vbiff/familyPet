@@ -12,9 +12,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jhonny/main.dart';
 
 void main() {
-  testWidgets('FamilyPet app smoke test', (WidgetTester tester) async {
+  testWidgets('Jhonny app smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const ProviderScope(child: FamilyPetApp()));
+    await tester.pumpWidget(const ProviderScope(child: MyApp()));
 
     // Just verify the app builds successfully without errors
     expect(find.byType(MaterialApp), findsOneWidget);
