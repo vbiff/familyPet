@@ -3,6 +3,9 @@ import 'package:jhonny/features/family/domain/usecases/create_family.dart';
 import 'package:jhonny/features/family/domain/usecases/join_family.dart';
 import 'package:jhonny/features/family/domain/usecases/get_current_family.dart';
 import 'package:jhonny/features/family/domain/usecases/get_family_members.dart';
+import 'package:jhonny/features/family/domain/repositories/family_repository.dart';
+import 'package:jhonny/features/family/domain/entities/family.dart'
+    as family_entity;
 import 'package:jhonny/features/family/presentation/providers/family_state.dart';
 
 class FamilyNotifier extends StateNotifier<FamilyState> {
@@ -10,16 +13,19 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
   final JoinFamily _joinFamily;
   final GetCurrentFamily _getCurrentFamily;
   final GetFamilyMembers _getFamilyMembers;
+  final FamilyRepository _familyRepository;
 
   FamilyNotifier({
     required CreateFamily createFamily,
     required JoinFamily joinFamily,
     required GetCurrentFamily getCurrentFamily,
     required GetFamilyMembers getFamilyMembers,
+    required FamilyRepository familyRepository,
   })  : _createFamily = createFamily,
         _joinFamily = joinFamily,
         _getCurrentFamily = getCurrentFamily,
         _getFamilyMembers = getFamilyMembers,
+        _familyRepository = familyRepository,
         super(FamilyState.initial());
 
   Future<void> loadCurrentFamily(String userId) async {
@@ -45,7 +51,7 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
           if (family != null) {
             state = FamilyState.loaded(family: family);
             // Load family members
-            _loadFamilyMembers(family.id);
+            loadFamilyMembers(family.id);
           } else {
             state = FamilyState.initial();
           }
@@ -87,7 +93,7 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
       (family) {
         state = FamilyState.loaded(family: family);
         // Load family members
-        _loadFamilyMembers(family.id);
+        loadFamilyMembers(family.id);
         return true;
       },
     );
@@ -122,13 +128,13 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
       (family) {
         state = FamilyState.loaded(family: family);
         // Load family members
-        _loadFamilyMembers(family.id);
+        loadFamilyMembers(family.id);
         return true;
       },
     );
   }
 
-  Future<void> _loadFamilyMembers(String familyId) async {
+  Future<void> loadFamilyMembers(String familyId) async {
     try {
       state = state.copyWith(isLoadingMembers: true);
 
@@ -161,6 +167,196 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
         members: [],
         isLoadingMembers: false,
       );
+    }
+  }
+
+  // New Phase 2 methods
+
+  Future<bool> updateFamily(family_entity.Family family) async {
+    try {
+      final result = await _familyRepository.updateFamily(family);
+
+      return result.fold(
+        (failure) {
+          state = state.copyWith(
+            status: FamilyStatus.error,
+            errorMessage: failure.message,
+          );
+          return false;
+        },
+        (updatedFamily) {
+          state = state.copyWith(
+            family: updatedFamily,
+            status: FamilyStatus.loaded,
+          );
+          return true;
+        },
+      );
+    } catch (e) {
+      state = state.copyWith(
+        status: FamilyStatus.error,
+        errorMessage: 'Failed to update family: $e',
+      );
+      return false;
+    }
+  }
+
+  Future<bool> leaveFamily({
+    required String familyId,
+    required String userId,
+  }) async {
+    try {
+      final result = await _familyRepository.leaveFamily(
+        familyId: familyId,
+        userId: userId,
+      );
+
+      return result.fold(
+        (failure) {
+          state = state.copyWith(
+            status: FamilyStatus.error,
+            errorMessage: failure.message,
+          );
+          return false;
+        },
+        (_) {
+          // Reset state after leaving family
+          state = FamilyState.initial();
+          return true;
+        },
+      );
+    } catch (e) {
+      state = state.copyWith(
+        status: FamilyStatus.error,
+        errorMessage: 'Failed to leave family: $e',
+      );
+      return false;
+    }
+  }
+
+  Future<bool> deleteFamily(String familyId) async {
+    try {
+      final result = await _familyRepository.deleteFamily(familyId);
+
+      return result.fold(
+        (failure) {
+          state = state.copyWith(
+            status: FamilyStatus.error,
+            errorMessage: failure.message,
+          );
+          return false;
+        },
+        (_) {
+          // Reset state after deleting family
+          state = FamilyState.initial();
+          return true;
+        },
+      );
+    } catch (e) {
+      state = state.copyWith(
+        status: FamilyStatus.error,
+        errorMessage: 'Failed to delete family: $e',
+      );
+      return false;
+    }
+  }
+
+  Future<bool> updateMemberRole({
+    required String familyId,
+    required String userId,
+    required String role,
+  }) async {
+    try {
+      final result = await _familyRepository.updateMemberRole(
+        familyId: familyId,
+        userId: userId,
+        role: role,
+      );
+
+      return result.fold(
+        (failure) {
+          state = state.copyWith(
+            status: FamilyStatus.error,
+            errorMessage: failure.message,
+          );
+          return false;
+        },
+        (_) {
+          // Reload family members to show updated roles
+          loadFamilyMembers(familyId);
+          return true;
+        },
+      );
+    } catch (e) {
+      state = state.copyWith(
+        status: FamilyStatus.error,
+        errorMessage: 'Failed to update member role: $e',
+      );
+      return false;
+    }
+  }
+
+  Future<bool> removeMemberFromFamily({
+    required String familyId,
+    required String userId,
+  }) async {
+    try {
+      final result = await _familyRepository.removeMemberFromFamily(
+        familyId: familyId,
+        userId: userId,
+      );
+
+      return result.fold(
+        (failure) {
+          state = state.copyWith(
+            status: FamilyStatus.error,
+            errorMessage: failure.message,
+          );
+          return false;
+        },
+        (_) {
+          // Reload family members to show updated list
+          loadFamilyMembers(familyId);
+          return true;
+        },
+      );
+    } catch (e) {
+      state = state.copyWith(
+        status: FamilyStatus.error,
+        errorMessage: 'Failed to remove member: $e',
+      );
+      return false;
+    }
+  }
+
+  Future<bool> generateNewInviteCode(String familyId) async {
+    try {
+      final result = await _familyRepository.generateNewInviteCode(familyId);
+
+      return result.fold(
+        (failure) {
+          state = state.copyWith(
+            status: FamilyStatus.error,
+            errorMessage: failure.message,
+          );
+          return false;
+        },
+        (newInviteCode) {
+          // Update family with new invite code
+          if (state.family != null) {
+            final updatedFamily =
+                state.family!.copyWith(inviteCode: newInviteCode);
+            state = state.copyWith(family: updatedFamily);
+          }
+          return true;
+        },
+      );
+    } catch (e) {
+      state = state.copyWith(
+        status: FamilyStatus.error,
+        errorMessage: 'Failed to generate new invite code: $e',
+      );
+      return false;
     }
   }
 

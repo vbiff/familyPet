@@ -21,6 +21,129 @@ enum TaskFrequency {
   bool get isRecurring => this != TaskFrequency.once;
 }
 
+enum TaskCategory {
+  chores,
+  homework,
+  personal,
+  exercise,
+  creative,
+  social,
+  learning,
+  other;
+
+  String get displayName {
+    switch (this) {
+      case TaskCategory.chores:
+        return 'Chores';
+      case TaskCategory.homework:
+        return 'Homework';
+      case TaskCategory.personal:
+        return 'Personal Care';
+      case TaskCategory.exercise:
+        return 'Exercise';
+      case TaskCategory.creative:
+        return 'Creative';
+      case TaskCategory.social:
+        return 'Social';
+      case TaskCategory.learning:
+        return 'Learning';
+      case TaskCategory.other:
+        return 'Other';
+    }
+  }
+
+  String get icon {
+    switch (this) {
+      case TaskCategory.chores:
+        return '🧹';
+      case TaskCategory.homework:
+        return '📚';
+      case TaskCategory.personal:
+        return '🧴';
+      case TaskCategory.exercise:
+        return '🏃‍♂️';
+      case TaskCategory.creative:
+        return '🎨';
+      case TaskCategory.social:
+        return '👥';
+      case TaskCategory.learning:
+        return '🧠';
+      case TaskCategory.other:
+        return '📝';
+    }
+  }
+}
+
+enum TaskDifficulty {
+  easy,
+  medium,
+  hard;
+
+  String get displayName {
+    switch (this) {
+      case TaskDifficulty.easy:
+        return 'Easy';
+      case TaskDifficulty.medium:
+        return 'Medium';
+      case TaskDifficulty.hard:
+        return 'Hard';
+    }
+  }
+
+  int get basePointMultiplier {
+    switch (this) {
+      case TaskDifficulty.easy:
+        return 1;
+      case TaskDifficulty.medium:
+        return 2;
+      case TaskDifficulty.hard:
+        return 3;
+    }
+  }
+}
+
+enum TaskRewardType {
+  points,
+  badge,
+  privilege,
+  custom;
+
+  String get displayName {
+    switch (this) {
+      case TaskRewardType.points:
+        return 'Points';
+      case TaskRewardType.badge:
+        return 'Badge';
+      case TaskRewardType.privilege:
+        return 'Privilege';
+      case TaskRewardType.custom:
+        return 'Custom';
+    }
+  }
+}
+
+class TaskReward extends Equatable {
+  final TaskRewardType type;
+  final String title;
+  final String description;
+  final int value; // Points value or duration in minutes for privileges
+  final String? imageUrl;
+  final Map<String, dynamic>? metadata;
+
+  const TaskReward({
+    required this.type,
+    required this.title,
+    required this.description,
+    required this.value,
+    this.imageUrl,
+    this.metadata,
+  });
+
+  @override
+  List<Object?> get props =>
+      [type, title, description, value, imageUrl, metadata];
+}
+
 class Task extends Equatable {
   final String id;
   final String title;
@@ -39,6 +162,16 @@ class Task extends Equatable {
   final DateTime? verifiedAt;
   final Map<String, dynamic>? metadata;
 
+  // Phase 2 enhancements
+  final TaskCategory category;
+  final TaskDifficulty difficulty;
+  final List<String> tags;
+  final List<TaskReward> rewards;
+  final DateTime? nextDueDate; // For recurring tasks
+  final int streakCount; // How many times completed in a row
+  final bool isTemplate; // Template for recurring tasks
+  final String? parentTaskId; // Reference to template task
+
   const Task({
     required this.id,
     required this.title,
@@ -56,13 +189,48 @@ class Task extends Equatable {
     this.completedAt,
     this.verifiedAt,
     this.metadata,
+    // Phase 2 properties with defaults
+    this.category = TaskCategory.other,
+    this.difficulty = TaskDifficulty.medium,
+    this.tags = const [],
+    this.rewards = const [],
+    this.nextDueDate,
+    this.streakCount = 0,
+    this.isTemplate = false,
+    this.parentTaskId,
   });
 
-  bool get isOverdue => DateTime.now().isAfter(dueDate);
+  bool get isOverdue => DateTime.now().isAfter(dueDate) && !status.isCompleted;
   bool get hasImages => imageUrls.isNotEmpty;
   bool get isVerifiedByParent => verifiedById != null;
   bool get needsVerification =>
       status == TaskStatus.completed && verifiedById == null;
+  bool get hasCustomRewards => rewards.isNotEmpty;
+  bool get hasTags => tags.isNotEmpty;
+  bool get isRecurringInstance => parentTaskId != null;
+  bool get hasStreak => streakCount > 0;
+
+  // Calculate total reward points including difficulty bonus
+  int get totalRewardPoints {
+    final basePoints = points * difficulty.basePointMultiplier;
+    final bonusPoints = rewards
+        .where((reward) => reward.type == TaskRewardType.points)
+        .fold(0, (sum, reward) => sum + reward.value);
+    return basePoints + bonusPoints;
+  }
+
+  // Get all non-point rewards
+  List<TaskReward> get nonPointRewards =>
+      rewards.where((reward) => reward.type != TaskRewardType.points).toList();
+
+  // Calculate time until due
+  Duration get timeUntilDue => dueDate.difference(DateTime.now());
+
+  // Check if task is due soon (within 24 hours)
+  bool get isDueSoon =>
+      !status.isCompleted &&
+      timeUntilDue.isNegative == false &&
+      timeUntilDue.inHours <= 24;
 
   Task copyWith({
     String? id,
@@ -81,6 +249,16 @@ class Task extends Equatable {
     DateTime? completedAt,
     DateTime? verifiedAt,
     Map<String, dynamic>? metadata,
+    TaskCategory? category,
+    TaskDifficulty? difficulty,
+    List<String>? tags,
+    List<TaskReward>? rewards,
+    DateTime? nextDueDate,
+    int? streakCount,
+    bool? isTemplate,
+    String? parentTaskId,
+    bool clearVerification = false,
+    bool clearNextDueDate = false,
   }) {
     return Task(
       id: id ?? this.id,
@@ -92,13 +270,22 @@ class Task extends Equatable {
       createdBy: createdBy ?? this.createdBy,
       dueDate: dueDate ?? this.dueDate,
       frequency: frequency ?? this.frequency,
-      verifiedById: verifiedById ?? this.verifiedById,
+      verifiedById:
+          clearVerification ? null : (verifiedById ?? this.verifiedById),
       familyId: familyId ?? this.familyId,
       imageUrls: imageUrls ?? this.imageUrls,
       createdAt: createdAt ?? this.createdAt,
       completedAt: completedAt ?? this.completedAt,
-      verifiedAt: verifiedAt ?? this.verifiedAt,
+      verifiedAt: clearVerification ? null : (verifiedAt ?? this.verifiedAt),
       metadata: metadata ?? this.metadata,
+      category: category ?? this.category,
+      difficulty: difficulty ?? this.difficulty,
+      tags: tags ?? this.tags,
+      rewards: rewards ?? this.rewards,
+      nextDueDate: clearNextDueDate ? null : (nextDueDate ?? this.nextDueDate),
+      streakCount: streakCount ?? this.streakCount,
+      isTemplate: isTemplate ?? this.isTemplate,
+      parentTaskId: parentTaskId ?? this.parentTaskId,
     );
   }
 
@@ -120,5 +307,13 @@ class Task extends Equatable {
         completedAt,
         verifiedAt,
         metadata,
+        category,
+        difficulty,
+        tags,
+        rewards,
+        nextDueDate,
+        streakCount,
+        isTemplate,
+        parentTaskId,
       ];
 }

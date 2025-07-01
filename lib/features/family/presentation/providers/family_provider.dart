@@ -58,12 +58,14 @@ final familyNotifierProvider =
   final joinFamily = ref.watch(joinFamilyUseCaseProvider);
   final getCurrentFamily = ref.watch(getCurrentFamilyUseCaseProvider);
   final getFamilyMembers = ref.watch(getFamilyMembersUseCaseProvider);
+  final familyRepository = ref.watch(familyRepositoryProvider);
 
   return family_notifier.FamilyNotifier(
     createFamily: createFamily,
     joinFamily: joinFamily,
     getCurrentFamily: getCurrentFamily,
     getFamilyMembers: getFamilyMembers,
+    familyRepository: familyRepository,
   );
 });
 
