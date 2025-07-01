@@ -9,13 +9,10 @@ class PetModel {
   final String mood;
   final int experience;
   final int level;
-  final String currentImageUrl;
-  final List<String> unlockedImageUrls;
   final DateTime lastFedAt;
   final DateTime lastPlayedAt;
   final DateTime createdAt;
   final Map<String, int> stats;
-  final Map<String, dynamic>? metadata;
 
   const PetModel({
     required this.id,
@@ -26,13 +23,10 @@ class PetModel {
     required this.mood,
     required this.experience,
     required this.level,
-    required this.currentImageUrl,
-    required this.unlockedImageUrls,
     required this.lastFedAt,
     required this.lastPlayedAt,
     required this.createdAt,
     required this.stats,
-    this.metadata,
   });
 
   // Convert from JSON (database)
@@ -46,15 +40,10 @@ class PetModel {
       mood: json['mood'] as String,
       experience: json['experience'] as int,
       level: json['level'] as int,
-      currentImageUrl: json['current_image_url'] as String? ?? '',
-      unlockedImageUrls: json['unlocked_image_urls'] != null
-          ? List<String>.from(json['unlocked_image_urls'] as List)
-          : [],
       lastFedAt: DateTime.parse(json['last_fed'] as String),
       lastPlayedAt: DateTime.parse(json['last_interaction'] as String),
       createdAt: DateTime.parse(json['created_at'] as String),
       stats: _parseStats(json),
-      metadata: json['metadata'] as Map<String, dynamic>?,
     );
   }
 
@@ -69,15 +58,12 @@ class PetModel {
       'mood': mood,
       'experience': experience,
       'level': level,
-      'current_image_url': currentImageUrl,
-      'unlocked_image_urls': unlockedImageUrls,
       'last_fed': lastFedAt.toIso8601String(),
       'last_interaction': lastPlayedAt.toIso8601String(),
       'created_at': createdAt.toIso8601String(),
       'happiness': stats['happiness'] ?? 50,
       'energy': stats['energy'] ?? 100,
       'health': stats['health'] ?? 100,
-      'metadata': metadata,
     };
   }
 
@@ -99,14 +85,10 @@ class PetModel {
       mood: _parseMood(mood),
       experience: experience,
       level: level,
-      currentImageUrl:
-          currentImageUrl.isEmpty ? _getDefaultImage(stage) : currentImageUrl,
-      unlockedImageUrls: unlockedImageUrls,
       lastFedAt: lastFedAt,
       lastPlayedAt: lastPlayedAt,
       createdAt: createdAt,
       stats: stats,
-      metadata: metadata,
     );
   }
 
@@ -121,13 +103,10 @@ class PetModel {
       mood: pet.mood.name,
       experience: pet.experience,
       level: pet.level,
-      currentImageUrl: pet.currentImageUrl,
-      unlockedImageUrls: pet.unlockedImageUrls,
       lastFedAt: pet.lastFedAt,
       lastPlayedAt: pet.lastPlayedAt,
       createdAt: pet.createdAt,
       stats: pet.stats,
-      metadata: pet.metadata,
     );
   }
 
@@ -154,23 +133,6 @@ class PetModel {
     );
   }
 
-  static String _getDefaultImage(String stage) {
-    switch (stage) {
-      case 'egg':
-        return 'assets/images/pet_egg.png';
-      case 'baby':
-        return 'assets/images/pet_baby.png';
-      case 'child':
-        return 'assets/images/pet_child.png';
-      case 'teen':
-        return 'assets/images/pet_teen.png';
-      case 'adult':
-        return 'assets/images/pet_adult.png';
-      default:
-        return 'assets/images/pet_default.png';
-    }
-  }
-
   PetModel copyWith({
     String? id,
     String? name,
@@ -180,13 +142,10 @@ class PetModel {
     String? mood,
     int? experience,
     int? level,
-    String? currentImageUrl,
-    List<String>? unlockedImageUrls,
     DateTime? lastFedAt,
     DateTime? lastPlayedAt,
     DateTime? createdAt,
     Map<String, int>? stats,
-    Map<String, dynamic>? metadata,
   }) {
     return PetModel(
       id: id ?? this.id,
@@ -197,13 +156,10 @@ class PetModel {
       mood: mood ?? this.mood,
       experience: experience ?? this.experience,
       level: level ?? this.level,
-      currentImageUrl: currentImageUrl ?? this.currentImageUrl,
-      unlockedImageUrls: unlockedImageUrls ?? this.unlockedImageUrls,
       lastFedAt: lastFedAt ?? this.lastFedAt,
       lastPlayedAt: lastPlayedAt ?? this.lastPlayedAt,
       createdAt: createdAt ?? this.createdAt,
       stats: stats ?? this.stats,
-      metadata: metadata ?? this.metadata,
     );
   }
 }

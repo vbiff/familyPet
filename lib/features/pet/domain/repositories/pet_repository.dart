@@ -14,7 +14,6 @@ abstract class PetRepository {
     required String name,
     required String ownerId,
     required String familyId,
-    Map<String, dynamic>? metadata,
   });
 
   /// Update pet details

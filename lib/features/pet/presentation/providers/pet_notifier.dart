@@ -4,6 +4,7 @@ import 'package:jhonny/features/pet/domain/usecases/feed_pet.dart';
 import 'package:jhonny/features/pet/domain/usecases/get_family_pet.dart';
 import 'package:jhonny/features/pet/domain/usecases/give_medical_care.dart';
 import 'package:jhonny/features/pet/domain/usecases/play_with_pet.dart';
+import 'package:jhonny/features/pet/domain/usecases/create_pet.dart';
 import 'package:jhonny/features/pet/presentation/providers/pet_state.dart';
 import 'package:logger/logger.dart';
 
@@ -13,6 +14,7 @@ class PetNotifier extends StateNotifier<PetState> {
   final PlayWithPet _playWithPet;
   final GiveMedicalCare _giveMedicalCare;
   final AddExperience _addExperience;
+  final CreatePet _createPet;
   final Logger _logger;
 
   PetNotifier(
@@ -21,6 +23,7 @@ class PetNotifier extends StateNotifier<PetState> {
     this._playWithPet,
     this._giveMedicalCare,
     this._addExperience,
+    this._createPet,
     this._logger,
   ) : super(const PetState());
 
@@ -47,6 +50,57 @@ class PetNotifier extends StateNotifier<PetState> {
         );
       },
     );
+  }
+
+  /// Create a new pet
+  Future<void> createPet({
+    required String name,
+    required String familyId,
+    String? ownerId,
+  }) async {
+    state = state.copyWith(isUpdating: true, clearError: true);
+
+    try {
+      _logger.i('Creating pet: $name for family: $familyId');
+
+      // Use the current user's ID as the owner ID
+      // In a real implementation, this should come from the auth state
+      final petOwnerId =
+          ownerId ?? 'current-user-id'; // TODO: Get from auth provider
+
+      final result = await _createPet(CreatePetParams(
+        name: name,
+        ownerId: petOwnerId,
+        familyId: familyId,
+      ));
+
+      result.fold(
+        (failure) {
+          _logger.e('Failed to create pet: ${failure.message}');
+          state = state.copyWith(
+            isUpdating: false,
+            status: PetStateStatus.error,
+            errorMessage: failure.message,
+          );
+        },
+        (pet) {
+          _logger.i('Pet created successfully: ${pet.name}');
+          state = state.copyWith(
+            isUpdating: false,
+            pet: pet,
+            status: PetStateStatus.success,
+            lastAction: 'Pet "${pet.name}" created successfully! 🎉',
+          );
+        },
+      );
+    } catch (e) {
+      _logger.e('Failed to create pet: $e');
+      state = state.copyWith(
+        isUpdating: false,
+        status: PetStateStatus.error,
+        errorMessage: 'Failed to create pet: $e',
+      );
+    }
   }
 
   /// Feed the pet

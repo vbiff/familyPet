@@ -32,13 +32,10 @@ class Pet extends Equatable {
   final PetMood mood;
   final int experience;
   final int level;
-  final String currentImageUrl;
-  final List<String> unlockedImageUrls;
   final DateTime lastFedAt;
   final DateTime lastPlayedAt;
   final DateTime createdAt;
   final Map<String, int> stats;
-  final Map<String, dynamic>? metadata;
 
   const Pet({
     required this.id,
@@ -49,13 +46,10 @@ class Pet extends Equatable {
     required this.mood,
     required this.experience,
     required this.level,
-    required this.currentImageUrl,
-    this.unlockedImageUrls = const [],
     required this.lastFedAt,
     required this.lastPlayedAt,
     required this.createdAt,
     required this.stats,
-    this.metadata,
   });
 
   bool get canEvolve =>
@@ -83,13 +77,10 @@ class Pet extends Equatable {
     PetMood? mood,
     int? experience,
     int? level,
-    String? currentImageUrl,
-    List<String>? unlockedImageUrls,
     DateTime? lastFedAt,
     DateTime? lastPlayedAt,
     DateTime? createdAt,
     Map<String, int>? stats,
-    Map<String, dynamic>? metadata,
   }) {
     return Pet(
       id: id ?? this.id,
@@ -100,13 +91,10 @@ class Pet extends Equatable {
       mood: mood ?? this.mood,
       experience: experience ?? this.experience,
       level: level ?? this.level,
-      currentImageUrl: currentImageUrl ?? this.currentImageUrl,
-      unlockedImageUrls: unlockedImageUrls ?? this.unlockedImageUrls,
       lastFedAt: lastFedAt ?? this.lastFedAt,
       lastPlayedAt: lastPlayedAt ?? this.lastPlayedAt,
       createdAt: createdAt ?? this.createdAt,
       stats: stats ?? this.stats,
-      metadata: metadata ?? this.metadata,
     );
   }
 
@@ -120,12 +108,9 @@ class Pet extends Equatable {
         mood,
         experience,
         level,
-        currentImageUrl,
-        unlockedImageUrls,
         lastFedAt,
         lastPlayedAt,
         createdAt,
         stats,
-        metadata,
       ];
 }

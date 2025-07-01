@@ -37,7 +37,6 @@ class SupabasePetRepository implements PetRepository {
     required String name,
     required String ownerId,
     required String familyId,
-    Map<String, dynamic>? metadata,
   }) async {
     try {
       final petId = _uuid.v4();
@@ -52,8 +51,6 @@ class SupabasePetRepository implements PetRepository {
         mood: PetMood.neutral.name,
         experience: 0,
         level: 1,
-        currentImageUrl: '',
-        unlockedImageUrls: const [],
         lastFedAt: now,
         lastPlayedAt: now,
         createdAt: now,
@@ -62,7 +59,6 @@ class SupabasePetRepository implements PetRepository {
           'happiness': 50,
           'energy': 100,
         },
-        metadata: metadata,
       );
 
       final createdPet = await _remoteDataSource.createPet(petModel);

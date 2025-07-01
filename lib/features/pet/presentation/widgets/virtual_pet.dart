@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jhonny/features/family/presentation/providers/family_provider.dart';
+import 'package:jhonny/features/pet/domain/entities/pet.dart';
 import 'package:jhonny/features/pet/presentation/providers/pet_provider.dart';
+import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 
 class VirtualPet extends ConsumerWidget {
   const VirtualPet({super.key});
@@ -23,7 +25,9 @@ class VirtualPet extends ConsumerWidget {
 
     // Show action feedback
     ref.listen(petNotifierProvider, (previous, next) {
-      if (next.lastAction != null) {
+      // Only show snackbar if lastAction is new (different from previous state)
+      if (next.lastAction != null &&
+          (previous == null || previous.lastAction != next.lastAction)) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.lastAction!),
@@ -33,8 +37,9 @@ class VirtualPet extends ConsumerWidget {
             duration: Duration(seconds: next.hasEvolved ? 4 : 2),
           ),
         );
-        // Clear the action after showing
-        Future.delayed(const Duration(milliseconds: 500), () {
+
+        // Clear the action after a short delay to prevent immediate rebuilds from showing it again
+        Future.delayed(const Duration(milliseconds: 100), () {
           ref.read(petNotifierProvider.notifier).clearLastAction();
         });
       }
@@ -123,6 +128,23 @@ class VirtualPet extends ConsumerWidget {
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
+                    const SizedBox(height: 24),
+                    // Add Create Pet button
+                    if (familyState.hasFamily)
+                      ElevatedButton.icon(
+                        onPressed: () =>
+                            _createPet(context, ref, familyState.family!.id),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Create Pet'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
+                          foregroundColor:
+                              Theme.of(context).colorScheme.onPrimary,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -156,12 +178,24 @@ class VirtualPet extends ConsumerWidget {
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
-                          Icon(
-                            Icons.pets,
-                            size: 60,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onPrimaryContainer,
+                          // Display actual pet image
+                          ClipOval(
+                            child: Image.asset(
+                              _getPetImagePath(petState.petStage),
+                              width: 100,
+                              height: 100,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                // Fallback to icon if image fails to load
+                                return Icon(
+                                  Icons.pets,
+                                  size: 60,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onPrimaryContainer,
+                                );
+                              },
+                            ),
                           ),
                           if (petState.isUpdating)
                             Positioned(
@@ -459,5 +493,83 @@ class VirtualPet extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  String _getPetImagePath(PetStage stage) {
+    switch (stage) {
+      case PetStage.egg:
+        return 'assets/images/pet_egg.png';
+      case PetStage.baby:
+        return 'assets/images/pet_baby.png';
+      case PetStage.child:
+        return 'assets/images/pet_child.png';
+      case PetStage.teen:
+        return 'assets/images/pet_teen.png';
+      case PetStage.adult:
+        return 'assets/images/pet_adult.png';
+    }
+  }
+
+  Future<void> _createPet(
+      BuildContext context, WidgetRef ref, String familyId) async {
+    final nameController = TextEditingController();
+
+    try {
+      // Show dialog to name the pet
+      final petName = await showDialog<String>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Create Your Pet'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('What would you like to name your pet?'),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: nameController,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Pet Name',
+                    hintText: 'Enter a name for your pet',
+                    border: OutlineInputBorder(),
+                  ),
+                  onSubmitted: (value) {
+                    final name = value.trim();
+                    Navigator.of(context).pop(name.isEmpty ? 'Fluffy' : name);
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final name = nameController.text.trim();
+                Navigator.of(context).pop(name.isEmpty ? 'Fluffy' : name);
+              },
+              child: const Text('Create'),
+            ),
+          ],
+        ),
+      );
+
+      if (petName != null && petName.isNotEmpty) {
+        final currentUser = ref.read(currentUserProvider);
+        await ref.read(petNotifierProvider.notifier).createPet(
+              name: petName,
+              familyId: familyId,
+              ownerId: currentUser?.id,
+            );
+      }
+    } finally {
+      // Dispose controller in finally block to ensure it's always disposed
+      nameController.dispose();
+    }
   }
 }

@@ -11,6 +11,7 @@ import 'package:jhonny/features/pet/domain/usecases/feed_pet.dart';
 import 'package:jhonny/features/pet/domain/usecases/get_family_pet.dart';
 import 'package:jhonny/features/pet/domain/usecases/give_medical_care.dart';
 import 'package:jhonny/features/pet/domain/usecases/play_with_pet.dart';
+import 'package:jhonny/features/pet/domain/usecases/create_pet.dart';
 import 'package:jhonny/features/pet/presentation/providers/pet_notifier.dart';
 import 'package:jhonny/features/pet/presentation/providers/pet_state.dart';
 
@@ -56,6 +57,11 @@ final addExperienceUseCaseProvider = Provider<AddExperience>((ref) {
   return AddExperience(repository);
 });
 
+final createPetUseCaseProvider = Provider<CreatePet>((ref) {
+  final repository = ref.watch(petRepositoryProvider);
+  return CreatePet(repository);
+});
+
 // Logger Provider
 final petLoggerProvider = Provider<Logger>((ref) => Logger());
 
@@ -66,6 +72,7 @@ final petNotifierProvider = StateNotifierProvider<PetNotifier, PetState>((ref) {
   final playWithPet = ref.watch(playWithPetUseCaseProvider);
   final giveMedicalCare = ref.watch(giveMedicalCareUseCaseProvider);
   final addExperience = ref.watch(addExperienceUseCaseProvider);
+  final createPet = ref.watch(createPetUseCaseProvider);
   final logger = ref.watch(petLoggerProvider);
 
   return PetNotifier(
@@ -74,6 +81,7 @@ final petNotifierProvider = StateNotifierProvider<PetNotifier, PetState>((ref) {
     playWithPet,
     giveMedicalCare,
     addExperience,
+    createPet,
     logger,
   );
 });

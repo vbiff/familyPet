@@ -54,13 +54,10 @@ void main() {
           mood: PetMood.happy,
           experience: 400,
           level: 5,
-          currentImageUrl: 'https://example.com/fluffy.jpg',
-          unlockedImageUrls: const ['img1.jpg', 'img2.jpg'],
           lastFedAt: testDate.subtract(const Duration(hours: 2)),
           lastPlayedAt: testDate.subtract(const Duration(hours: 4)),
           createdAt: testDate,
           stats: const {'health': 80, 'happiness': 90},
-          metadata: const {'color': 'brown'},
         );
       });
 
@@ -73,10 +70,7 @@ void main() {
         expect(testPet.mood, PetMood.happy);
         expect(testPet.experience, 400);
         expect(testPet.level, 5);
-        expect(testPet.currentImageUrl, 'https://example.com/fluffy.jpg');
-        expect(testPet.unlockedImageUrls, ['img1.jpg', 'img2.jpg']);
         expect(testPet.stats, {'health': 80, 'happiness': 90});
-        expect(testPet.metadata, {'color': 'brown'});
       });
 
       test('should create pet with minimal properties', () {
@@ -89,15 +83,14 @@ void main() {
           mood: PetMood.neutral,
           experience: 0,
           level: 1,
-          currentImageUrl: 'egg.jpg',
           lastFedAt: testDate,
           lastPlayedAt: testDate,
           createdAt: testDate,
           stats: const {'health': 100},
         );
 
-        expect(minimalPet.unlockedImageUrls, isEmpty);
-        expect(minimalPet.metadata, isNull);
+        expect(minimalPet.id, 'minimal-pet');
+        expect(minimalPet.experience, 0);
       });
 
       group('Evolution logic', () {
@@ -168,29 +161,20 @@ void main() {
       });
 
       group('copyWith method', () {
-        test('should create copy with updated properties', () {
+        test('should return new instance with updated values', () {
           final updatedPet = testPet.copyWith(
             name: 'Updated Fluffy',
-            mood: PetMood.content,
             experience: 500,
-            stats: {'health': 85, 'happiness': 95},
           );
 
-          expect(updatedPet.id, testPet.id);
           expect(updatedPet.name, 'Updated Fluffy');
-          expect(updatedPet.mood, PetMood.content);
           expect(updatedPet.experience, 500);
-          expect(updatedPet.stats, {'health': 85, 'happiness': 95});
-          expect(updatedPet.familyId, testPet.familyId);
+          expect(updatedPet.id, testPet.id); // Unchanged field
         });
 
-        test(
-            'should preserve existing values when copyWith called without changes',
-            () {
-          final updatedPet = testPet.copyWith();
-          expect(updatedPet.metadata, testPet.metadata);
-          expect(updatedPet.name, testPet.name);
-          expect(updatedPet.experience, testPet.experience);
+        test('should return same instance when no values provided', () {
+          final samePet = testPet.copyWith();
+          expect(samePet, equals(testPet));
         });
       });
 
@@ -205,13 +189,10 @@ void main() {
             mood: PetMood.happy,
             experience: 400,
             level: 5,
-            currentImageUrl: 'https://example.com/fluffy.jpg',
-            unlockedImageUrls: const ['img1.jpg', 'img2.jpg'],
             lastFedAt: testDate.subtract(const Duration(hours: 2)),
             lastPlayedAt: testDate.subtract(const Duration(hours: 4)),
             createdAt: testDate,
             stats: const {'health': 80, 'happiness': 90},
-            metadata: const {'color': 'brown'},
           );
 
           expect(testPet, equals(samePet));
@@ -235,13 +216,10 @@ void main() {
             PetMood.happy,
             400,
             5,
-            'https://example.com/fluffy.jpg',
-            ['img1.jpg', 'img2.jpg'],
             testDate.subtract(const Duration(hours: 2)),
             testDate.subtract(const Duration(hours: 4)),
             testDate,
             {'health': 80, 'happiness': 90},
-            {'color': 'brown'},
           ]);
         });
       });

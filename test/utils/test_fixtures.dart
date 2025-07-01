@@ -56,15 +56,12 @@ class TestFixtures {
         ownerId: 'child-1',
         stage: PetStage.child,
         mood: PetMood.happy,
-        experience: 350,
-        level: 4,
-        currentImageUrl: 'https://example.com/fluffy.jpg',
-        unlockedImageUrls: const ['image1.jpg', 'image2.jpg'],
+        experience: 400,
+        level: 5,
         lastFedAt: baseDate.subtract(const Duration(hours: 2)),
-        lastPlayedAt: baseDate.subtract(const Duration(hours: 3)),
+        lastPlayedAt: baseDate.subtract(const Duration(hours: 4)),
         createdAt: baseDate,
-        stats: const {'health': 85, 'happiness': 90, 'energy': 75},
-        metadata: const {'color': 'orange', 'breed': 'virtual'},
+        stats: const {'health': 80, 'happiness': 90},
       );
 
   // Task fixtures

@@ -266,7 +266,6 @@ class SupabasePetRemoteDataSource implements PetRemoteDataSource {
         stage: nextStage.name,
         mood: PetMood.happy.name, // Happy after evolution
         stats: updatedStats,
-        currentImageUrl: _getDefaultImageForStage(nextStage.name),
       );
 
       _logger.i(
@@ -329,22 +328,5 @@ class SupabasePetRemoteDataSource implements PetRemoteDataSource {
     if (experience < 600) return 3;
     if (experience < 1000) return 4;
     return min(5 + ((experience - 1000) ~/ 200), 100); // Max level 100
-  }
-
-  String _getDefaultImageForStage(String stage) {
-    switch (stage) {
-      case 'egg':
-        return 'assets/images/pet_egg.png';
-      case 'baby':
-        return 'assets/images/pet_baby.png';
-      case 'child':
-        return 'assets/images/pet_child.png';
-      case 'teen':
-        return 'assets/images/pet_teen.png';
-      case 'adult':
-        return 'assets/images/pet_adult.png';
-      default:
-        return 'assets/images/pet_default.png';
-    }
   }
 }
