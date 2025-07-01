@@ -162,8 +162,8 @@ class VirtualPet extends ConsumerWidget {
                   children: [
                     // Pet avatar
                     Container(
-                      width: 120,
-                      height: 120,
+                      width: 180,
+                      height: 180,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
@@ -180,30 +180,20 @@ class VirtualPet extends ConsumerWidget {
                         children: [
                           // Display actual pet image
                           ClipOval(
-                            child: Image.asset(
-                              _getPetImagePath(petState.petStage),
-                              width: 100,
-                              height: 100,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                // Fallback to icon if image fails to load
-                                return Icon(
-                                  Icons.pets,
-                                  size: 60,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onPrimaryContainer,
-                                );
-                              },
+                            child: _buildPetImage(
+                              context,
+                              familyState.family?.petImageUrl,
+                              familyState.family?.petStageImages,
+                              petState.petStage,
                             ),
                           ),
                           if (petState.isUpdating)
                             Positioned(
-                              top: 8,
-                              right: 8,
+                              top: 12,
+                              right: 12,
                               child: SizedBox(
-                                width: 20,
-                                height: 20,
+                                width: 24,
+                                height: 24,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
                                   color: Theme.of(context).colorScheme.primary,
@@ -493,6 +483,75 @@ class VirtualPet extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildPetImage(
+    BuildContext context,
+    String? petImageUrl,
+    Map<String, String>? petStageImages,
+    PetStage stage,
+  ) {
+    // Use specific stage image URL if available
+    String? stageImageUrl;
+    if (petStageImages != null) {
+      stageImageUrl = petStageImages[stage.name];
+    }
+
+    // Prioritize current pet image, then stage image, then fallback to local assets
+    final imageUrl = petImageUrl ?? stageImageUrl;
+
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      return Image.network(
+        imageUrl,
+        width: 150,
+        height: 150,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Center(
+            child: CircularProgressIndicator(
+              value: loadingProgress.expectedTotalBytes != null
+                  ? loadingProgress.cumulativeBytesLoaded /
+                      loadingProgress.expectedTotalBytes!
+                  : null,
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          // Fallback to local asset if network image fails
+          return Image.asset(
+            _getPetImagePath(stage),
+            width: 150,
+            height: 150,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              // Final fallback to icon if everything fails
+              return Icon(
+                Icons.pets,
+                size: 90,
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+              );
+            },
+          );
+        },
+      );
+    } else {
+      // Use local asset as default
+      return Image.asset(
+        _getPetImagePath(stage),
+        width: 150,
+        height: 150,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          // Fallback to icon if image fails to load
+          return Icon(
+            Icons.pets,
+            size: 90,
+            color: Theme.of(context).colorScheme.onPrimaryContainer,
+          );
+        },
+      );
+    }
   }
 
   String _getPetImagePath(PetStage stage) {

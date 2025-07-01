@@ -17,6 +17,11 @@ abstract class FamilyRemoteDataSource {
   Future<void> deleteFamily(String familyId);
   Stream<FamilyModel> watchFamily(String familyId);
   Stream<List<FamilyMemberModel>> watchFamilyMembers(String familyId);
+  Future<void> updatePetImageUrl(
+      {required String familyId, required String petImageUrl});
+  Future<void> updatePetStageImages(
+      {required String familyId, required Map<String, String> petStageImages});
+  Future<String?> getFamilyPetImageUrl(String familyId);
 }
 
 class SupabaseFamilyRemoteDataSource implements FamilyRemoteDataSource {
@@ -385,5 +390,53 @@ class SupabaseFamilyRemoteDataSource implements FamilyRemoteDataSource {
     }
 
     return code;
+  }
+
+  /// Update family pet image URL
+  @override
+  Future<void> updatePetImageUrl({
+    required String familyId,
+    required String petImageUrl,
+  }) async {
+    try {
+      await _client.from('families').update({
+        'pet_image_url': petImageUrl,
+        'last_activity_at': DateTime.now().toIso8601String(),
+      }).eq('id', familyId);
+    } catch (e) {
+      throw Exception('Failed to update pet image URL: $e');
+    }
+  }
+
+  /// Update family pet stage images
+  @override
+  Future<void> updatePetStageImages({
+    required String familyId,
+    required Map<String, String> petStageImages,
+  }) async {
+    try {
+      await _client.from('families').update({
+        'pet_stage_images': petStageImages,
+        'last_activity_at': DateTime.now().toIso8601String(),
+      }).eq('id', familyId);
+    } catch (e) {
+      throw Exception('Failed to update pet stage images: $e');
+    }
+  }
+
+  /// Get family pet image URL
+  @override
+  Future<String?> getFamilyPetImageUrl(String familyId) async {
+    try {
+      final response = await _client
+          .from('families')
+          .select('pet_image_url')
+          .eq('id', familyId)
+          .maybeSingle();
+
+      return response?['pet_image_url'] as String?;
+    } catch (e) {
+      throw Exception('Failed to get family pet image URL: $e');
+    }
   }
 }

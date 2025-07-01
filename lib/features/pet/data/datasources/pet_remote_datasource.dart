@@ -309,7 +309,10 @@ class SupabasePetRemoteDataSource implements PetRemoteDataSource {
   // Helper methods
   Future<PetModel> _getPetById(String petId) async {
     final data =
-        await _client.from(_tableName).select().eq('id', petId).single();
+        await _client.from(_tableName).select().eq('id', petId).maybeSingle();
+    if (data == null) {
+      throw Exception('Pet not found with id: $petId');
+    }
     return PetModel.fromJson(data);
   }
 

@@ -11,6 +11,8 @@ class Family extends Equatable {
   final DateTime? lastActivityAt;
   final Map<String, dynamic>? settings;
   final Map<String, dynamic>? metadata;
+  final String? petImageUrl;
+  final Map<String, String>? petStageImages;
 
   const Family({
     required this.id,
@@ -23,6 +25,8 @@ class Family extends Equatable {
     this.lastActivityAt,
     this.settings,
     this.metadata,
+    this.petImageUrl,
+    this.petStageImages,
   });
 
   int get totalMembers => parentIds.length + childIds.length;
@@ -50,6 +54,8 @@ class Family extends Equatable {
     DateTime? lastActivityAt,
     Map<String, dynamic>? settings,
     Map<String, dynamic>? metadata,
+    String? petImageUrl,
+    Map<String, String>? petStageImages,
   }) {
     return Family(
       id: id ?? this.id,
@@ -62,6 +68,8 @@ class Family extends Equatable {
       lastActivityAt: lastActivityAt ?? this.lastActivityAt,
       settings: settings ?? this.settings,
       metadata: metadata ?? this.metadata,
+      petImageUrl: petImageUrl ?? this.petImageUrl,
+      petStageImages: petStageImages ?? this.petStageImages,
     );
   }
 
@@ -77,5 +85,7 @@ class Family extends Equatable {
         lastActivityAt,
         settings,
         metadata,
+        petImageUrl,
+        petStageImages,
       ];
 }

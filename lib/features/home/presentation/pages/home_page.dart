@@ -9,6 +9,7 @@ import 'package:jhonny/features/family/presentation/providers/family_state.dart'
 import 'package:jhonny/features/family/presentation/widgets/family_list.dart';
 import 'package:jhonny/features/home/presentation/providers/home_provider.dart';
 import 'package:jhonny/features/pet/presentation/widgets/virtual_pet.dart';
+import 'package:jhonny/features/pet/presentation/providers/pet_provider.dart';
 import 'package:jhonny/features/task/presentation/widgets/task_list.dart';
 import 'package:jhonny/shared/widgets/widgets.dart';
 
@@ -43,6 +44,20 @@ class HomePage extends ConsumerWidget {
         ref.read(familyNotifierProvider.notifier).loadCurrentFamily(user.id);
       });
     }
+
+    // Auto-load pet data when family becomes available
+    ref.listen(familyNotifierProvider, (previous, next) {
+      if (next.hasFamily) {
+        final petState = ref.read(petNotifierProvider);
+        if (!petState.hasPet && !petState.isLoading) {
+          Future.microtask(() {
+            ref
+                .read(petNotifierProvider.notifier)
+                .loadFamilyPet(next.family!.id);
+          });
+        }
+      }
+    });
 
     return Scaffold(
       body: CustomScrollView(

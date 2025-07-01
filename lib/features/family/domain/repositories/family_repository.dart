@@ -70,4 +70,19 @@ abstract class FamilyRepository {
 
   /// Watch family members for real-time updates
   Stream<List<FamilyMemberModel>> watchFamilyMembers(String familyId);
+
+  /// Update family pet image URL
+  Future<Either<Failure, void>> updatePetImageUrl({
+    required String familyId,
+    required String petImageUrl,
+  });
+
+  /// Update family pet stage images
+  Future<Either<Failure, void>> updatePetStageImages({
+    required String familyId,
+    required Map<String, String> petStageImages,
+  });
+
+  /// Get family pet image URL
+  Future<Either<Failure, String?>> getFamilyPetImageUrl(String familyId);
 }

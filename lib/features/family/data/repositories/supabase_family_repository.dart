@@ -247,4 +247,47 @@ class SupabaseFamilyRepository implements FamilyRepository {
 
     return code;
   }
+
+  @override
+  Future<Either<Failure, void>> updatePetImageUrl({
+    required String familyId,
+    required String petImageUrl,
+  }) async {
+    try {
+      await _remoteDataSource.updatePetImageUrl(
+        familyId: familyId,
+        petImageUrl: petImageUrl,
+      );
+      return right(null);
+    } catch (e) {
+      return left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> updatePetStageImages({
+    required String familyId,
+    required Map<String, String> petStageImages,
+  }) async {
+    try {
+      await _remoteDataSource.updatePetStageImages(
+        familyId: familyId,
+        petStageImages: petStageImages,
+      );
+      return right(null);
+    } catch (e) {
+      return left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String?>> getFamilyPetImageUrl(String familyId) async {
+    try {
+      final petImageUrl =
+          await _remoteDataSource.getFamilyPetImageUrl(familyId);
+      return right(petImageUrl);
+    } catch (e) {
+      return left(ServerFailure(message: e.toString()));
+    }
+  }
 }

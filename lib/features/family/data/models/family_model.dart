@@ -1,18 +1,58 @@
 import 'package:jhonny/features/family/domain/entities/family.dart';
 
 class FamilyModel extends Family {
+  @override
+  final String id;
+  @override
+  final String name;
+  @override
+  final String inviteCode;
+  @override
+  final String createdById;
+  @override
+  final List<String> parentIds;
+  @override
+  final List<String> childIds;
+  @override
+  final DateTime createdAt;
+  @override
+  final DateTime? lastActivityAt;
+  @override
+  final Map<String, dynamic>? settings;
+  @override
+  final Map<String, dynamic>? metadata;
+  @override
+  final String? petImageUrl;
+  @override
+  final Map<String, String>? petStageImages;
+
   const FamilyModel({
-    required super.id,
-    required super.name,
-    required super.inviteCode,
-    required super.createdById,
-    super.parentIds = const [],
-    super.childIds = const [],
-    required super.createdAt,
-    super.lastActivityAt,
-    super.settings,
-    super.metadata,
-  });
+    required this.id,
+    required this.name,
+    required this.inviteCode,
+    required this.createdById,
+    required this.parentIds,
+    required this.childIds,
+    required this.createdAt,
+    this.lastActivityAt,
+    this.settings,
+    this.metadata,
+    this.petImageUrl,
+    this.petStageImages,
+  }) : super(
+          id: id,
+          name: name,
+          inviteCode: inviteCode,
+          createdById: createdById,
+          parentIds: parentIds,
+          childIds: childIds,
+          createdAt: createdAt,
+          lastActivityAt: lastActivityAt,
+          settings: settings,
+          metadata: metadata,
+          petImageUrl: petImageUrl,
+          petStageImages: petStageImages,
+        );
 
   factory FamilyModel.fromJson(Map<String, dynamic> json) {
     return FamilyModel(
@@ -26,8 +66,12 @@ class FamilyModel extends Family {
       lastActivityAt: json['last_activity_at'] != null
           ? DateTime.parse(json['last_activity_at'] as String)
           : null,
-      settings: json['settings'] as Map<String, dynamic>?,
-      metadata: json['metadata'] as Map<String, dynamic>?,
+      settings: json['settings'] as Map<String, dynamic>? ?? {},
+      metadata: json['metadata'] as Map<String, dynamic>? ?? {},
+      petImageUrl: json['pet_image_url'] as String?,
+      petStageImages: json['pet_stage_images'] != null
+          ? Map<String, String>.from(json['pet_stage_images'] as Map)
+          : null,
     );
   }
 
@@ -43,6 +87,8 @@ class FamilyModel extends Family {
       'last_activity_at': lastActivityAt?.toIso8601String(),
       'settings': settings,
       'metadata': metadata,
+      'pet_image_url': petImageUrl,
+      'pet_stage_images': petStageImages,
     };
   }
 
@@ -78,6 +124,8 @@ class FamilyModel extends Family {
       lastActivityAt: family.lastActivityAt,
       settings: family.settings,
       metadata: family.metadata,
+      petImageUrl: family.petImageUrl,
+      petStageImages: family.petStageImages,
     );
   }
 
@@ -93,6 +141,8 @@ class FamilyModel extends Family {
       lastActivityAt: lastActivityAt,
       settings: settings,
       metadata: metadata,
+      petImageUrl: petImageUrl,
+      petStageImages: petStageImages,
     );
   }
 }
