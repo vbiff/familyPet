@@ -227,7 +227,8 @@ class SupabaseFamilyRemoteDataSource implements FamilyRemoteDataSource {
           members.add(FamilyMemberModel.fromJson(memberData));
         } catch (statsError) {
           // If task stats fail, create member without stats
-          print('Task stats failed for member ${profile['id']}: $statsError');
+          // TODO: Use proper logging instead of print
+          // print('Task stats failed for member ${profile['id']}: $statsError');
           final memberData = Map<String, dynamic>.from(profile);
           memberData.addAll({
             'tasks_completed': 0,

@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:jhonny/features/task/data/models/task_model.dart';
 import 'package:jhonny/features/task/domain/entities/task.dart';
+import 'package:logger/logger.dart';
 
 abstract class TaskRemoteDataSource {
   Future<List<TaskModel>> getTasks({
@@ -35,6 +36,7 @@ abstract class TaskRemoteDataSource {
 class SupabaseTaskRemoteDataSource implements TaskRemoteDataSource {
   final SupabaseClient _client;
   static const String _tableName = 'tasks';
+  static final _logger = Logger();
 
   SupabaseTaskRemoteDataSource(this._client);
 
@@ -128,36 +130,40 @@ class SupabaseTaskRemoteDataSource implements TaskRemoteDataSource {
     DateTime? completedAt,
     DateTime? verifiedAt,
   }) async {
-    try {
-      final updates = <String, dynamic>{
-        'status': status.name,
-        'updated_at': DateTime.now().toIso8601String(),
-      };
+    final updates = <String, dynamic>{
+      'status': status.name,
+      'updated_at': DateTime.now().toIso8601String(),
+    };
 
-      if (completedAt != null) {
-        updates['completed_at'] = completedAt.toIso8601String();
-      }
+    if (completedAt != null) {
+      updates['completed_at'] = completedAt.toIso8601String();
+    }
 
-      // Handle verification fields - explicitly set to null when unverifying
+    if (verifiedById != null) {
       updates['verified_by_id'] = verifiedById;
       updates['verified_at'] = verifiedAt?.toIso8601String();
+    }
 
-      print('🔧 Database update - Task ID: $taskId');
-      print('🔧 Database update - Updates: $updates');
+    _logger.d('Database update - Task ID: $taskId');
+    _logger.d('Database update - Updates: $updates');
 
-      final data = await _client
+    try {
+      final response = await _client
           .from(_tableName)
           .update(updates)
           .eq('id', taskId)
-          .select()
-          .single();
+          .select();
 
-      print('✅ Database update successful');
-      print('🔧 Updated task data: $data');
-
-      return TaskModel.fromJson(data);
+      if (response.isNotEmpty) {
+        final data = response.first;
+        _logger.i('Database update successful');
+        _logger.d('Updated task data: $data');
+        return TaskModel.fromJson(data);
+      } else {
+        throw Exception('No data returned from database update');
+      }
     } catch (e) {
-      print('❌ Database update failed: $e');
+      _logger.e('Database update failed: $e');
       throw Exception('Failed to update task status: $e');
     }
   }
@@ -173,9 +179,12 @@ class SupabaseTaskRemoteDataSource implements TaskRemoteDataSource {
           (data) => data.map((json) => TaskModel.fromJson(json)).where((task) {
                 if (task.familyId != familyId) return false;
                 if (task.metadata?['is_archived'] == true) return false;
-                if (assignedTo != null && task.assignedTo != assignedTo)
+                if (assignedTo != null && task.assignedTo != assignedTo) {
                   return false;
-                if (status != null && task.status != status) return false;
+                }
+                if (status != null && task.status != status) {
+                  return false;
+                }
                 return true;
               }).toList()
                 ..sort((a, b) => b.createdAt.compareTo(a.createdAt)));

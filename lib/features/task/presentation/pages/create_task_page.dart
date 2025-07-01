@@ -4,7 +4,7 @@ import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jhonny/features/task/domain/entities/task.dart';
 import 'package:jhonny/features/task/presentation/providers/task_provider.dart';
 import 'package:jhonny/features/family/presentation/providers/family_provider.dart';
-import 'package:jhonny/features/family/data/models/family_member_model.dart';
+// import 'package:jhonny/features/family/data/models/family_member_model.dart';
 
 class CreateTaskPage extends ConsumerStatefulWidget {
   const CreateTaskPage({super.key});
@@ -45,7 +45,7 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
   @override
   Widget build(BuildContext context) {
     final isCreating = ref.watch(taskCreatingProvider);
-    final familyMembers = ref.watch(familyMembersProvider);
+    // final familyMembers = ref.watch(familyMembersProvider);
 
     return Scaffold(
       appBar: AppBar(

@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:logger/logger.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jhonny/features/task/domain/entities/task.dart';
 import 'package:jhonny/features/task/presentation/providers/task_provider.dart';
 
 class TaskDetailPage extends ConsumerWidget {
   final Task task;
+  static final _logger = Logger();
 
   const TaskDetailPage({
     super.key,
@@ -140,7 +142,7 @@ class TaskDetailPage extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Icon(icon, color: color, size: 24),
@@ -316,10 +318,10 @@ class TaskDetailPage extends ConsumerWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: statusColor.withOpacity(0.1),
+                color: statusColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: statusColor.withOpacity(0.3),
+                  color: statusColor.withValues(alpha: 0.3),
                 ),
               ),
               child: Row(
@@ -439,9 +441,9 @@ class TaskDetailPage extends ConsumerWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.1),
+            color: Colors.green.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.green.withOpacity(0.3)),
+            border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -585,21 +587,21 @@ class TaskDetailPage extends ConsumerWidget {
     try {
       final currentTask = _getCurrentTask(ref);
 
-      print('🔍 Debug - Current task status: ${currentTask.status.name}');
-      print('🔍 Debug - Is verified: ${currentTask.isVerifiedByParent}');
-      print('🔍 Debug - Needs verification: ${currentTask.needsVerification}');
-      print('🔍 Debug - VerifiedById: ${currentTask.verifiedById}');
+      _logger.d('Current task status: ${currentTask.status.name}');
+      _logger.d('Is verified: ${currentTask.isVerifiedByParent}');
+      _logger.d('Needs verification: ${currentTask.needsVerification}');
+      _logger.d('VerifiedById: ${currentTask.verifiedById}');
 
       // Only verify if task is completed but not verified yet
       if (currentTask.status == TaskStatus.completed &&
           !currentTask.isVerifiedByParent) {
-        print('🚀 Debug - Attempting to verify task...');
+        _logger.i('Attempting to verify task...');
 
         // Get current authenticated user ID
         final currentUser = ref.read(currentUserProvider);
         final verifiedById = currentUser?.id; // Use actual authenticated user
 
-        print('🔍 Debug - Current user ID: $verifiedById');
+        _logger.d('Current user ID: $verifiedById');
 
         await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
               taskId: task.id,
@@ -607,7 +609,7 @@ class TaskDetailPage extends ConsumerWidget {
               verifiedById: verifiedById,
             );
 
-        print('✅ Debug - Verification request sent');
+        _logger.i('Verification request sent');
 
         // Show success feedback
         if (ref.context.mounted) {
@@ -619,9 +621,9 @@ class TaskDetailPage extends ConsumerWidget {
           );
         }
       } else {
-        print('❌ Debug - Cannot verify task');
-        print('   Status: ${currentTask.status.name}');
-        print('   Already verified: ${currentTask.isVerifiedByParent}');
+        _logger.w('Cannot verify task');
+        _logger.w('Status: ${currentTask.status.name}');
+        _logger.w('Already verified: ${currentTask.isVerifiedByParent}');
 
         // Show why verification failed
         if (ref.context.mounted) {
@@ -635,7 +637,7 @@ class TaskDetailPage extends ConsumerWidget {
         }
       }
     } catch (e) {
-      print('❌ Debug - Verification error: $e');
+      _logger.e('Verification error: $e');
       // Show error feedback
       if (ref.context.mounted) {
         ScaffoldMessenger.of(ref.context).showSnackBar(
@@ -652,8 +654,8 @@ class TaskDetailPage extends ConsumerWidget {
     try {
       final currentTask = _getCurrentTask(ref);
 
-      print('🔄 Debug - Attempting to unverify task...');
-      print('🔄 Debug - Current verified by: ${currentTask.verifiedById}');
+      _logger.d('Attempting to unverify task...');
+      _logger.d('Current verified by: ${currentTask.verifiedById}');
 
       // Only unverify if task is currently verified
       if (currentTask.isVerifiedByParent) {

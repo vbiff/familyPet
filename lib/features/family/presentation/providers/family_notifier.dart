@@ -133,7 +133,8 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
       result.fold(
         (failure) {
           // If member loading fails, set empty list and show error in logs
-          print('Failed to load family members: ${failure.message}');
+          // TODO: Use proper logging instead of print
+          // print('Failed to load family members: ${failure.message}');
           state = state.copyWith(
             members: [],
             isLoadingMembers: false,
@@ -148,7 +149,8 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
       );
     } catch (e) {
       // If member loading fails completely, ensure we have an empty list
-      print('Exception loading family members: $e');
+      // TODO: Use proper logging instead of print
+      // print('Exception loading family members: $e');
       state = state.copyWith(
         members: [],
         isLoadingMembers: false,
