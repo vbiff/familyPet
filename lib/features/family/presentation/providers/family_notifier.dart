@@ -25,6 +25,12 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
   Future<void> loadCurrentFamily(String userId) async {
     if (state.isLoading) return;
 
+    // Guard: Don't load if userId is empty
+    if (userId.isEmpty) {
+      state = FamilyState.initial();
+      return;
+    }
+
     try {
       state = FamilyState.loading();
 

@@ -34,6 +34,16 @@ class PetNotifier extends StateNotifier<PetState> {
   Future<void> loadFamilyPet(String familyId) async {
     if (state.isLoading) return;
 
+    // Guard: Don't load if family ID is empty
+    if (familyId.isEmpty) {
+      _logger.w('Attempted to load pet with empty family ID');
+      state = state.copyWith(
+        status: PetStateStatus.success,
+        pet: null,
+      );
+      return;
+    }
+
     state = state.copyWith(status: PetStateStatus.loading, clearError: true);
 
     final result = await _getFamilyPet(familyId);

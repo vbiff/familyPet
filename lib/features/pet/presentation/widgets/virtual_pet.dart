@@ -18,9 +18,13 @@ class VirtualPet extends ConsumerWidget {
     final petAge = ref.watch(petAgeProvider);
     final petEvolutionStatus = ref.watch(petEvolutionStatusProvider);
 
-    // Load pet data when family is available
+    // Load pet data when family is available and valid
     ref.listen(familyNotifierProvider, (previous, next) {
-      if (next.hasFamily && !petState.hasPet && !petState.isLoading) {
+      if (next.hasFamily &&
+          next.family != null &&
+          next.family!.id.isNotEmpty &&
+          !petState.hasPet &&
+          !petState.isLoading) {
         ref.read(petNotifierProvider.notifier).loadFamilyPet(next.family!.id);
       }
     });

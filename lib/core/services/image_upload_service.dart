@@ -15,6 +15,12 @@ class ImageUploadService {
     required String fileName,
     required Uint8List fileBytes,
   }) async {
+    // Guard: Don't upload if family ID is empty or null
+    if (familyId.isEmpty) {
+      return const Left(
+          ServerFailure(message: 'Family ID is required for pet image upload'));
+    }
+
     try {
       final path = 'pets/$familyId/$fileName';
 
@@ -38,6 +44,12 @@ class ImageUploadService {
     required String familyId,
     required File file,
   }) async {
+    // Guard: Don't upload if family ID is empty or null
+    if (familyId.isEmpty) {
+      return const Left(
+          ServerFailure(message: 'Family ID is required for pet image upload'));
+    }
+
     try {
       final fileName =
           '${DateTime.now().millisecondsSinceEpoch}_${file.path.split('/').last}';
@@ -57,6 +69,12 @@ class ImageUploadService {
   Future<Either<Failure, Map<String, String>>> uploadDefaultPetImages({
     required String familyId,
   }) async {
+    // Guard: Don't upload if family ID is empty or null
+    if (familyId.isEmpty) {
+      return const Left(
+          ServerFailure(message: 'Family ID is required for pet image upload'));
+    }
+
     try {
       final Map<String, String> stageImages = {};
 

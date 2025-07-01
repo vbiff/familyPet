@@ -39,8 +39,9 @@ class HomePage extends ConsumerWidget {
       }
     });
 
-    // Auto-load family data when user becomes available
+    // Auto-load family data when user becomes available and has family ID
     if (user != null &&
+        user.familyId != null &&
         authState.status == AuthStatus.authenticated &&
         familyState.status == FamilyStatus.initial &&
         !familyState.isLoading) {
@@ -62,9 +63,9 @@ class HomePage extends ConsumerWidget {
       }
     }
 
-    // Auto-load pet data when family becomes available
+    // Auto-load pet data when family becomes available and valid
     ref.listen(familyNotifierProvider, (previous, next) {
-      if (next.hasFamily) {
+      if (next.hasFamily && next.family != null && next.family!.id.isNotEmpty) {
         final petState = ref.read(petNotifierProvider);
         if (!petState.hasPet && !petState.isLoading) {
           Future.microtask(() {
@@ -211,13 +212,7 @@ class HomePage extends ConsumerWidget {
 
   Widget? _buildFloatingActionButton(
       BuildContext context, WidgetRef ref, int selectedTab, bool hasFamily) {
-    // Show family setup FAB only when on family tab and user has no family
-    if (selectedTab == HomeTab.family.index && !hasFamily) {
-      return EnhancedButton.primary(
-        onPressed: () => _navigateToFamilySetup(context),
-        child: const Text('Setup Family'),
-      );
-    }
+    // No floating action button needed
     return null;
   }
 
