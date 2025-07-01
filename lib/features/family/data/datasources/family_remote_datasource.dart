@@ -209,7 +209,6 @@ class SupabaseFamilyRemoteDataSource implements FamilyRemoteDataSource {
       final List<FamilyMemberModel> members = [];
 
       for (final profile in response) {
-        // Temporarily bypass task stats to debug member loading
         try {
           final taskStatsResponse =
               await _client.rpc('get_member_task_stats', params: {
