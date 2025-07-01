@@ -1,18 +1,39 @@
 -- Enable necessary extensions
 create extension if not exists "uuid-ossp";
 
--- Create enum types
-create type user_role as enum ('parent', 'child');
-create type task_status as enum ('pending', 'completed', 'approved', 'rejected');
-create type task_frequency as enum ('once', 'daily', 'weekly', 'monthly');
-create type pet_mood as enum ('happy', 'neutral', 'sad');
-create type pet_stage as enum ('egg', 'baby', 'child', 'teen', 'adult');
+-- Create enum types (skip if they already exist)
+DO $$ BEGIN
+    CREATE TYPE user_role AS ENUM ('parent', 'child');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
--- Create auth schema
-create schema if not exists auth;
+DO $$ BEGIN
+    CREATE TYPE task_status AS ENUM ('pending', 'completed', 'approved', 'rejected');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
--- Enable RLS
-alter table auth.users enable row level security;
+DO $$ BEGIN
+    CREATE TYPE task_frequency AS ENUM ('once', 'daily', 'weekly', 'monthly');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE pet_mood AS ENUM ('happy', 'neutral', 'sad');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE pet_stage AS ENUM ('egg', 'baby', 'child', 'teen', 'adult');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+-- Auth schema already exists in Supabase
+-- Skipping auth schema creation and RLS on auth.users (managed by Supabase)
 
 -- Create families table first (without parent_id constraint initially)
 create table families (
@@ -39,11 +60,10 @@ create table profiles (
 -- Add parent_id to families table after profiles exists
 alter table families add column parent_id uuid references profiles(id);
 
--- Enable Row Level Security
+-- Enable Row Level Security (only on tables that exist so far)
 alter table profiles enable row level security;
 alter table families enable row level security;
-alter table tasks enable row level security;
-alter table pets enable row level security;
+-- tasks and pets tables will have RLS enabled when they are created in later migrations
 
 -- Create RLS policies
 
@@ -88,112 +108,16 @@ create policy "Parents can update their family"
     parent_id = auth.uid()
   );
 
--- Tasks policies
-create policy "Tasks are viewable by family members"
-  on tasks for select
-  using (
-    family_id in (
-      select family_id from profiles where id = auth.uid()
-    )
-  );
+-- Tasks and Pets policies will be created when the tables are created in later migrations
 
-create policy "Parents can create tasks"
-  on tasks for insert
-  with check (
-    exists (
-      select 1 from profiles
-      where id = auth.uid()
-      and role = 'parent'
-      and family_id = tasks.family_id
-    )
-  );
-
-create policy "Parents can update tasks"
-  on tasks for update
-  using (
-    exists (
-      select 1 from profiles
-      where id = auth.uid()
-      and role = 'parent'
-      and family_id = tasks.family_id
-    )
-  );
-
-create policy "Children can update their assigned tasks"
-  on tasks for update
-  using (
-    assigned_to_id = auth.uid()
-    and status in ('pending', 'completed')
-  )
-  with check (
-    assigned_to_id = auth.uid()
-    and status in ('pending', 'completed')
-  );
-
--- Pets policies
-create policy "Pets are viewable by family members"
-  on pets for select
-  using (
-    family_id in (
-      select family_id from profiles where id = auth.uid()
-    )
-  );
-
-create policy "Children can create one pet"
-  on pets for insert
-  with check (
-    exists (
-      select 1 from profiles
-      where id = auth.uid()
-      and role = 'child'
-    )
-    and not exists (
-      select 1 from pets where owner_id = auth.uid()
-    )
-  );
-
-create policy "Children can update their own pet"
-  on pets for update
-  using (owner_id = auth.uid())
-  with check (owner_id = auth.uid());
-
--- Create storage buckets
+-- Create storage buckets (skip if they already exist)
 insert into storage.buckets (id, name)
 values 
   ('task_images', 'Task Images'),
-  ('profile_images', 'Profile Images');
+  ('profile_images', 'Profile Images')
+on conflict (id) do nothing;
 
--- Set up storage policies
-create policy "Task images are viewable by family members"
-  on storage.objects for select
-  using (
-    bucket_id = 'task_images'
-    and (
-      auth.uid() in (
-        select profiles.id
-        from storage.objects
-        join tasks on tasks.image_url = storage.objects.name
-        join profiles on profiles.family_id = tasks.family_id
-        where storage.objects.id = objects.id
-      )
-    )
-  );
-
-create policy "Users can upload task images"
-  on storage.objects for insert
-  with check (
-    bucket_id = 'task_images'
-  );
-
-create policy "Profile images are publicly accessible"
-  on storage.objects for select
-  using (bucket_id = 'profile_images');
-
-create policy "Users can upload their profile image"
-  on storage.objects for insert
-  with check (
-    bucket_id = 'profile_images'
-  );
+-- Storage policies will be created in later migrations when the necessary tables exist
 
 -- Set up realtime replication
 begin;
@@ -201,8 +125,7 @@ begin;
   create publication supabase_realtime;
 commit;
 
-alter publication supabase_realtime add table tasks;
-alter publication supabase_realtime add table pets;
+-- Tables will be added to realtime publication when they are created in later migrations
 
 -- Create functions for updating timestamps
 create or replace function update_updated_at_column()

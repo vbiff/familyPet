@@ -65,7 +65,7 @@ class ImageUploadService {
 
       for (final stage in stages) {
         // Load asset as bytes (you'll need to implement this)
-        final assetPath = 'assets/images/pet_$stage.png';
+
         final fileName = 'pet_$stage.png';
 
         // For now, we'll create placeholder URLs
@@ -81,6 +81,31 @@ class ImageUploadService {
     } catch (e) {
       return Left(
           ServerFailure(message: 'Failed to upload default images: $e'));
+    }
+  }
+
+  /// Uploads a profile avatar from file
+  Future<Either<Failure, String>> uploadProfileAvatarFromFile({
+    required String userId,
+    required File file,
+  }) async {
+    try {
+      final fileName = '${DateTime.now().millisecondsSinceEpoch}_avatar.jpg';
+      final path = 'profiles/$userId/$fileName';
+      final fileBytes = await file.readAsBytes();
+
+      // Upload to profile-images bucket
+      await _supabaseClient.storage
+          .from('profile_images')
+          .uploadBinary(path, fileBytes);
+
+      // Get public URL
+      final publicUrl =
+          _supabaseClient.storage.from('profile_images').getPublicUrl(path);
+
+      return Right(publicUrl);
+    } catch (e) {
+      return Left(ServerFailure(message: 'Failed to upload avatar: $e'));
     }
   }
 

@@ -21,6 +21,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
       } else {
         state = const AuthState(status: AuthStatus.unauthenticated);
       }
+    }, onError: (error) {
+      // Handle auth errors like invalid refresh tokens
+      if (error.toString().contains('refresh_token_not_found') ||
+          error.toString().contains('Invalid Refresh Token')) {
+        // Clear invalid session and redirect to login
+        state = const AuthState(status: AuthStatus.unauthenticated);
+      }
     });
   }
 

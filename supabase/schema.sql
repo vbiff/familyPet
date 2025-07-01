@@ -1,276 +1,476 @@
+-- Complete Database Schema for Jhonny Family Task Management App
+-- This schema is fully aligned with domain entities and includes all necessary functionality
+
 -- Enable necessary extensions
-create extension if not exists "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Create enum types
-create type user_role as enum ('parent', 'child');
-create type task_status as enum ('pending', 'completed', 'approved', 'rejected');
-create type task_frequency as enum ('once', 'daily', 'weekly', 'monthly');
-create type pet_mood as enum ('happy', 'neutral', 'sad');
-create type pet_stage as enum ('egg', 'baby', 'child', 'teen', 'adult');
+-- ===== ENUM TYPES =====
 
--- Create profiles table
-create table profiles (
-  id uuid references auth.users primary key,
-  email text not null unique,
-  display_name text,
-  avatar_url text,
-  role user_role not null,
-  family_id uuid references families(id),
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+-- User roles in the family system
+CREATE TYPE user_role AS ENUM ('parent', 'child');
+
+-- Task statuses aligned with domain entity
+CREATE TYPE task_status AS ENUM ('pending', 'inProgress', 'completed', 'expired');
+
+-- Task frequency options
+CREATE TYPE task_frequency AS ENUM ('once', 'daily', 'weekly', 'monthly');
+
+-- Pet mood states aligned with domain entity
+CREATE TYPE pet_mood AS ENUM ('happy', 'content', 'neutral', 'sad', 'upset');
+
+-- Pet evolution stages
+CREATE TYPE pet_stage AS ENUM ('egg', 'baby', 'child', 'teen', 'adult');
+
+-- ===== MAIN TABLES =====
+
+-- Profiles table for user information
+CREATE TABLE profiles (
+  id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  display_name TEXT NOT NULL,
+  avatar_url TEXT,
+  role user_role NOT NULL,
+  family_id UUID, -- References families(id), added later due to circular dependency
+  last_login_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
 
--- Create families table
-create table families (
-  id uuid default uuid_generate_v4() primary key,
-  name text not null,
-  parent_id uuid references profiles(id) not null,
-  invite_code text unique not null,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+-- Families table for family groups
+CREATE TABLE families (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  name TEXT NOT NULL,
+  invite_code TEXT UNIQUE NOT NULL,
+  created_by_id UUID REFERENCES profiles(id) NOT NULL,
+  parent_ids UUID[] DEFAULT '{}',
+  child_ids UUID[] DEFAULT '{}',
+  last_activity_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  settings JSONB DEFAULT '{}',
+  metadata JSONB DEFAULT '{}',
+  pet_image_url TEXT,
+  pet_stage_images JSONB DEFAULT '{}',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  
+  -- Constraints
+  CONSTRAINT families_name_length_check CHECK (LENGTH(TRIM(name)) >= 2),
+  CONSTRAINT families_invite_code_length_check CHECK (LENGTH(invite_code) = 6)
 );
 
--- Create tasks table
-create table tasks (
-  id uuid default uuid_generate_v4() primary key,
-  title text not null,
-  description text not null,
-  points integer not null check (points >= 0),
-  family_id uuid references families(id) not null,
-  assigned_to_id uuid references profiles(id) not null,
-  created_by_id uuid references profiles(id) not null,
-  status task_status not null default 'pending',
-  frequency task_frequency not null,
-  due_date timestamp with time zone not null,
-  image_url text,
-  completion_note text,
-  completed_at timestamp with time zone,
-  approved_at timestamp with time zone,
-  is_archived boolean not null default false,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+-- Add foreign key reference after families table exists
+ALTER TABLE profiles ADD CONSTRAINT profiles_family_id_fkey 
+FOREIGN KEY (family_id) REFERENCES families(id) ON DELETE SET NULL;
+
+-- Tasks table for family task management
+CREATE TABLE tasks (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  points INTEGER NOT NULL CHECK (points >= 0),
+  family_id UUID REFERENCES families(id) NOT NULL,
+  assigned_to_id UUID REFERENCES profiles(id) NOT NULL,
+  created_by_id UUID REFERENCES profiles(id) NOT NULL,
+  status task_status NOT NULL DEFAULT 'pending',
+  frequency task_frequency NOT NULL,
+  due_date TIMESTAMP WITH TIME ZONE NOT NULL,
+  verified_by_id UUID REFERENCES profiles(id),
+  verified_at TIMESTAMP WITH TIME ZONE,
+  image_urls TEXT[] DEFAULT '{}',
+  metadata JSONB DEFAULT '{}',
+  is_archived BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  completed_at TIMESTAMP WITH TIME ZONE,
+  
+  -- Constraints
+  CONSTRAINT tasks_points_positive_check CHECK (points >= 0)
 );
 
--- Create pets table
-create table pets (
-  id uuid default uuid_generate_v4() primary key,
-  name text not null,
-  owner_id uuid references profiles(id) not null,
-  family_id uuid references families(id) not null,
-  mood pet_mood not null default 'neutral',
-  stage pet_stage not null default 'egg',
-  experience integer not null default 0 check (experience >= 0),
-  level integer not null default 1 check (level >= 1),
-  happiness integer not null default 50 check (happiness >= 0 and happiness <= 100),
-  energy integer not null default 100 check (energy >= 0 and energy <= 100),
-  last_fed timestamp with time zone not null default timezone('utc'::text, now()),
-  last_interaction timestamp with time zone not null default timezone('utc'::text, now()),
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+-- Pets table for virtual pet system
+CREATE TABLE pets (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  name TEXT NOT NULL,
+  owner_id UUID REFERENCES profiles(id) NOT NULL,
+  family_id UUID REFERENCES families(id) NOT NULL,
+  mood pet_mood NOT NULL DEFAULT 'neutral',
+  stage pet_stage NOT NULL DEFAULT 'egg',
+  experience INTEGER NOT NULL DEFAULT 0 CHECK (experience >= 0),
+  level INTEGER NOT NULL DEFAULT 1 CHECK (level >= 1),
+  happiness INTEGER NOT NULL DEFAULT 50 CHECK (happiness >= 0 AND happiness <= 100),
+  energy INTEGER NOT NULL DEFAULT 100 CHECK (energy >= 0 AND energy <= 100),
+  health INTEGER NOT NULL DEFAULT 100 CHECK (health >= 0 AND health <= 100),
+  last_fed_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  last_played_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  
+  -- Constraints
+  CONSTRAINT pets_level_positive_check CHECK (level >= 1)
 );
 
--- Create indexes
-create index idx_profiles_family_id on profiles(family_id);
-create index idx_tasks_family_id on tasks(family_id);
-create index idx_tasks_assigned_to_id on tasks(assigned_to_id);
-create index idx_tasks_created_by_id on tasks(created_by_id);
-create index idx_tasks_due_date on tasks(due_date);
-create index idx_pets_owner_id on pets(owner_id);
-create index idx_pets_family_id on pets(family_id);
+-- ===== INDEXES FOR PERFORMANCE =====
 
--- Enable Row Level Security
-alter table profiles enable row level security;
-alter table families enable row level security;
-alter table tasks enable row level security;
-alter table pets enable row level security;
+-- Profiles indexes
+CREATE INDEX idx_profiles_family_id ON profiles(family_id);
+CREATE INDEX idx_profiles_role ON profiles(role);
+CREATE INDEX idx_profiles_email ON profiles(email);
 
--- Create RLS policies
+-- Families indexes
+CREATE INDEX idx_families_invite_code ON families(invite_code);
+CREATE INDEX idx_families_created_by_id ON families(created_by_id);
+CREATE INDEX idx_families_created_at ON families(created_at);
+
+-- Tasks indexes
+CREATE INDEX idx_tasks_family_id ON tasks(family_id);
+CREATE INDEX idx_tasks_assigned_to_id ON tasks(assigned_to_id);
+CREATE INDEX idx_tasks_created_by_id ON tasks(created_by_id);
+CREATE INDEX idx_tasks_due_date ON tasks(due_date);
+CREATE INDEX idx_tasks_status ON tasks(status);
+CREATE INDEX idx_tasks_frequency ON tasks(frequency);
+CREATE INDEX idx_tasks_verified_by_id ON tasks(verified_by_id);
+
+-- Pets indexes
+CREATE INDEX idx_pets_owner_id ON pets(owner_id);
+CREATE INDEX idx_pets_family_id ON pets(family_id);
+CREATE INDEX idx_pets_stage ON pets(stage);
+CREATE INDEX idx_pets_mood ON pets(mood);
+CREATE INDEX idx_pets_level ON pets(level);
+
+-- Composite indexes for common queries
+CREATE INDEX idx_tasks_family_status_due ON tasks(family_id, status, due_date) WHERE NOT is_archived;
+CREATE INDEX idx_tasks_assigned_status_due ON tasks(assigned_to_id, status, due_date) WHERE NOT is_archived;
+CREATE INDEX idx_pets_family_stage ON pets(family_id, stage);
+CREATE INDEX idx_tasks_active ON tasks(family_id, created_at DESC) WHERE NOT is_archived;
+
+-- ===== ROW LEVEL SECURITY =====
+
+-- Enable RLS on all tables
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE families ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pets ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
-create policy "Profiles are viewable by family members"
-  on profiles for select
-  using (
-    auth.uid() = id or
-    family_id in (
-      select family_id from profiles where id = auth.uid()
+CREATE POLICY "Profiles are viewable by family members"
+  ON profiles FOR SELECT
+  USING (
+    auth.uid() = id OR
+    family_id IN (
+      SELECT family_id FROM profiles WHERE id = auth.uid()
     )
   );
 
-create policy "Users can update own profile"
-  on profiles for update
-  using (auth.uid() = id)
-  with check (auth.uid() = id);
+CREATE POLICY "Users can update own profile"
+  ON profiles FOR UPDATE
+  USING (auth.uid() = id)
+  WITH CHECK (auth.uid() = id);
+
+CREATE POLICY "Authenticated users can create profiles"
+  ON profiles FOR INSERT
+  WITH CHECK (auth.uid() = id);
 
 -- Families policies
-create policy "Families are viewable by members"
-  on families for select
-  using (
-    id in (
-      select family_id from profiles where id = auth.uid()
-    )
+CREATE POLICY "Families are viewable by members"
+  ON families FOR SELECT
+  USING (
+    created_by_id = auth.uid() OR
+    auth.uid() = ANY(parent_ids) OR
+    auth.uid() = ANY(child_ids)
   );
 
-create policy "Parents can create families"
-  on families for insert
-  with check (
-    exists (
-      select 1 from profiles
-      where id = auth.uid()
-      and role = 'parent'
-    )
-  );
+CREATE POLICY "Authenticated users can create families"
+  ON families FOR INSERT
+  WITH CHECK (auth.uid() = created_by_id);
 
-create policy "Parents can update their family"
-  on families for update
-  using (
-    parent_id = auth.uid()
+CREATE POLICY "Family creators and parents can update families"
+  ON families FOR UPDATE
+  USING (
+    created_by_id = auth.uid() OR
+    auth.uid() = ANY(parent_ids)
   )
-  with check (
-    parent_id = auth.uid()
+  WITH CHECK (
+    created_by_id = auth.uid() OR
+    auth.uid() = ANY(parent_ids)
   );
+
+CREATE POLICY "Only family creators can delete families"
+  ON families FOR DELETE
+  USING (created_by_id = auth.uid());
 
 -- Tasks policies
-create policy "Tasks are viewable by family members"
-  on tasks for select
-  using (
-    family_id in (
-      select family_id from profiles where id = auth.uid()
+CREATE POLICY "Tasks are viewable by family members"
+  ON tasks FOR SELECT
+  USING (
+    family_id IN (
+      SELECT family_id FROM profiles WHERE id = auth.uid()
     )
   );
 
-create policy "Parents can create tasks"
-  on tasks for insert
-  with check (
-    exists (
-      select 1 from profiles
-      where id = auth.uid()
-      and role = 'parent'
-      and family_id = tasks.family_id
+CREATE POLICY "Authenticated users can create tasks"
+  ON tasks FOR INSERT
+  WITH CHECK (
+    auth.uid() = created_by_id AND
+    family_id IN (
+      SELECT family_id FROM profiles WHERE id = auth.uid()
     )
   );
 
-create policy "Parents can update tasks"
-  on tasks for update
-  using (
-    exists (
-      select 1 from profiles
-      where id = auth.uid()
-      and role = 'parent'
-      and family_id = tasks.family_id
-    )
-  );
-
-create policy "Children can update their assigned tasks"
-  on tasks for update
-  using (
-    assigned_to_id = auth.uid()
-    and status in ('pending', 'completed')
+CREATE POLICY "Task creators and assignees can update tasks"
+  ON tasks FOR UPDATE
+  USING (
+    auth.uid() = created_by_id OR
+    auth.uid() = assigned_to_id
   )
-  with check (
-    assigned_to_id = auth.uid()
-    and status in ('pending', 'completed')
+  WITH CHECK (
+    auth.uid() = created_by_id OR
+    auth.uid() = assigned_to_id
+  );
+
+CREATE POLICY "Parents can verify tasks"
+  ON tasks FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles p1
+      JOIN profiles p2 ON p1.family_id = p2.family_id
+      WHERE p1.id = auth.uid()
+      AND p1.role = 'parent'
+      AND p2.id = tasks.assigned_to_id
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM profiles p1
+      JOIN profiles p2 ON p1.family_id = p2.family_id
+      WHERE p1.id = auth.uid()
+      AND p1.role = 'parent'
+      AND p2.id = tasks.assigned_to_id
+    )
   );
 
 -- Pets policies
-create policy "Pets are viewable by family members"
-  on pets for select
-  using (
-    family_id in (
-      select family_id from profiles where id = auth.uid()
+CREATE POLICY "Pets are viewable by family members"
+  ON pets FOR SELECT
+  USING (
+    family_id IN (
+      SELECT family_id FROM profiles WHERE id = auth.uid()
     )
   );
 
-create policy "Children can create one pet"
-  on pets for insert
-  with check (
-    exists (
-      select 1 from profiles
-      where id = auth.uid()
-      and role = 'child'
-    )
-    and not exists (
-      select 1 from pets where owner_id = auth.uid()
+CREATE POLICY "Children can create one pet"
+  ON pets FOR INSERT
+  WITH CHECK (
+    auth.uid() = owner_id AND
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid()
+      AND role = 'child'
+    ) AND
+    NOT EXISTS (
+      SELECT 1 FROM pets WHERE owner_id = auth.uid()
     )
   );
 
-create policy "Children can update their own pet"
-  on pets for update
-  using (owner_id = auth.uid())
-  with check (owner_id = auth.uid());
+CREATE POLICY "Children can update their own pet"
+  ON pets FOR UPDATE
+  USING (owner_id = auth.uid())
+  WITH CHECK (owner_id = auth.uid());
+
+-- ===== STORAGE BUCKETS =====
 
 -- Create storage buckets
-insert into storage.buckets (id, name)
-values 
-  ('task_images', 'Task Images'),
-  ('profile_images', 'Profile Images');
+INSERT INTO storage.buckets (id, name, public)
+VALUES 
+  ('task_images', 'Task Images', false),
+  ('profile_images', 'Profile Images', true),
+  ('pet_images', 'Pet Images', true)
+ON CONFLICT (id) DO NOTHING;
 
--- Set up storage policies
-create policy "Task images are viewable by family members"
-  on storage.objects for select
-  using (
-    bucket_id = 'task_images'
-    and (
-      auth.uid() in (
-        select profiles.id
-        from storage.objects
-        join tasks on tasks.image_url = storage.objects.name
-        join profiles on profiles.family_id = tasks.family_id
-        where storage.objects.id = objects.id
-      )
+-- Storage policies
+CREATE POLICY "Task images are viewable by family members"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'task_images');
+
+CREATE POLICY "Users can upload task images"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'task_images' AND auth.uid() IS NOT NULL);
+
+CREATE POLICY "Profile images are publicly accessible"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'profile_images');
+
+CREATE POLICY "Users can upload their profile image"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'profile_images' AND auth.uid() IS NOT NULL);
+
+CREATE POLICY "Pet images are publicly viewable"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'pet_images');
+
+CREATE POLICY "Authenticated users can upload pet images"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'pet_images' AND auth.uid() IS NOT NULL);
+
+-- ===== FUNCTIONS =====
+
+-- Function to generate unique invite codes
+CREATE OR REPLACE FUNCTION generate_unique_invite_code()
+RETURNS VARCHAR(6) AS $$
+DECLARE
+    code VARCHAR(6);
+    code_exists BOOLEAN;
+BEGIN
+    LOOP
+        code := UPPER(SUBSTR(MD5(RANDOM()::TEXT), 1, 6));
+        code := REPLACE(code, '0', '2');
+        code := REPLACE(code, 'O', '3');
+        code := REPLACE(code, 'I', '4');
+        code := REPLACE(code, 'L', '5');
+        
+        SELECT EXISTS(SELECT 1 FROM families WHERE invite_code = code) INTO code_exists;
+        
+        IF NOT code_exists THEN
+            EXIT;
+        END IF;
+    END LOOP;
+    
+    RETURN code;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to handle new user signup
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = public
+AS $$
+BEGIN
+    INSERT INTO public.profiles (
+        id,
+        email,
+        display_name,
+        role,
+        created_at,
+        updated_at,
+        last_login_at,
+        metadata
     )
-  );
+    VALUES (
+        new.id,
+        new.email,
+        COALESCE(new.raw_user_meta_data->>'display_name', new.email),
+        COALESCE((new.raw_user_meta_data->>'role')::user_role, 'parent'::user_role),
+        timezone('utc'::text, now()),
+        timezone('utc'::text, now()),
+        timezone('utc'::text, now()),
+        COALESCE(new.raw_user_meta_data, '{}')
+    );
+    RETURN new;
+END;
+$$;
 
-create policy "Users can upload task images"
-  on storage.objects for insert
-  with check (
-    bucket_id = 'task_images'
-  );
+-- Function to update timestamps
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = timezone('utc'::text, now());
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
-create policy "Profile images are publicly accessible"
-  on storage.objects for select
-  using (bucket_id = 'profile_images');
+-- Function to auto-generate invite codes
+CREATE OR REPLACE FUNCTION set_invite_code()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.invite_code IS NULL OR NEW.invite_code = '' THEN
+        NEW.invite_code := generate_unique_invite_code();
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
-create policy "Users can upload their profile image"
-  on storage.objects for insert
-  with check (
-    bucket_id = 'profile_images'
-  );
+-- ===== TRIGGERS =====
+
+-- Trigger for new user signup
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
+-- Triggers for updating timestamps
+CREATE TRIGGER update_profiles_updated_at
+  BEFORE UPDATE ON profiles
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_families_updated_at
+  BEFORE UPDATE ON families
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_tasks_updated_at
+  BEFORE UPDATE ON tasks
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_pets_updated_at
+  BEFORE UPDATE ON pets
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- Trigger to auto-generate invite codes
+CREATE TRIGGER trigger_set_invite_code
+    BEFORE INSERT ON families
+    FOR EACH ROW
+    EXECUTE FUNCTION set_invite_code();
+
+-- ===== REALTIME PUBLICATION =====
 
 -- Set up realtime replication
-begin;
-  drop publication if exists supabase_realtime;
-  create publication supabase_realtime;
-commit;
+BEGIN;
+  DROP PUBLICATION IF EXISTS supabase_realtime;
+  CREATE PUBLICATION supabase_realtime;
+COMMIT;
 
-alter publication supabase_realtime add table tasks;
-alter publication supabase_realtime add table pets;
+ALTER PUBLICATION supabase_realtime ADD TABLE profiles;
+ALTER PUBLICATION supabase_realtime ADD TABLE families;
+ALTER PUBLICATION supabase_realtime ADD TABLE tasks;
+ALTER PUBLICATION supabase_realtime ADD TABLE pets;
 
--- Create functions for updating timestamps
-create or replace function update_updated_at_column()
-returns trigger as $$
-begin
-  new.updated_at = timezone('utc'::text, now());
-  return new;
-end;
-$$ language plpgsql;
+-- ===== COMMENTS FOR DOCUMENTATION =====
 
--- Create triggers for updating timestamps
-create trigger update_profiles_updated_at
-  before update on profiles
-  for each row
-  execute function update_updated_at_column();
+-- Table comments
+COMMENT ON TABLE profiles IS 'User profiles with roles and family associations';
+COMMENT ON TABLE families IS 'Family groups with member management';
+COMMENT ON TABLE tasks IS 'Family tasks with assignment and completion tracking';
+COMMENT ON TABLE pets IS 'Virtual pets with evolution and care mechanics';
 
-create trigger update_families_updated_at
-  before update on families
-  for each row
-  execute function update_updated_at_column();
+-- Column comments
+COMMENT ON COLUMN profiles.last_login_at IS 'Timestamp of user last login';
+COMMENT ON COLUMN profiles.metadata IS 'Additional user metadata stored as JSON';
 
-create trigger update_tasks_updated_at
-  before update on tasks
-  for each row
-  execute function update_updated_at_column();
+COMMENT ON COLUMN families.invite_code IS 'Unique 6-character code for inviting family members';
+COMMENT ON COLUMN families.parent_ids IS 'Array of parent user IDs in this family';
+COMMENT ON COLUMN families.child_ids IS 'Array of child user IDs in this family';
+COMMENT ON COLUMN families.last_activity_at IS 'Timestamp of last family activity';
+COMMENT ON COLUMN families.settings IS 'Family settings stored as JSON';
+COMMENT ON COLUMN families.metadata IS 'Additional family metadata stored as JSON';
+COMMENT ON COLUMN families.pet_image_url IS 'Current family pet image URL';
+COMMENT ON COLUMN families.pet_stage_images IS 'Mapping of pet stages to image URLs';
 
-create trigger update_pets_updated_at
-  before update on pets
-  for each row
-  execute function update_updated_at_column(); 
+COMMENT ON COLUMN tasks.verified_by_id IS 'Parent who verified task completion';
+COMMENT ON COLUMN tasks.verified_at IS 'Timestamp when task was verified by parent';
+COMMENT ON COLUMN tasks.image_urls IS 'Array of image URLs for task proof/documentation';
+COMMENT ON COLUMN tasks.metadata IS 'Additional task metadata stored as JSON';
+COMMENT ON COLUMN tasks.is_archived IS 'Soft delete flag for completed/expired tasks';
+
+COMMENT ON COLUMN pets.health IS 'Pet health stat (0-100)';
+COMMENT ON COLUMN pets.happiness IS 'Pet happiness stat (0-100)';
+COMMENT ON COLUMN pets.energy IS 'Pet energy stat (0-100)';
+COMMENT ON COLUMN pets.last_fed_at IS 'Timestamp when pet was last fed';
+COMMENT ON COLUMN pets.last_played_at IS 'Timestamp when pet was last played with';
+
+-- Function comments
+COMMENT ON FUNCTION generate_unique_invite_code() IS 'Generates a unique 6-character invite code for families';
+COMMENT ON FUNCTION handle_new_user() IS 'Creates user profile when new user signs up';
+COMMENT ON FUNCTION update_updated_at_column() IS 'Updates the updated_at timestamp on row changes';
+COMMENT ON FUNCTION set_invite_code() IS 'Auto-generates invite code for new families'; 
