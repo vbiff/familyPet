@@ -1,10 +1,13 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jhonny/features/task/domain/entities/task.dart';
 import 'package:jhonny/features/task/presentation/providers/task_provider.dart';
 import 'package:jhonny/features/family/presentation/providers/family_provider.dart';
 import 'package:jhonny/shared/widgets/widgets.dart';
+import 'package:jhonny/core/services/notification_service.dart';
 // import 'package:jhonny/features/family/data/models/family_member_model.dart';
 
 class CreateTaskPage extends ConsumerStatefulWidget {
@@ -347,6 +350,82 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
           isExpanded: true,
           onPressed: isCreating ? null : () => Navigator.of(context).pop(),
         ),
+        const SizedBox(height: 8),
+        // Test notification button - Direct approach
+        TextButton(
+          onPressed: () async {
+            try {
+              // Import needed for direct test
+              final FlutterLocalNotificationsPlugin
+                  flutterLocalNotificationsPlugin =
+                  FlutterLocalNotificationsPlugin();
+
+              print('🧪 Starting direct notification test...');
+
+              // Basic initialization
+              const AndroidInitializationSettings
+                  initializationSettingsAndroid =
+                  AndroidInitializationSettings('app_icon');
+              const DarwinInitializationSettings initializationSettingsIOS =
+                  DarwinInitializationSettings(
+                requestAlertPermission: true,
+                requestBadgePermission: true,
+                requestSoundPermission: true,
+              );
+              const InitializationSettings initializationSettings =
+                  InitializationSettings(
+                android: initializationSettingsAndroid,
+                iOS: initializationSettingsIOS,
+              );
+
+              await flutterLocalNotificationsPlugin
+                  .initialize(initializationSettings);
+              print('🧪 Plugin initialized directly');
+
+              // Request permissions for iOS
+              if (Platform.isIOS) {
+                final permissions = await flutterLocalNotificationsPlugin
+                    .resolvePlatformSpecificImplementation<
+                        IOSFlutterLocalNotificationsPlugin>()
+                    ?.requestPermissions(alert: true, badge: true, sound: true);
+                print('🧪 iOS permissions: $permissions');
+              }
+
+              // Show simple notification
+              await flutterLocalNotificationsPlugin.show(
+                999,
+                'Direct Test 🧪',
+                'This notification bypassed our service!',
+                const NotificationDetails(
+                  android: AndroidNotificationDetails(
+                    'test_channel',
+                    'Test Channel',
+                    channelDescription: 'Direct test notifications',
+                    importance: Importance.max,
+                    priority: Priority.high,
+                  ),
+                  iOS: DarwinNotificationDetails(),
+                ),
+              );
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Direct notification test sent!'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            } catch (e) {
+              print('🧪 Direct test failed: $e');
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Direct test failed: $e'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+          child: const Text('🧪 Direct Test'),
+        ),
       ],
     );
   }
@@ -460,14 +539,44 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
 
     final taskState = ref.read(taskNotifierProvider);
     if (taskState.failure == null && mounted) {
+      // Task created successfully - try to schedule notifications (but don't fail if they don't work)
+      if (taskState.selectedTask != null) {
+        // Try notifications in background without blocking UI
+        _tryScheduleNotifications(taskState.selectedTask!, user);
+      }
+
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Task created successfully!')),
+        const SnackBar(
+          content: Text('Task created successfully!'),
+          backgroundColor: Colors.green,
+        ),
       );
     } else if (taskState.failure != null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(taskState.failure!.message)),
       );
+    }
+  }
+
+  // Background notification scheduling (doesn't block UI)
+  void _tryScheduleNotifications(Task task, user) async {
+    try {
+      final notificationService = NotificationService();
+      await notificationService.initialize();
+      final hasPermissions = await notificationService.requestPermissions();
+
+      if (hasPermissions) {
+        await notificationService.scheduleTaskDeadlineNotification(task);
+        await notificationService.notifyFamilyActivity(
+          'created a new task: "${task.title}"',
+          user.displayName.isNotEmpty ? user.displayName : 'Someone',
+        );
+        print('✅ Notifications scheduled successfully');
+      }
+    } catch (e) {
+      print('❌ Background notification scheduling failed: $e');
+      // Notifications failed, but task was created successfully
     }
   }
 }

@@ -51,13 +51,20 @@ Future<void> _initializeServices() async {
     await themeService.initialize();
 
     // Initialize notification service
-    await notificationService.initialize();
-    await notificationService.requestPermissions();
+    try {
+      await notificationService.initialize();
+      await notificationService.requestPermissions();
 
-    // Schedule default notifications
-    await notificationService.scheduleDailyReminder(
-        19, 0); // 7 PM daily reminder
-    await notificationService.scheduleWeeklyReport();
+      // Schedule default notifications
+      await notificationService.scheduleDailyReminder(
+          19, 0); // 7 PM daily reminder
+      await notificationService.scheduleWeeklyReport();
+
+      debugPrint('✅ Notification service initialized successfully');
+    } catch (e) {
+      debugPrint('❌ Notification service initialization failed: $e');
+      // App continues to work without notifications
+    }
   } catch (error) {
     debugPrint('Error initializing services: $error');
   }

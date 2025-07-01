@@ -8,31 +8,44 @@ class AppConfig {
 
   static Future<void> load() async {
     try {
+      // Load the .env file
       await dotenv.load(fileName: ".env");
+      if (kDebugMode) {
+        print('✅ .env file loaded successfully');
+        print(
+            '🔗 Supabase URL: ${supabaseUrl.isNotEmpty ? "${supabaseUrl.substring(0, 20)}..." : "not found"}');
+        print(
+            '🔑 Supabase Key: ${supabaseAnonKey.isNotEmpty ? "${supabaseAnonKey.substring(0, 20)}..." : "not found"}');
+      }
     } catch (e) {
       if (kDebugMode) {
-        print(
-            'Warning: .env file not found. Using placeholder values for development.');
+        print('❌ Failed to load .env file: $e');
       }
     }
 
-    // Initialize Supabase with fallback values for development
-    final url = supabaseUrl.isNotEmpty
-        ? supabaseUrl
-        : 'https://placeholder.supabase.co';
-    final key =
-        supabaseAnonKey.isNotEmpty ? supabaseAnonKey : 'placeholder-anon-key';
-
-    try {
-      await Supabase.initialize(
-        url: url,
-        anonKey: key,
-      );
-    } catch (e) {
-      if (kDebugMode) {
-        print(
-            'Warning: Supabase initialization failed. Running in offline mode: $e');
+    // Validate and initialize Supabase
+    if (supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty) {
+      try {
+        await Supabase.initialize(
+          url: supabaseUrl,
+          anonKey: supabaseAnonKey,
+        );
+        if (kDebugMode) {
+          print('✅ Supabase initialized successfully');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('❌ Supabase initialization failed: $e');
+        }
+        rethrow;
       }
+    } else {
+      final error =
+          'Missing Supabase configuration: URL=${supabaseUrl.isEmpty ? "missing" : "found"}, Key=${supabaseAnonKey.isEmpty ? "missing" : "found"}';
+      if (kDebugMode) {
+        print('❌ $error');
+      }
+      throw Exception(error);
     }
   }
 

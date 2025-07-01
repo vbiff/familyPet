@@ -29,39 +29,56 @@ class NotificationService {
   Future<void> initialize() async {
     if (_isInitialized) return;
 
-    // Initialize timezone data
-    tz.initializeTimeZones();
-    if (!kIsWeb && Platform.isAndroid) {
-      tz.setLocalLocation(tz.getLocation('America/New_York'));
+    try {
+      print('🔔 Starting notification service initialization...');
+
+      // Initialize timezone data
+      tz.initializeTimeZones();
+      if (!kIsWeb && Platform.isAndroid) {
+        tz.setLocalLocation(tz.getLocation('America/New_York'));
+      }
+      print('🕐 Timezone initialized');
+
+      const androidInitializationSettings =
+          AndroidInitializationSettings('app_icon');
+
+      const darwinInitializationSettings = DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
+        onDidReceiveLocalNotification: _onDidReceiveLocalNotification,
+      );
+
+      const initializationSettings = InitializationSettings(
+        android: androidInitializationSettings,
+        iOS: darwinInitializationSettings,
+        macOS: darwinInitializationSettings,
+      );
+
+      print('📱 Initializing flutter_local_notifications plugin...');
+      final result = await _flutterLocalNotificationsPlugin.initialize(
+        initializationSettings,
+        onDidReceiveNotificationResponse: _onDidReceiveNotificationResponse,
+        onDidReceiveBackgroundNotificationResponse:
+            _onDidReceiveBackgroundNotificationResponse,
+      );
+
+      print('🔔 Plugin initialization result: $result');
+
+      // Create notification channels for Android
+      await _createNotificationChannels();
+      print('📺 Notification channels created');
+
+      _isInitialized = true;
+      print('✅ Notification service initialized successfully');
+    } catch (e, stackTrace) {
+      print('❌ Failed to initialize notification service: $e');
+      print('Stack trace: $stackTrace');
+
+      // Don't throw the error, just mark as not initialized
+      _isInitialized = false;
+      rethrow; // Re-throw to let caller handle
     }
-
-    const androidInitializationSettings =
-        AndroidInitializationSettings('app_icon');
-
-    const darwinInitializationSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-      onDidReceiveLocalNotification: _onDidReceiveLocalNotification,
-    );
-
-    const initializationSettings = InitializationSettings(
-      android: androidInitializationSettings,
-      iOS: darwinInitializationSettings,
-      macOS: darwinInitializationSettings,
-    );
-
-    await _flutterLocalNotificationsPlugin.initialize(
-      initializationSettings,
-      onDidReceiveNotificationResponse: _onDidReceiveNotificationResponse,
-      onDidReceiveBackgroundNotificationResponse:
-          _onDidReceiveBackgroundNotificationResponse,
-    );
-
-    // Create notification channels for Android
-    await _createNotificationChannels();
-
-    _isInitialized = true;
   }
 
   static void _onDidReceiveLocalNotification(
