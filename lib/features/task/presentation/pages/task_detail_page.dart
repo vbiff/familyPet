@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
+import 'package:jhonny/features/auth/domain/entities/user.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jhonny/features/task/domain/entities/task.dart';
 import 'package:jhonny/features/task/presentation/providers/task_provider.dart';
@@ -407,6 +408,36 @@ class TaskDetailPage extends ConsumerWidget {
 
   Widget _buildVerificationActions(
       BuildContext context, WidgetRef ref, bool isUpdating) {
+    final currentUser = ref.watch(currentUserProvider);
+    final isParent = currentUser?.role == UserRole.parent;
+
+    // Only parents can verify tasks
+    if (!isParent) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.orange.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.hourglass_empty, color: Colors.orange),
+            const SizedBox(width: 8),
+            Text(
+              'Waiting for Parent Verification',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Colors.orange,
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Column(
       children: [
         FilledButton.icon(
@@ -446,6 +477,9 @@ class TaskDetailPage extends ConsumerWidget {
 
   Widget _buildVerifiedActions(
       BuildContext context, WidgetRef ref, bool isUpdating, Task currentTask) {
+    final currentUser = ref.watch(currentUserProvider);
+    final isParent = currentUser?.role == UserRole.parent;
+
     return Column(
       children: [
         Container(
@@ -471,16 +505,19 @@ class TaskDetailPage extends ConsumerWidget {
             ],
           ),
         ),
-        const SizedBox(height: 12),
-        OutlinedButton.icon(
-          onPressed: isUpdating ? null : () => _unverifyTask(ref),
-          icon: const Icon(Icons.cancel),
-          label: const Text('Remove Verification'),
-          style: OutlinedButton.styleFrom(
-            minimumSize: const Size.fromHeight(52),
-            foregroundColor: Colors.orange,
+        // Only parents can remove verification
+        if (isParent) ...[
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: isUpdating ? null : () => _unverifyTask(ref),
+            icon: const Icon(Icons.cancel),
+            label: const Text('Remove Verification'),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(52),
+              foregroundColor: Colors.orange,
+            ),
           ),
-        ),
+        ],
       ],
     );
   }
@@ -597,6 +634,21 @@ class TaskDetailPage extends ConsumerWidget {
   Future<void> _verifyTask(WidgetRef ref) async {
     try {
       final currentTask = _getCurrentTask(ref);
+      final currentUser = ref.read(currentUserProvider);
+
+      // Validate user is a parent
+      if (currentUser?.role != UserRole.parent) {
+        _logger.w('Non-parent user attempted to verify task');
+        if (ref.context.mounted) {
+          ScaffoldMessenger.of(ref.context).showSnackBar(
+            const SnackBar(
+              content: Text('❌ Only parents can verify tasks'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
 
       _logger.d('Current task status: ${currentTask.status.name}');
       _logger.d('Is verified: ${currentTask.isVerifiedByParent}');
@@ -608,10 +660,7 @@ class TaskDetailPage extends ConsumerWidget {
           !currentTask.isVerifiedByParent) {
         _logger.i('Attempting to verify task...');
 
-        // Get current authenticated user ID
-        final currentUser = ref.read(currentUserProvider);
-        final verifiedById = currentUser?.id; // Use actual authenticated user
-
+        final verifiedById = currentUser!.id;
         _logger.d('Current user ID: $verifiedById');
 
         await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
@@ -664,6 +713,21 @@ class TaskDetailPage extends ConsumerWidget {
   Future<void> _unverifyTask(WidgetRef ref) async {
     try {
       final currentTask = _getCurrentTask(ref);
+      final currentUser = ref.read(currentUserProvider);
+
+      // Validate user is a parent
+      if (currentUser?.role != UserRole.parent) {
+        _logger.w('Non-parent user attempted to unverify task');
+        if (ref.context.mounted) {
+          ScaffoldMessenger.of(ref.context).showSnackBar(
+            const SnackBar(
+              content: Text('❌ Only parents can remove verification'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
 
       _logger.d('Attempting to unverify task...');
       _logger.d('Current verified by: ${currentTask.verifiedById}');

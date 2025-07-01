@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:jhonny/features/auth/domain/entities/user.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jhonny/features/family/presentation/providers/family_provider.dart';
 import 'package:jhonny/features/task/domain/entities/task.dart';
@@ -438,24 +439,56 @@ class _TaskListState extends ConsumerState<TaskList> {
             ),
           ),
         ] else if (task.needsVerification && currentUser != null) ...[
-          // Verify button for completed but unverified tasks
-          Expanded(
-            flex: 2,
-            child: EnhancedButton.primary(
-              text: 'Verify',
-              leadingIcon: Icons.verified,
-              backgroundColor: Colors.blue,
-              onPressed: isUpdating ? null : () => _verifyTask(task),
+          // Only parents can verify tasks
+          if (currentUser.role == UserRole.parent) ...[
+            // Verify button for completed but unverified tasks (parents only)
+            Expanded(
+              flex: 2,
+              child: EnhancedButton.primary(
+                text: 'Verify',
+                leadingIcon: Icons.verified,
+                backgroundColor: Colors.blue,
+                onPressed: isUpdating ? null : () => _verifyTask(task),
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: EnhancedButton.outline(
-              text: 'Undo',
-              leadingIcon: Icons.undo,
-              onPressed: isUpdating ? null : () => _markAsPending(task),
+            const SizedBox(width: 8),
+            Expanded(
+              child: EnhancedButton.outline(
+                text: 'Undo',
+                leadingIcon: Icons.undo,
+                onPressed: isUpdating ? null : () => _markAsPending(task),
+              ),
             ),
-          ),
+          ] else ...[
+            // Children see waiting message
+            Expanded(
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border:
+                      Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.hourglass_empty,
+                        color: Colors.orange, size: 16),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Waiting for parent verification',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Colors.orange,
+                            fontWeight: FontWeight.w500,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ] else if (task.status == TaskStatus.completed) ...[
           // Undo button for completed tasks
           Expanded(
@@ -505,6 +538,19 @@ class _TaskListState extends ConsumerState<TaskList> {
   Future<void> _verifyTask(Task task) async {
     final currentUser = ref.read(currentUserProvider);
     if (currentUser == null) return;
+
+    // Validate user is a parent
+    if (currentUser.role != UserRole.parent) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('❌ Only parents can verify tasks'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
 
     await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
           taskId: task.id,
