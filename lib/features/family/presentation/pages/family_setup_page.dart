@@ -48,6 +48,8 @@ class _FamilySetupPageState extends ConsumerState<FamilySetupPage>
       if (next.hasError) {
         _showErrorSnackBar(context, next.errorMessage!);
       } else if (next.hasFamily && previous?.hasFamily != true) {
+        // Refresh user data to get updated familyId
+        ref.read(authNotifierProvider.notifier).refreshUser();
         _showSuccessSnackBar(context, 'Family setup completed!');
         Navigator.of(context).pop(); // Go back to home
       }
@@ -367,8 +369,11 @@ class _FamilySetupPageState extends ConsumerState<FamilySetupPage>
   Future<void> _createFamily() async {
     if (!_createFamilyFormKey.currentState!.validate()) return;
 
-    final user = ref.read(authNotifierProvider).user;
-    if (user == null) return;
+    final user = ref.read(currentUserProvider);
+    if (user == null) {
+      _showErrorSnackBar(context, 'You must be logged in to create a family');
+      return;
+    }
 
     final success =
         await ref.read(familyNotifierProvider.notifier).createFamily(
@@ -377,7 +382,7 @@ class _FamilySetupPageState extends ConsumerState<FamilySetupPage>
             );
 
     if (success) {
-      _familyNameController.clear();
+      // Success is handled by the listener
     }
   }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:logger/logger.dart';
 import 'package:jhonny/features/auth/presentation/pages/login_page.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_state.dart';
@@ -11,6 +12,8 @@ import 'package:jhonny/features/home/presentation/providers/home_provider.dart';
 import 'package:jhonny/features/pet/presentation/widgets/virtual_pet.dart';
 import 'package:jhonny/features/pet/presentation/providers/pet_provider.dart';
 import 'package:jhonny/features/task/presentation/widgets/task_list.dart';
+import 'package:jhonny/features/task/presentation/providers/task_provider.dart';
+import 'package:jhonny/features/task/presentation/providers/task_state.dart';
 import 'package:jhonny/shared/widgets/widgets.dart';
 
 class HomePage extends ConsumerWidget {
@@ -43,6 +46,19 @@ class HomePage extends ConsumerWidget {
       Future.microtask(() {
         ref.read(familyNotifierProvider.notifier).loadCurrentFamily(user.id);
       });
+
+      // Auto-load tasks when user becomes available
+      final taskState = ref.read(taskNotifierProvider);
+      if (taskState.status == TaskStateStatus.initial &&
+          !taskState.isCreating &&
+          user.familyId != null) {
+        Future.microtask(() {
+          Logger().i('🏠 Home: Loading tasks for family ID: ${user.familyId}');
+          ref
+              .read(taskNotifierProvider.notifier)
+              .loadTasks(familyId: user.familyId!);
+        });
+      }
     }
 
     // Auto-load pet data when family becomes available
@@ -230,6 +246,29 @@ class HomePage extends ConsumerWidget {
   Widget _buildQuickStatsSection(BuildContext context, WidgetRef ref) {
     final familyMembers = ref.watch(familyMembersProvider);
     final hasFamily = ref.watch(hasFamilyProvider);
+    final pendingTasks = ref.watch(pendingTasksProvider);
+    final petState = ref.watch(petNotifierProvider);
+
+    // Calculate task stats based on family status
+    final user = ref.watch(currentUserProvider);
+    final pendingCount =
+        hasFamily && user?.familyId != null ? pendingTasks.length : 0;
+    final taskValue =
+        hasFamily && user?.familyId != null ? '$pendingCount' : '--';
+    final taskSubtitle =
+        hasFamily && user?.familyId != null ? 'Pending' : 'Setup Needed';
+
+    // Calculate pet stats
+    final pet = petState.pet;
+    final petHealth = pet?.stats['health'] ?? 0;
+    final petHealthValue = pet != null ? '$petHealth%' : '--';
+    final petHealthSubtitle = pet != null
+        ? (petHealth >= 80
+            ? 'Happy'
+            : petHealth >= 50
+                ? 'OK'
+                : 'Needs Care')
+        : 'No Pet';
 
     return EnhancedCard.elevated(
       child: Padding(
@@ -241,8 +280,8 @@ class HomePage extends ConsumerWidget {
                 context,
                 icon: Icons.task_alt,
                 label: 'Tasks',
-                value: '5',
-                subtitle: 'Pending',
+                value: taskValue,
+                subtitle: taskSubtitle,
                 color: Theme.of(context).colorScheme.primary,
               ),
             ),
@@ -257,8 +296,8 @@ class HomePage extends ConsumerWidget {
                 context,
                 icon: Icons.pets,
                 label: 'Pet Health',
-                value: '85%',
-                subtitle: 'Happy',
+                value: petHealthValue,
+                subtitle: petHealthSubtitle,
                 color: Theme.of(context).colorScheme.tertiary,
               ),
             ),

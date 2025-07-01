@@ -71,19 +71,23 @@ final tasksProvider = Provider<List<Task>>((ref) {
 });
 
 final pendingTasksProvider = Provider<List<Task>>((ref) {
-  return ref.watch(taskNotifierProvider.notifier).pendingTasks;
+  final tasks = ref.watch(taskNotifierProvider).tasks;
+  return tasks.where((task) => task.status.isPending).toList();
 });
 
 final completedTasksProvider = Provider<List<Task>>((ref) {
-  return ref.watch(taskNotifierProvider.notifier).completedTasks;
+  final tasks = ref.watch(taskNotifierProvider).tasks;
+  return tasks.where((task) => task.status.isCompleted).toList();
 });
 
 final overdueTasksProvider = Provider<List<Task>>((ref) {
-  return ref.watch(taskNotifierProvider.notifier).overdueTasks;
+  final tasks = ref.watch(taskNotifierProvider).tasks;
+  return tasks.where((task) => task.isOverdue).toList();
 });
 
 final tasksNeedingVerificationProvider = Provider<List<Task>>((ref) {
-  return ref.watch(taskNotifierProvider.notifier).tasksNeedingVerification;
+  final tasks = ref.watch(taskNotifierProvider).tasks;
+  return tasks.where((task) => task.needsVerification).toList();
 });
 
 final selectedTaskProvider = Provider<Task?>((ref) {
@@ -104,7 +108,8 @@ final taskUpdatingProvider = Provider<bool>((ref) {
 
 // User-specific task providers
 final userTasksProvider = Provider.family<List<Task>, String>((ref, userId) {
-  return ref.watch(taskNotifierProvider.notifier).getTasksForUser(userId);
+  final tasks = ref.watch(taskNotifierProvider).tasks;
+  return tasks.where((task) => task.assignedTo == userId).toList();
 });
 
 // Real-time task stream provider

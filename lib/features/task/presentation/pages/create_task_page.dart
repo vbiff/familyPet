@@ -424,11 +424,20 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
 
     final user = ref.read(currentUserProvider);
 
-    // TODO: Remove this temporary fix when family management is implemented
-    // For now, use mock UUIDs to enable testing
-    final mockUserId = user?.id ?? '99999999-9999-9999-9999-999999999999';
-    final mockFamilyId =
-        user?.familyId ?? '88888888-8888-8888-8888-888888888888';
+    // Require real user and family IDs
+    if (user?.id == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User not authenticated')),
+      );
+      return;
+    }
+
+    if (user?.familyId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please create or join a family first')),
+      );
+      return;
+    }
 
     if (_assignedTo == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -443,10 +452,10 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
           description: _descriptionController.text.trim(),
           points: int.parse(_pointsController.text),
           assignedTo: _assignedTo!,
-          createdBy: mockUserId,
+          createdBy: user!.id,
           dueDate: _dueDate,
           frequency: _frequency,
-          familyId: mockFamilyId,
+          familyId: user.familyId!,
         );
 
     final taskState = ref.read(taskNotifierProvider);

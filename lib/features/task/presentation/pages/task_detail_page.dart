@@ -5,6 +5,7 @@ import 'package:logger/logger.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jhonny/features/task/domain/entities/task.dart';
 import 'package:jhonny/features/task/presentation/providers/task_provider.dart';
+import 'package:jhonny/features/family/presentation/providers/family_provider.dart';
 
 class TaskDetailPage extends ConsumerWidget {
   final Task task;
@@ -21,6 +22,16 @@ class TaskDetailPage extends ConsumerWidget {
       (t) => t.id == task.id,
       orElse: () => task,
     );
+  }
+
+  String _getMemberName(WidgetRef ref, String userId) {
+    final familyMembers = ref.watch(familyMembersProvider);
+    try {
+      final member = familyMembers.firstWhere((member) => member.id == userId);
+      return member.displayName;
+    } catch (e) {
+      return 'Unknown User';
+    }
   }
 
   @override
@@ -58,7 +69,7 @@ class TaskDetailPage extends ConsumerWidget {
           children: [
             _buildTaskHeader(context, currentTask),
             const SizedBox(height: 24),
-            _buildTaskInfo(context),
+            _buildTaskInfo(context, ref),
             const SizedBox(height: 24),
             _buildTaskSchedule(context),
             const SizedBox(height: 24),
@@ -177,7 +188,7 @@ class TaskDetailPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildTaskInfo(BuildContext context) {
+  Widget _buildTaskInfo(BuildContext context, WidgetRef ref) {
     return Card(
       elevation: 0,
       color: Theme.of(context).colorScheme.surfaceContainerLow,
@@ -197,14 +208,14 @@ class TaskDetailPage extends ConsumerWidget {
               context,
               Icons.person,
               'Assigned to',
-              task.assignedTo,
+              _getMemberName(ref, task.assignedTo),
             ),
             const Divider(height: 24),
             _buildInfoRow(
               context,
               Icons.person_add,
               'Created by',
-              task.createdBy,
+              _getMemberName(ref, task.createdBy),
             ),
             const Divider(height: 24),
             _buildInfoRow(

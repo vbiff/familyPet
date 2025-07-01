@@ -9,6 +9,7 @@ import 'package:jhonny/features/task/presentation/pages/task_detail_page.dart';
 import 'package:jhonny/features/task/presentation/providers/task_provider.dart';
 import 'package:jhonny/features/task/presentation/providers/task_state.dart';
 import 'package:jhonny/shared/widgets/widgets.dart';
+import 'package:jhonny/features/family/presentation/pages/family_setup_page.dart';
 
 class TaskList extends ConsumerStatefulWidget {
   const TaskList({super.key});
@@ -28,18 +29,25 @@ class _TaskListState extends ConsumerState<TaskList> {
 
   void _loadTasks() {
     final user = ref.read(currentUserProvider);
-    // Use test family ID as fallback until proper family management is implemented
-    final familyId = user?.familyId ?? '88888888-8888-8888-8888-888888888888';
 
-    ref.read(taskNotifierProvider.notifier).loadTasks(
-          familyId: familyId,
-        );
+    // Only load tasks if user has a real family
+    if (user?.familyId != null) {
+      ref.read(taskNotifierProvider.notifier).loadTasks(
+            familyId: user!.familyId!,
+          );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final taskState = ref.watch(taskNotifierProvider);
     final tasks = taskState.tasks;
+    final user = ref.watch(currentUserProvider);
+
+    // Show family setup message if user doesn't have a family
+    if (user?.familyId == null) {
+      return _buildNoFamilyContent(context);
+    }
 
     // Listen for auth changes and reload tasks when user profile is updated
     ref.listen(currentUserProvider, (previous, next) {
@@ -521,6 +529,44 @@ class _TaskListState extends ConsumerState<TaskList> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => TaskDetailPage(task: task),
+      ),
+    );
+  }
+
+  Widget _buildNoFamilyContent(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.family_restroom,
+            size: 64,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No family setup',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Please set up your family to manage tasks',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          EnhancedButton.primary(
+            leadingIcon: Icons.group_add,
+            text: 'Set Up Family',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const FamilySetupPage(),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
