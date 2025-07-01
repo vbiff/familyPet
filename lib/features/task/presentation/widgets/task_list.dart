@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
+import 'package:jhonny/features/family/presentation/providers/family_provider.dart';
 import 'package:jhonny/features/task/domain/entities/task.dart';
 import 'package:jhonny/features/task/presentation/pages/create_task_page.dart';
 import 'package:jhonny/features/task/presentation/pages/task_detail_page.dart';
@@ -164,97 +165,130 @@ class _TaskListState extends ConsumerState<TaskList> {
           margin: const EdgeInsets.only(bottom: 12),
           elevation: 0,
           color: Theme.of(context).colorScheme.surfaceContainerLow,
-          child: ListTile(
-            contentPadding: const EdgeInsets.all(16),
-            leading: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color:
-                    _getTaskDisplayColor(context, task).withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                _getTaskDisplayIcon(task),
-                color: _getTaskDisplayColor(context, task),
-              ),
-            ),
-            title: Text(
-              task.title,
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                decoration:
-                    task.status.isCompleted ? TextDecoration.lineThrough : null,
-              ),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  task.description,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+          child: Column(
+            children: [
+              ListTile(
+                contentPadding: const EdgeInsets.all(16),
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: _getTaskDisplayColor(context, task)
+                        .withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    _getTaskDisplayIcon(task),
+                    color: _getTaskDisplayColor(context, task),
+                  ),
                 ),
-                const SizedBox(height: 4),
-                Row(
+                title: Text(
+                  task.title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    decoration: task.status.isCompleted
+                        ? TextDecoration.lineThrough
+                        : null,
+                  ),
+                ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons.schedule,
-                      size: 14,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 4),
-                    Flexible(
-                      child: Text(
-                        formatDueDate(task.dueDate),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: task.isOverdue
-                                  ? Theme.of(context).colorScheme.error
-                                  : Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
-                            ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(
-                      Icons.stars,
-                      size: 14,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 4),
                     Text(
-                      '${task.points}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      task.description,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color:
                                 Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.schedule,
+                          size: 14,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            formatDueDate(task.dueDate),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: task.isOverdue
+                                          ? Theme.of(context).colorScheme.error
+                                          : Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                    ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.stars,
+                          size: 14,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${task.points}',
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    // Assigned to row
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.person,
+                          size: 14,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Assigned to: ${_getAssignedUserName(task.assignedTo)}',
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
-            trailing: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color:
-                    _getTaskDisplayColor(context, task).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Text(
-                _getTaskDisplayText(task),
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: _getTaskDisplayColor(context, task),
+                trailing: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: _getTaskDisplayColor(context, task)
+                        .withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    _getTaskDisplayText(task),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: _getTaskDisplayColor(context, task),
+                    ),
+                  ),
                 ),
+                onTap: () => onTaskTap(task),
               ),
-            ),
-            onTap: () => onTaskTap(task),
+              // Quick Action Buttons
+              _buildQuickActions(context, task),
+            ],
           ),
         );
       },
@@ -335,6 +369,153 @@ class _TaskListState extends ConsumerState<TaskList> {
       return 'Overdue ${DateFormat('MMM d').format(dueDate)}';
     } else {
       return DateFormat('MMM d, HH:mm').format(dueDate);
+    }
+  }
+
+  String _getAssignedUserName(String assignedUserId) {
+    final currentUser = ref.read(currentUserProvider);
+    final familyMembers = ref.read(familyMembersProvider);
+
+    // Check if it's the current user
+    if (currentUser != null && assignedUserId == currentUser.id) {
+      return 'You';
+    }
+
+    // Find the assigned user in family members
+    for (final member in familyMembers) {
+      if (member.id == assignedUserId) {
+        return member.displayName.isNotEmpty
+            ? member.displayName
+            : 'Family Member';
+      }
+    }
+
+    // Fallback if user not found
+    return 'Unknown User';
+  }
+
+  Widget _buildQuickActions(BuildContext context, Task task) {
+    final currentUser = ref.watch(currentUserProvider);
+    final isUpdating = ref.watch(taskNotifierProvider).isUpdating;
+
+    // Don't show actions if task is verified
+    if (task.isVerifiedByParent) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          if (task.status == TaskStatus.pending) ...[
+            // Mark as Complete button for pending tasks
+            FilledButton.icon(
+              onPressed: isUpdating ? null : () => _markAsCompleted(task),
+              icon: isUpdating
+                  ? const SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.check, size: 16),
+              label: const Text('Complete'),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.green,
+                minimumSize: const Size(0, 32),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+              ),
+            ),
+          ] else if (task.needsVerification && currentUser != null) ...[
+            // Verify button for completed but unverified tasks
+            FilledButton.icon(
+              onPressed: isUpdating ? null : () => _verifyTask(task),
+              icon: const Icon(Icons.verified, size: 16),
+              label: const Text('Verify'),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.blue,
+                minimumSize: const Size(0, 32),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+              ),
+            ),
+            const SizedBox(width: 8),
+            OutlinedButton.icon(
+              onPressed: isUpdating ? null : () => _markAsPending(task),
+              icon: const Icon(Icons.undo, size: 16),
+              label: const Text('Undo'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(0, 32),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+              ),
+            ),
+          ] else if (task.status == TaskStatus.completed) ...[
+            // Undo button for completed tasks
+            OutlinedButton.icon(
+              onPressed: isUpdating ? null : () => _markAsPending(task),
+              icon: const Icon(Icons.undo, size: 16),
+              label: const Text('Mark Pending'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(0, 32),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _markAsCompleted(Task task) async {
+    await ref
+        .read(taskNotifierProvider.notifier)
+        .updateTaskStatus(taskId: task.id, status: TaskStatus.completed);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('✅ "${task.title}" marked as completed!'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  Future<void> _markAsPending(Task task) async {
+    await ref
+        .read(taskNotifierProvider.notifier)
+        .updateTaskStatus(taskId: task.id, status: TaskStatus.pending);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('🔄 "${task.title}" marked as pending'),
+          backgroundColor: Colors.orange,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  Future<void> _verifyTask(Task task) async {
+    final currentUser = ref.read(currentUserProvider);
+    if (currentUser == null) return;
+
+    await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
+          taskId: task.id,
+          status: TaskStatus.completed,
+          verifiedById: currentUser.id,
+        );
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              '🏆 "${task.title}" verified! ${task.points} points awarded'),
+          backgroundColor: Colors.blue,
+          duration: const Duration(seconds: 3),
+        ),
+      );
     }
   }
 
