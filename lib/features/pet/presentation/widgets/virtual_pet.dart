@@ -15,6 +15,8 @@ class VirtualPet extends ConsumerWidget {
     final petHealthStatus = ref.watch(petHealthStatusProvider);
     final petMoodDisplay = ref.watch(petMoodDisplayProvider);
     final petStageDisplay = ref.watch(petStageDisplayProvider);
+    final petAge = ref.watch(petAgeProvider);
+    final petEvolutionStatus = ref.watch(petEvolutionStatusProvider);
 
     // Load pet data when family is available
     ref.listen(familyNotifierProvider, (previous, next) {
@@ -267,6 +269,34 @@ class VirtualPet extends ConsumerWidget {
                             color:
                                 Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
+                    ),
+                    const SizedBox(height: 4),
+
+                    Text(
+                      petAge,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                    const SizedBox(height: 2),
+
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.tertiaryContainer,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        petEvolutionStatus,
+                        style: TextStyle(
+                          color:
+                              Theme.of(context).colorScheme.onTertiaryContainer,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 11,
+                        ),
+                      ),
                     ),
                   ],
                 ),

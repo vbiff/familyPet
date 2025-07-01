@@ -5,6 +5,7 @@ import 'package:jhonny/features/pet/domain/usecases/get_family_pet.dart';
 import 'package:jhonny/features/pet/domain/usecases/give_medical_care.dart';
 import 'package:jhonny/features/pet/domain/usecases/play_with_pet.dart';
 import 'package:jhonny/features/pet/domain/usecases/create_pet.dart';
+import 'package:jhonny/features/pet/domain/usecases/auto_evolve_pet.dart';
 import 'package:jhonny/features/pet/presentation/providers/pet_state.dart';
 import 'package:logger/logger.dart';
 
@@ -15,6 +16,7 @@ class PetNotifier extends StateNotifier<PetState> {
   final GiveMedicalCare _giveMedicalCare;
   final AddExperience _addExperience;
   final CreatePet _createPet;
+  final AutoEvolvePet _autoEvolvePet;
   final Logger _logger;
 
   PetNotifier(
@@ -24,6 +26,7 @@ class PetNotifier extends StateNotifier<PetState> {
     this._giveMedicalCare,
     this._addExperience,
     this._createPet,
+    this._autoEvolvePet,
     this._logger,
   ) : super(const PetState());
 
@@ -42,12 +45,49 @@ class PetNotifier extends StateNotifier<PetState> {
           errorMessage: failure.message,
         );
       },
-      (pet) {
+      (pet) async {
         _logger.i('Family pet loaded successfully: ${pet?.name ?? 'No pet'}');
-        state = state.copyWith(
-          status: PetStateStatus.success,
-          pet: pet,
-        );
+
+        if (pet != null) {
+          // Check if pet needs auto-evolution based on age
+          final evolveResult = await _autoEvolvePet(pet);
+          evolveResult.fold(
+            (failure) {
+              _logger.w('Auto-evolution check failed: ${failure.message}');
+              // Still set the original pet even if evolution fails
+              state = state.copyWith(
+                status: PetStateStatus.success,
+                pet: pet,
+              );
+            },
+            (evolvedPet) {
+              if (evolvedPet != null && evolvedPet.stage != pet.stage) {
+                // Pet evolved! Show evolution message
+                _logger.i(
+                    'Pet evolved from ${pet.stage.name} to ${evolvedPet.stage.name}!');
+                state = state.copyWith(
+                  status: PetStateStatus.success,
+                  pet: evolvedPet,
+                  lastAction:
+                      '🎉 ${pet.name} evolved into ${evolvedPet.stage.name.toUpperCase()}! 🎉',
+                  hasEvolved: true,
+                );
+              } else {
+                // No evolution needed
+                state = state.copyWith(
+                  status: PetStateStatus.success,
+                  pet: evolvedPet ?? pet,
+                );
+              }
+            },
+          );
+        } else {
+          // No pet found
+          state = state.copyWith(
+            status: PetStateStatus.success,
+            pet: null,
+          );
+        }
       },
     );
   }

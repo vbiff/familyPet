@@ -12,6 +12,7 @@ import 'package:jhonny/features/pet/domain/usecases/get_family_pet.dart';
 import 'package:jhonny/features/pet/domain/usecases/give_medical_care.dart';
 import 'package:jhonny/features/pet/domain/usecases/play_with_pet.dart';
 import 'package:jhonny/features/pet/domain/usecases/create_pet.dart';
+import 'package:jhonny/features/pet/domain/usecases/auto_evolve_pet.dart';
 import 'package:jhonny/features/pet/presentation/providers/pet_notifier.dart';
 import 'package:jhonny/features/pet/presentation/providers/pet_state.dart';
 
@@ -62,6 +63,11 @@ final createPetUseCaseProvider = Provider<CreatePet>((ref) {
   return CreatePet(repository);
 });
 
+final autoEvolvePetUseCaseProvider = Provider<AutoEvolvePet>((ref) {
+  final repository = ref.watch(petRepositoryProvider);
+  return AutoEvolvePet(repository);
+});
+
 // Logger Provider
 final petLoggerProvider = Provider<Logger>((ref) => Logger());
 
@@ -73,6 +79,7 @@ final petNotifierProvider = StateNotifierProvider<PetNotifier, PetState>((ref) {
   final giveMedicalCare = ref.watch(giveMedicalCareUseCaseProvider);
   final addExperience = ref.watch(addExperienceUseCaseProvider);
   final createPet = ref.watch(createPetUseCaseProvider);
+  final autoEvolvePet = ref.watch(autoEvolvePetUseCaseProvider);
   final logger = ref.watch(petLoggerProvider);
 
   return PetNotifier(
@@ -82,6 +89,7 @@ final petNotifierProvider = StateNotifierProvider<PetNotifier, PetState>((ref) {
     giveMedicalCare,
     addExperience,
     createPet,
+    autoEvolvePet,
     logger,
   );
 });
@@ -147,5 +155,46 @@ final petStageDisplayProvider = Provider<String>((ref) {
       return 'Teen 🐦';
     case PetStage.adult:
       return 'Adult 🦅';
+  }
+});
+
+final petAgeProvider = Provider<String>((ref) {
+  final petState = ref.watch(petNotifierProvider);
+  if (!petState.hasPet || petState.pet == null) return 'Unknown';
+
+  final ageInDays = DateTime.now().difference(petState.pet!.createdAt).inDays;
+  return '$ageInDays day${ageInDays == 1 ? '' : 's'} old';
+});
+
+final petEvolutionStatusProvider = Provider<String>((ref) {
+  final petState = ref.watch(petNotifierProvider);
+  if (!petState.hasPet || petState.pet == null) return 'No pet';
+
+  final ageInDays = DateTime.now().difference(petState.pet!.createdAt).inDays;
+  final currentStage = petState.petStage;
+
+  switch (currentStage) {
+    case PetStage.egg:
+      final daysUntilBaby = 2 - ageInDays;
+      return daysUntilBaby > 0
+          ? 'Evolves in $daysUntilBaby day${daysUntilBaby == 1 ? '' : 's'}'
+          : 'Ready to evolve!';
+    case PetStage.baby:
+      final daysUntilChild = 4 - ageInDays;
+      return daysUntilChild > 0
+          ? 'Evolves in $daysUntilChild day${daysUntilChild == 1 ? '' : 's'}'
+          : 'Ready to evolve!';
+    case PetStage.child:
+      final daysUntilTeen = 6 - ageInDays;
+      return daysUntilTeen > 0
+          ? 'Evolves in $daysUntilTeen day${daysUntilTeen == 1 ? '' : 's'}'
+          : 'Ready to evolve!';
+    case PetStage.teen:
+      final daysUntilAdult = 8 - ageInDays;
+      return daysUntilAdult > 0
+          ? 'Evolves in $daysUntilAdult day${daysUntilAdult == 1 ? '' : 's'}'
+          : 'Ready to evolve!';
+    case PetStage.adult:
+      return 'Fully grown';
   }
 });
