@@ -8,6 +8,7 @@ import 'package:jhonny/features/task/presentation/pages/create_task_page.dart';
 import 'package:jhonny/features/task/presentation/pages/task_detail_page.dart';
 import 'package:jhonny/features/task/presentation/providers/task_provider.dart';
 import 'package:jhonny/features/task/presentation/providers/task_state.dart';
+import 'package:jhonny/shared/widgets/widgets.dart';
 
 class TaskList extends ConsumerStatefulWidget {
   const TaskList({super.key});
@@ -61,19 +62,22 @@ class _TaskListState extends ConsumerState<TaskList> {
             ),
             Row(
               children: [
-                IconButton(
-                  icon: const Icon(Icons.add),
+                EnhancedButton.ghost(
+                  leadingIcon: Icons.add,
+                  text: 'Create',
+                  size: EnhancedButtonSize.small,
                   onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) => const CreateTaskPage(),
                     ),
                   ),
-                  tooltip: 'Create Task',
                 ),
-                IconButton(
-                  icon: const Icon(Icons.refresh),
+                const SizedBox(width: 8),
+                EnhancedButton.ghost(
+                  leadingIcon: Icons.refresh,
+                  size: EnhancedButtonSize.small,
                   onPressed: _loadTasks,
-                  tooltip: 'Refresh',
+                  child: const Text('Refresh'),
                 ),
               ],
             ),
@@ -119,10 +123,10 @@ class _TaskListState extends ConsumerState<TaskList> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
-            FilledButton.icon(
+            EnhancedButton.primary(
+              leadingIcon: Icons.refresh,
+              text: 'Retry',
               onPressed: _loadTasks,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
             ),
           ],
         ),
@@ -152,6 +156,16 @@ class _TaskListState extends ConsumerState<TaskList> {
                   ),
               textAlign: TextAlign.center,
             ),
+            const SizedBox(height: 24),
+            EnhancedButton.primary(
+              leadingIcon: Icons.add,
+              text: 'Create First Task',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const CreateTaskPage(),
+                ),
+              ),
+            ),
           ],
         ),
       );
@@ -161,39 +175,48 @@ class _TaskListState extends ConsumerState<TaskList> {
       itemCount: tasks.length,
       itemBuilder: (context, index) {
         final task = tasks[index];
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          elevation: 0,
-          color: Theme.of(context).colorScheme.surfaceContainerLow,
-          child: Column(
+        return _buildTaskCard(context, task);
+      },
+    );
+  }
+
+  Widget _buildTaskCard(BuildContext context, Task task) {
+    return EnhancedCard.outlined(
+      onTap: () => onTaskTap(task),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with status and points
+          Row(
             children: [
-              ListTile(
-                contentPadding: const EdgeInsets.all(16),
-                leading: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: _getTaskDisplayColor(context, task)
-                        .withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    _getTaskDisplayIcon(task),
-                    color: _getTaskDisplayColor(context, task),
-                  ),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: _getTaskDisplayColor(context, task)
+                      .withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                title: Text(
-                  task.title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    decoration: task.status.isCompleted
-                        ? TextDecoration.lineThrough
-                        : null,
-                  ),
+                child: Icon(
+                  _getTaskDisplayIcon(task),
+                  color: _getTaskDisplayColor(context, task),
+                  size: 20,
                 ),
-                subtitle: Column(
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text(
+                      task.title,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            decoration: task.status.isCompleted
+                                ? TextDecoration.lineThrough
+                                : null,
+                          ),
+                    ),
+                    const SizedBox(height: 4),
                     Text(
                       task.description,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -203,95 +226,90 @@ class _TaskListState extends ConsumerState<TaskList> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.schedule,
-                          size: 14,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            formatDueDate(task.dueDate),
-                            style:
-                                Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: task.isOverdue
-                                          ? Theme.of(context).colorScheme.error
-                                          : Theme.of(context)
-                                              .colorScheme
-                                              .onSurfaceVariant,
-                                    ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Icon(
-                          Icons.stars,
-                          size: 14,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${task.points}',
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant,
-                                  ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    // Assigned to row
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.person,
-                          size: 14,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Assigned to: ${_getAssignedUserName(task.assignedTo)}',
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant,
-                                  ),
-                        ),
-                      ],
-                    ),
                   ],
                 ),
-                trailing: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: _getTaskDisplayColor(context, task)
-                        .withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    _getTaskDisplayText(task),
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: _getTaskDisplayColor(context, task),
-                    ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _getTaskDisplayColor(context, task)
+                      .withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  _getTaskDisplayText(task),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: _getTaskDisplayColor(context, task),
                   ),
                 ),
-                onTap: () => onTaskTap(task),
               ),
-              // Quick Action Buttons
-              _buildQuickActions(context, task),
             ],
           ),
-        );
-      },
+
+          const SizedBox(height: 12),
+
+          // Task details
+          Row(
+            children: [
+              Icon(
+                Icons.schedule,
+                size: 16,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                formatDueDate(task.dueDate),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: task.isOverdue
+                          ? Theme.of(context).colorScheme.error
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+              const Spacer(),
+              const Icon(
+                Icons.stars,
+                size: 16,
+                color: Colors.amber,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '${task.points} pts',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.amber[700],
+                    ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 8),
+
+          Row(
+            children: [
+              Icon(
+                Icons.person,
+                size: 16,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'Assigned to: ${_getAssignedUserName(task.assignedTo)}',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+            ],
+          ),
+
+          // Quick Action Buttons
+          if (!task.isVerifiedByParent) ...[
+            const SizedBox(height: 16),
+            _buildQuickActions(context, task),
+          ],
+        ],
+      ),
     );
   }
 
@@ -337,7 +355,7 @@ class _TaskListState extends ConsumerState<TaskList> {
   // Helper methods that consider verification status
   Color _getTaskDisplayColor(BuildContext context, Task task) {
     if (task.status == TaskStatus.completed && task.isVerifiedByParent) {
-      return Theme.of(context).colorScheme.primary; // Green for verified
+      return Colors.green; // Green for verified
     }
     return getTaskStatusColor(context, task.status);
   }
@@ -398,70 +416,49 @@ class _TaskListState extends ConsumerState<TaskList> {
     final currentUser = ref.watch(currentUserProvider);
     final isUpdating = ref.watch(taskNotifierProvider).isUpdating;
 
-    // Don't show actions if task is verified
-    if (task.isVerifiedByParent) {
-      return const SizedBox.shrink();
-    }
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          if (task.status == TaskStatus.pending) ...[
-            // Mark as Complete button for pending tasks
-            FilledButton.icon(
+    return Row(
+      children: [
+        if (task.status == TaskStatus.pending) ...[
+          // Mark as Complete button for pending tasks
+          Expanded(
+            child: EnhancedButton.primary(
+              text: 'Complete',
+              leadingIcon: Icons.check,
+              isLoading: isUpdating,
+              backgroundColor: Colors.green,
               onPressed: isUpdating ? null : () => _markAsCompleted(task),
-              icon: isUpdating
-                  ? const SizedBox(
-                      width: 12,
-                      height: 12,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.check, size: 16),
-              label: const Text('Complete'),
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.green,
-                minimumSize: const Size(0, 32),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-              ),
             ),
-          ] else if (task.needsVerification && currentUser != null) ...[
-            // Verify button for completed but unverified tasks
-            FilledButton.icon(
+          ),
+        ] else if (task.needsVerification && currentUser != null) ...[
+          // Verify button for completed but unverified tasks
+          Expanded(
+            flex: 2,
+            child: EnhancedButton.primary(
+              text: 'Verify',
+              leadingIcon: Icons.verified,
+              backgroundColor: Colors.blue,
               onPressed: isUpdating ? null : () => _verifyTask(task),
-              icon: const Icon(Icons.verified, size: 16),
-              label: const Text('Verify'),
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.blue,
-                minimumSize: const Size(0, 32),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-              ),
             ),
-            const SizedBox(width: 8),
-            OutlinedButton.icon(
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: EnhancedButton.outline(
+              text: 'Undo',
+              leadingIcon: Icons.undo,
               onPressed: isUpdating ? null : () => _markAsPending(task),
-              icon: const Icon(Icons.undo, size: 16),
-              label: const Text('Undo'),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size(0, 32),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-              ),
             ),
-          ] else if (task.status == TaskStatus.completed) ...[
-            // Undo button for completed tasks
-            OutlinedButton.icon(
+          ),
+        ] else if (task.status == TaskStatus.completed) ...[
+          // Undo button for completed tasks
+          Expanded(
+            child: EnhancedButton.outline(
+              text: 'Mark Pending',
+              leadingIcon: Icons.undo,
               onPressed: isUpdating ? null : () => _markAsPending(task),
-              icon: const Icon(Icons.undo, size: 16),
-              label: const Text('Mark Pending'),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size(0, 32),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-              ),
             ),
-          ],
+          ),
         ],
-      ),
+      ],
     );
   }
 

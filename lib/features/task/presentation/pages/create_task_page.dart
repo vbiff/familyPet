@@ -4,6 +4,7 @@ import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jhonny/features/task/domain/entities/task.dart';
 import 'package:jhonny/features/task/presentation/providers/task_provider.dart';
 import 'package:jhonny/features/family/presentation/providers/family_provider.dart';
+import 'package:jhonny/shared/widgets/widgets.dart';
 // import 'package:jhonny/features/family/data/models/family_member_model.dart';
 
 class CreateTaskPage extends ConsumerStatefulWidget {
@@ -87,53 +88,35 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
   }
 
   Widget _buildTaskInfoSection() {
-    return Card(
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerLow,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Task Information',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _titleController,
-              decoration: const InputDecoration(
-                labelText: 'Task Title',
-                hintText: 'e.g., Clean your room',
-                border: OutlineInputBorder(),
-              ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Please enter a task title';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Description',
-                hintText: 'Describe what needs to be done',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 3,
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Please enter a description';
-                }
-                return null;
-              },
-            ),
-          ],
-        ),
+    return EnhancedCard.elevated(
+      title: 'Task Information',
+      child: Column(
+        children: [
+          EnhancedInput(
+            label: 'Task Title',
+            placeholder: 'e.g., Clean your room',
+            controller: _titleController,
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Please enter a task title';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          EnhancedInput.multiline(
+            label: 'Description',
+            placeholder: 'Describe what needs to be done',
+            controller: _descriptionController,
+            maxLines: 3,
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Please enter a description';
+              }
+              return null;
+            },
+          ),
+        ],
       ),
     );
   }
@@ -199,191 +182,150 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
       assignmentOptions = [];
     }
 
-    return Card(
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerLow,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Assignment',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 16),
-            if (!hasFamily)
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.errorContainer,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.warning,
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'You need to create or join a family first',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            else if (assignmentOptions.isEmpty)
-              const Center(
-                child: CircularProgressIndicator(),
-              )
-            else
-              DropdownButtonFormField<String>(
-                value: assignmentOptions
-                        .any((option) => option['id'] == _assignedTo)
-                    ? _assignedTo
-                    : null,
-                decoration: const InputDecoration(
-                  labelText: 'Assign to',
-                  border: OutlineInputBorder(),
-                ),
-                isExpanded: true,
-                items:
-                    assignmentOptions.map<DropdownMenuItem<String>>((option) {
-                  final isCurrentUser = currentUser?.id == option['id'];
-                  final displayText = isCurrentUser
-                      ? '${option['displayName']} (You)'
-                      : option['displayName'];
-
-                  return DropdownMenuItem<String>(
-                    value: option['id'] as String,
-                    child: Text(
-                      displayText,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w500,
-                        color: isCurrentUser
-                            ? Theme.of(context).colorScheme.primary
-                            : null,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  );
-                }).toList(),
-                onChanged: hasFamily
-                    ? (value) {
-                        setState(() {
-                          _assignedTo = value;
-                        });
-                      }
-                    : null,
-                validator: (value) {
-                  if (!hasFamily) {
-                    return 'Please create or join a family first';
-                  }
-                  if (value == null) {
-                    return 'Please select who to assign this task to';
-                  }
-                  return null;
-                },
+    return EnhancedCard.elevated(
+      title: 'Assignment',
+      child: Column(
+        children: [
+          if (!hasFamily)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.errorContainer,
+                borderRadius: BorderRadius.circular(8),
               ),
-          ],
-        ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.warning,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'You need to create or join a family first',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else if (assignmentOptions.isEmpty)
+            const Center(
+              child: CircularProgressIndicator(),
+            )
+          else
+            DropdownButtonFormField<String>(
+              value:
+                  assignmentOptions.any((option) => option['id'] == _assignedTo)
+                      ? _assignedTo
+                      : null,
+              decoration: const InputDecoration(
+                labelText: 'Assign to',
+                border: OutlineInputBorder(),
+              ),
+              isExpanded: true,
+              items: assignmentOptions.map<DropdownMenuItem<String>>((option) {
+                final isCurrentUser = currentUser?.id == option['id'];
+                final displayText = isCurrentUser
+                    ? '${option['displayName']} (You)'
+                    : option['displayName'];
+
+                return DropdownMenuItem<String>(
+                  value: option['id'] as String,
+                  child: Text(
+                    displayText,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      color: isCurrentUser
+                          ? Theme.of(context).colorScheme.primary
+                          : null,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                );
+              }).toList(),
+              onChanged: hasFamily
+                  ? (value) {
+                      setState(() {
+                        _assignedTo = value;
+                      });
+                    }
+                  : null,
+              validator: (value) {
+                if (!hasFamily) {
+                  return 'Please create or join a family first';
+                }
+                if (value == null) {
+                  return 'Please select who to assign this task to';
+                }
+                return null;
+              },
+            ),
+        ],
       ),
     );
   }
 
   Widget _buildSchedulingSection() {
-    return Card(
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerLow,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Scheduling',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+    return EnhancedCard.elevated(
+      title: 'Scheduling',
+      child: Column(
+        children: [
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(
+              Icons.calendar_today,
+              color: Theme.of(context).colorScheme.primary,
             ),
-            const SizedBox(height: 16),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(
-                Icons.calendar_today,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              title: const Text('Due Date'),
-              subtitle: Text(
-                '${_dueDate.day}/${_dueDate.month}/${_dueDate.year} at ${_dueDate.hour.toString().padLeft(2, '0')}:${_dueDate.minute.toString().padLeft(2, '0')}',
-              ),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: _selectDueDate,
+            title: const Text('Due Date'),
+            subtitle: Text(
+              '${_dueDate.day}/${_dueDate.month}/${_dueDate.year} at ${_dueDate.hour.toString().padLeft(2, '0')}:${_dueDate.minute.toString().padLeft(2, '0')}',
             ),
-            const Divider(),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(
-                Icons.repeat,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              title: const Text('Frequency'),
-              subtitle: Text(_getFrequencyText(_frequency)),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: _selectFrequency,
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _selectDueDate,
+          ),
+          const Divider(),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(
+              Icons.repeat,
+              color: Theme.of(context).colorScheme.primary,
             ),
-          ],
-        ),
+            title: const Text('Frequency'),
+            subtitle: Text(_getFrequencyText(_frequency)),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _selectFrequency,
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildPointsSection() {
-    return Card(
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerLow,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Reward Points',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _pointsController,
-              decoration: const InputDecoration(
-                labelText: 'Points',
-                hintText: '10',
-                border: OutlineInputBorder(),
-                suffixIcon: Icon(Icons.stars),
-              ),
-              keyboardType: TextInputType.number,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter points';
-                }
-                final points = int.tryParse(value);
-                if (points == null || points < 0) {
-                  return 'Please enter a valid number (0 or greater)';
-                }
-                return null;
-              },
-            ),
-          ],
-        ),
+    return EnhancedCard.elevated(
+      title: 'Reward Points',
+      child: Column(
+        children: [
+          EnhancedInput(
+            label: 'Points',
+            placeholder: '10',
+            type: EnhancedInputType.number,
+            controller: _pointsController,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter points';
+              }
+              final points = int.tryParse(value);
+              if (points == null || points < 0) {
+                return 'Please enter a valid number (0 or greater)';
+              }
+              return null;
+            },
+          ),
+        ],
       ),
     );
   }
@@ -392,27 +334,18 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        FilledButton.icon(
+        EnhancedButton.primary(
+          text: isCreating ? 'Creating...' : 'Create Task',
+          leadingIcon: Icons.add_task,
+          isLoading: isCreating,
+          isExpanded: true,
           onPressed: isCreating ? null : _createTask,
-          icon: isCreating
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.add_task),
-          label: Text(isCreating ? 'Creating...' : 'Create Task'),
-          style: FilledButton.styleFrom(
-            minimumSize: const Size(double.infinity, 48),
-          ),
         ),
         const SizedBox(height: 12),
-        OutlinedButton(
+        EnhancedButton.outline(
+          text: 'Cancel',
+          isExpanded: true,
           onPressed: isCreating ? null : () => Navigator.of(context).pop(),
-          style: OutlinedButton.styleFrom(
-            minimumSize: const Size(double.infinity, 48),
-          ),
-          child: const Text('Cancel'),
         ),
       ],
     );

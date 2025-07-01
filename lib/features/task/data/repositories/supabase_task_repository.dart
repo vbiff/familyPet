@@ -109,6 +109,7 @@ class SupabaseTaskRepository implements TaskRepository {
     String? verifiedById,
     DateTime? completedAt,
     DateTime? verifiedAt,
+    bool clearVerification = false,
   }) async {
     try {
       final updatedTask = await _remoteDataSource.updateTaskStatus(
@@ -117,6 +118,7 @@ class SupabaseTaskRepository implements TaskRepository {
         verifiedById: verifiedById,
         completedAt: completedAt,
         verifiedAt: verifiedAt,
+        clearVerification: clearVerification,
       );
 
       return right(updatedTask.toEntity());

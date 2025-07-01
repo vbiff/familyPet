@@ -662,7 +662,7 @@ class TaskDetailPage extends ConsumerWidget {
         await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
               taskId: task.id,
               status: TaskStatus.completed,
-              verifiedById: null, // Remove verification
+              clearVerification: true, // Clear verification
             );
 
         // Show success feedback

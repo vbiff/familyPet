@@ -101,6 +101,7 @@ class TaskNotifier extends StateNotifier<TaskState> {
     required String taskId,
     required TaskStatus status,
     String? verifiedById,
+    bool clearVerification = false,
   }) async {
     state = state.copyWith(
       isUpdating: true,
@@ -124,6 +125,7 @@ class TaskNotifier extends StateNotifier<TaskState> {
       verifiedById: verifiedById,
       completedAt: completedAt,
       verifiedAt: verifiedAt,
+      clearVerification: clearVerification,
     ));
 
     result.fold(

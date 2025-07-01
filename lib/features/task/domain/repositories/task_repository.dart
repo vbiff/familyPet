@@ -34,6 +34,7 @@ abstract class TaskRepository {
     String? verifiedById,
     DateTime? completedAt,
     DateTime? verifiedAt,
+    bool clearVerification = false,
   });
 
   Stream<List<Task>> watchTasks({

@@ -24,6 +24,7 @@ abstract class TaskRemoteDataSource {
     String? verifiedById,
     DateTime? completedAt,
     DateTime? verifiedAt,
+    bool clearVerification = false,
   });
 
   Stream<List<TaskModel>> watchTasks({
@@ -129,6 +130,7 @@ class SupabaseTaskRemoteDataSource implements TaskRemoteDataSource {
     String? verifiedById,
     DateTime? completedAt,
     DateTime? verifiedAt,
+    bool clearVerification = false,
   }) async {
     final updates = <String, dynamic>{
       'status': status.name,
@@ -139,9 +141,16 @@ class SupabaseTaskRemoteDataSource implements TaskRemoteDataSource {
       updates['completed_at'] = completedAt.toIso8601String();
     }
 
+    // Handle verification fields
     if (verifiedById != null) {
+      // Setting verification
       updates['verified_by_id'] = verifiedById;
-      updates['verified_at'] = verifiedAt?.toIso8601String();
+      updates['verified_at'] =
+          verifiedAt?.toIso8601String() ?? DateTime.now().toIso8601String();
+    } else if (clearVerification) {
+      // Clearing verification (unverifying)
+      updates['verified_by_id'] = null;
+      updates['verified_at'] = null;
     }
 
     _logger.d('Database update - Task ID: $taskId');

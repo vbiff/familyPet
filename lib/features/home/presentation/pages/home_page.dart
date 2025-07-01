@@ -10,6 +10,7 @@ import 'package:jhonny/features/family/presentation/widgets/family_list.dart';
 import 'package:jhonny/features/home/presentation/providers/home_provider.dart';
 import 'package:jhonny/features/pet/presentation/widgets/virtual_pet.dart';
 import 'package:jhonny/features/task/presentation/widgets/task_list.dart';
+import 'package:jhonny/shared/widgets/widgets.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -113,8 +114,7 @@ class HomePage extends ConsumerWidget {
             SliverToBoxAdapter(
               child: Container(
                 margin: const EdgeInsets.all(16),
-                child: Card(
-                  color: Theme.of(context).colorScheme.errorContainer,
+                child: EnhancedCard.elevated(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Row(
@@ -181,12 +181,9 @@ class HomePage extends ConsumerWidget {
       BuildContext context, WidgetRef ref, int selectedTab, bool hasFamily) {
     // Show family setup FAB only when on family tab and user has no family
     if (selectedTab == HomeTab.family.index && !hasFamily) {
-      return FloatingActionButton.extended(
+      return EnhancedButton.primary(
         onPressed: () => _navigateToFamilySetup(context),
-        icon: const Icon(Icons.family_restroom),
-        label: const Text('Setup Family'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        child: const Text('Setup Family'),
       );
     }
     return null;
@@ -219,9 +216,7 @@ class HomePage extends ConsumerWidget {
     final familyMembers = ref.watch(familyMembersProvider);
     final hasFamily = ref.watch(hasFamilyProvider);
 
-    return Card(
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerLow,
+    return EnhancedCard.elevated(
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Row(

@@ -9,6 +9,7 @@ class UpdateTaskStatusParams {
   final String? verifiedById;
   final DateTime? completedAt;
   final DateTime? verifiedAt;
+  final bool clearVerification;
 
   const UpdateTaskStatusParams({
     required this.taskId,
@@ -16,6 +17,7 @@ class UpdateTaskStatusParams {
     this.verifiedById,
     this.completedAt,
     this.verifiedAt,
+    this.clearVerification = false,
   });
 }
 
@@ -36,7 +38,9 @@ class UpdateTaskStatus {
       ));
     }
 
-    if (params.verifiedById != null && params.verifiedAt == null) {
+    if (params.verifiedById != null &&
+        params.verifiedAt == null &&
+        !params.clearVerification) {
       return left(const ValidationFailure(
         message: 'Verified at date is required when task is verified',
       ));
@@ -48,6 +52,7 @@ class UpdateTaskStatus {
       verifiedById: params.verifiedById,
       completedAt: params.completedAt,
       verifiedAt: params.verifiedAt,
+      clearVerification: params.clearVerification,
     );
   }
 }
