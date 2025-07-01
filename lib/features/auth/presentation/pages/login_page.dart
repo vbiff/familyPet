@@ -71,6 +71,69 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     );
   }
 
+  void _showForgotPasswordDialog() {
+    final emailController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset Password'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Enter your email address to receive a password reset link.',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              AuthTextField(
+                label: 'Email',
+                hint: 'Enter your email',
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                validator: _validateEmail,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (formKey.currentState?.validate() ?? false) {
+                Navigator.pop(context);
+
+                await ref.read(authNotifierProvider.notifier).resetPassword(
+                      email: emailController.text.trim(),
+                    );
+
+                // Show success message
+                if (mounted && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Password reset email sent! Check your inbox.',
+                      ),
+                      backgroundColor: Colors.green,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('Send Reset Email'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
@@ -132,6 +195,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       : Icons.visibility_off_outlined,
                 ),
                 onPressed: _togglePasswordVisibility,
+              ),
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: isLoading ? null : _showForgotPasswordDialog,
+                child: const Text('Forgot Password?'),
               ),
             ),
             const SizedBox(height: 24),
