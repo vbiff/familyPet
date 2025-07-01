@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 import 'package:jhonny/features/auth/presentation/pages/login_page.dart';
+import 'package:jhonny/features/auth/presentation/pages/profile_settings_page.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_state.dart';
 import 'package:jhonny/features/family/presentation/pages/family_setup_page.dart';
@@ -438,7 +439,11 @@ class HomePage extends ConsumerWidget {
               title: const Text('Profile Settings'),
               onTap: () {
                 Navigator.pop(context);
-                // TODO: Navigate to profile settings
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const ProfileSettingsPage(),
+                  ),
+                );
               },
             ),
             ListTile(

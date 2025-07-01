@@ -90,18 +90,18 @@ class ImageUploadService {
     required File file,
   }) async {
     try {
-      final fileName = '${DateTime.now().millisecondsSinceEpoch}_avatar.jpg';
-      final path = 'profiles/$userId/$fileName';
+      final fileName = 'avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final path = 'avatars/$userId/$fileName';
       final fileBytes = await file.readAsBytes();
 
       // Upload to profile-images bucket
       await _supabaseClient.storage
-          .from('profile_images')
+          .from('profile-images')
           .uploadBinary(path, fileBytes);
 
       // Get public URL
       final publicUrl =
-          _supabaseClient.storage.from('profile_images').getPublicUrl(path);
+          _supabaseClient.storage.from('profile-images').getPublicUrl(path);
 
       return Right(publicUrl);
     } catch (e) {
