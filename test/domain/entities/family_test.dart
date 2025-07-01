@@ -202,6 +202,8 @@ void main() {
           testDate,
           {'theme': 'light'},
           {'version': '1.0'},
+          null, // petImageUrl
+          null, // petStageImages
         ]);
       });
     });

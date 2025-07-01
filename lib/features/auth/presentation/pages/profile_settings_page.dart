@@ -694,8 +694,81 @@ class _ProfileSettingsPageState extends ConsumerState<ProfileSettingsPage> {
   }
 
   void _showResetPasswordDialog() {
-    // TODO: Implement reset password dialog
-    _showInfoSnackBar('Reset password feature coming soon!');
+    final emailController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset Password'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Enter your email address to receive a password reset link.',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: emailController,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  hintText: 'Enter your email',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.emailAddress,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your email';
+                  }
+                  if (!value.contains('@')) {
+                    return 'Please enter a valid email';
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (formKey.currentState?.validate() ?? false) {
+                Navigator.pop(context);
+
+                setState(() {
+                  _isLoading = true;
+                });
+
+                try {
+                  await ref.read(authNotifierProvider.notifier).resetPassword(
+                        email: emailController.text.trim(),
+                      );
+
+                  _showSuccessSnackBar(
+                    'Password reset email sent! Check your inbox.',
+                  );
+                } catch (e) {
+                  _logger.e('Error sending reset email: $e');
+                  _showErrorSnackBar('Failed to send reset email');
+                } finally {
+                  setState(() {
+                    _isLoading = false;
+                  });
+                }
+              }
+            },
+            child: const Text('Send Reset Email'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showDeleteAccountDialog() {

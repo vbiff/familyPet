@@ -127,4 +127,21 @@ class AuthNotifier extends StateNotifier<AuthState> {
       (user) => state = state.copyWith(user: user, failure: null),
     );
   }
+
+  Future<void> resetPassword({required String email}) async {
+    state = state.copyWith(status: AuthStatus.loading);
+
+    final result = await _authRepository.resetPassword(email: email);
+
+    state = result.fold(
+      (failure) => state.copyWith(
+        status: AuthStatus.error,
+        failure: failure,
+      ),
+      (_) => state.copyWith(
+        status: AuthStatus.unauthenticated,
+        failure: null,
+      ),
+    );
+  }
 }
