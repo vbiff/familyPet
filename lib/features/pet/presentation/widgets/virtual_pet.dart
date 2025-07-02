@@ -5,6 +5,7 @@ import 'package:jhonny/features/pet/domain/entities/pet.dart';
 import 'package:jhonny/features/pet/presentation/providers/pet_provider.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jhonny/features/auth/domain/entities/user.dart';
+import 'package:jhonny/shared/widgets/animated_interactions.dart';
 
 class VirtualPet extends ConsumerWidget {
   const VirtualPet({super.key});
@@ -18,6 +19,21 @@ class VirtualPet extends ConsumerWidget {
     final petAge = ref.watch(petAgeProvider);
     final petEvolutionStatus = ref.watch(petEvolutionStatusProvider);
     final currentUser = ref.watch(currentUserProvider);
+
+    Color getFeedButtonColor(int? hunger) {
+      if (hunger != null) {
+        final percentage = (100 - hunger) / 100;
+        if (percentage < 0.33) {
+          return Colors.red;
+        } else if (percentage < 0.66) {
+          return Colors.orange;
+        } else {
+          return Colors.green;
+        }
+      } else {
+        return Theme.of(context).colorScheme.primary;
+      }
+    }
 
     // Load pet data when family is available and valid
     ref.listen(familyNotifierProvider, (previous, next) {
@@ -438,72 +454,240 @@ class VirtualPet extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
 
-            Row(
-              children: [
-                Expanded(
-                  child: _buildActionButton(
-                    context,
-                    icon: Icons.restaurant,
-                    label: petState.hunger < 30
-                        ? 'Feed (${petState.hunger}%)'
-                        : 'Feed',
-                    color: petState.hunger < 30
-                        ? Colors.red
-                        : Theme.of(context).colorScheme.primary,
-                    enabled: !petState.isUpdating,
-                    onTap: () {
-                      ref
-                          .read(petNotifierProvider.notifier)
-                          .feedPet(bonusPoints: 10);
-                    },
+            // Pet Actions
+            if (petState.isLoading) ...[
+              const Center(
+                child: CircularProgressIndicator(),
+              ),
+            ] else ...[
+              _buildActionButton(
+                context,
+                icon: Icons.restaurant,
+                label: petState.pet?.stats['hunger'] != null
+                    ? 'Feed (${100 - petState.pet!.stats['hunger']!}%)'
+                    : 'Feed Pet',
+                color: getFeedButtonColor(petState.pet?.stats['hunger']),
+                enabled: !petState.isUpdating,
+                onTap: () {
+                  ref.read(petNotifierProvider.notifier).feedPet();
+                },
+              ),
+
+              const SizedBox(height: 12),
+
+              SpringButton(
+                onPressed: !petState.isUpdating
+                    ? () {
+                        ref.read(petNotifierProvider.notifier).playWithPet();
+                      }
+                    : null,
+                child: Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.secondary,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .secondary
+                            .withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      PulsingIndicator(
+                        child: Icon(
+                          Icons.sports_esports,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'Play with Pet',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildActionButton(
-                    context,
-                    icon: Icons.sports_esports,
-                    label: 'Play',
-                    color: Theme.of(context).colorScheme.secondary,
-                    enabled: !petState.isUpdating,
-                    onTap: () {
-                      ref.read(petNotifierProvider.notifier).playWithPet();
-                    },
+              ),
+
+              const SizedBox(height: 12),
+
+              SpringButton(
+                onPressed: !petState.isUpdating
+                    ? () {
+                        ref
+                            .read(petNotifierProvider.notifier)
+                            .giveMedicalCare();
+                      }
+                    : null,
+                child: Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.tertiary,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .tertiary
+                            .withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.health_and_safety,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'Medical Care',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Temporary reset button to fix happiness - only for parents
+              if (currentUser?.role == UserRole.parent) ...[
+                const SizedBox(height: 12),
+                SpringButton(
+                  onPressed: !petState.isUpdating
+                      ? () {
+                          ref
+                              .read(petNotifierProvider.notifier)
+                              .resetPetStats();
+                        }
+                      : null,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 16, horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.orange.withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.refresh,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          'Reset Stats (Fix Happiness)',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
-            ),
+            ],
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 24),
 
-            SizedBox(
-              width: double.infinity,
-              child: _buildActionButton(
-                context,
-                icon: Icons.health_and_safety,
-                label: 'Medical Care',
-                color: Theme.of(context).colorScheme.tertiary,
-                enabled: !petState.isUpdating,
-                onTap: () {
-                  ref.read(petNotifierProvider.notifier).giveMedicalCare();
+            // Pet Evolution Status with animation
+            if (petEvolutionStatus.contains('evolve')) ...[
+              SpringButton(
+                onPressed: () {
+                  // Handle evolution
                 },
-              ),
-            ),
-
-            // Temporary reset button to fix happiness
-            const SizedBox(height: 12),
-            if (currentUser?.role == UserRole.parent) ...[
-              SizedBox(
-                width: double.infinity,
-                child: _buildActionButton(
-                  context,
-                  icon: Icons.refresh,
-                  label: 'Reset Stats (Fix Happiness)',
-                  color: Colors.orange,
-                  enabled: !petState.isUpdating,
-                  onTap: () {
-                    ref.read(petNotifierProvider.notifier).resetPetStats();
-                  },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [
+                        Colors.purple,
+                        Colors.deepPurple,
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.purple.withValues(alpha: 0.4),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Row(
+                    children: [
+                      PulsingIndicator(
+                        child: Icon(
+                          Icons.auto_awesome,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Evolution Ready!',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'Your pet is ready to evolve to the next stage',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        Icons.arrow_forward,
+                        color: Colors.white,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],

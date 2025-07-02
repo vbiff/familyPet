@@ -64,6 +64,20 @@ dependencies:
   # Accessibility
   flutter_localizations:
     sdk: flutter
+    
+  # Onboarding & Tutorial Features
+  introduction_screen: ^3.1.14
+  showcaseview: ^3.0.0
+  tutorial_coach_mark: ^1.2.11
+  
+  # Enhanced UX & Accessibility
+  vibration: ^1.8.4
+  spring_button: ^2.0.0
+  flutter_keyboard_visibility: ^6.0.0
+  
+  # Enhanced Animations & Microinteractions
+  rive: ^0.13.1
+  flutter_staggered_animations: ^1.1.1
 
 dev_dependencies:
   flutter_test:

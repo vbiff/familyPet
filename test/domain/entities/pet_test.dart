@@ -56,6 +56,7 @@ void main() {
           level: 5,
           lastFedAt: testDate.subtract(const Duration(hours: 2)),
           lastPlayedAt: testDate.subtract(const Duration(hours: 4)),
+          lastCareAt: testDate.subtract(const Duration(hours: 1)),
           createdAt: testDate,
           stats: const {'health': 80, 'happiness': 90},
         );
@@ -85,6 +86,7 @@ void main() {
           level: 1,
           lastFedAt: testDate,
           lastPlayedAt: testDate,
+          lastCareAt: testDate,
           createdAt: testDate,
           stats: const {'health': 100},
         );
@@ -191,6 +193,7 @@ void main() {
             level: 5,
             lastFedAt: testDate.subtract(const Duration(hours: 2)),
             lastPlayedAt: testDate.subtract(const Duration(hours: 4)),
+            lastCareAt: testDate.subtract(const Duration(hours: 1)),
             createdAt: testDate,
             stats: const {'health': 80, 'happiness': 90},
           );
@@ -218,6 +221,7 @@ void main() {
             5,
             testDate.subtract(const Duration(hours: 2)),
             testDate.subtract(const Duration(hours: 4)),
+            testDate.subtract(const Duration(hours: 1)),
             testDate,
             {'health': 80, 'happiness': 90},
           ]);

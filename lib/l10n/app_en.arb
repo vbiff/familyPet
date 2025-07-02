@@ -1,0 +1,289 @@
+{
+  "@@locale": "en",
+  "appTitle": "Jhonny",
+  "@appTitle": {
+    "description": "The application title"
+  },
+  "appDescription": "Family Task Manager with Virtual Pet",
+  "@appDescription": {
+    "description": "Short description of the app"
+  },
+
+  "welcomeToJhonny": "Welcome to Jhonny",
+  "@welcomeToJhonny": {
+    "description": "Welcome message for new users"
+  },
+
+  "onboardingWelcomeTitle": "Welcome to Jhonny",
+  "onboardingWelcomeDescription": "A fun family task manager where completing tasks helps your virtual pet grow and thrive!",
+  "onboardingTasksTitle": "Complete Family Tasks",
+  "onboardingTasksDescription": "Assign tasks to family members and track progress together. Everyone contributes to pet care!",
+  "onboardingPetTitle": "Watch Your Pet Grow", 
+  "onboardingPetDescription": "Your virtual pet evolves based on task completion. Keep your pet happy and healthy!",
+  "onboardingAnalyticsTitle": "Family Analytics",
+  "onboardingAnalyticsDescription": "Track family progress with beautiful charts and celebrate achievements together!",
+
+  "getStarted": "Get Started",
+  "next": "Next",
+  "back": "Back",
+  "skip": "Skip",
+  "done": "Done",
+  "continue": "Continue",
+  "cancel": "Cancel",
+  "save": "Save",
+  "delete": "Delete",
+  "edit": "Edit",
+  "create": "Create",
+  "close": "Close",
+  "ok": "OK",
+  "yes": "Yes",
+  "no": "No",
+
+  "navigationTasks": "Tasks",
+  "navigationPet": "Pet",
+  "navigationFamily": "Family",
+  "navigationAnalytics": "Analytics",
+  "navigationSettings": "Settings",
+
+  "tasksTitle": "Family Tasks",
+  "tasksEmpty": "No tasks yet",
+  "tasksEmptyDescription": "Create your first task to get started!",
+  "createTask": "Create Task",
+  "createNewTask": "Create New Task",
+  "taskTitle": "Task Title",
+  "taskDescription": "Task Description",
+  "taskCategory": "Category",
+  "taskDifficulty": "Difficulty",
+  "taskPoints": "Points",
+  "taskAssignTo": "Assign To",
+  "taskDueDate": "Due Date",
+  "taskCompleted": "Task Completed!",
+  "markAsComplete": "Mark as Complete",
+  "taskStatusPending": "Pending",
+  "taskStatusInProgress": "In Progress", 
+  "taskStatusCompleted": "Completed",
+
+  "taskCategoryHousehold": "Household",
+  "taskCategoryPersonal": "Personal",
+  "taskCategoryEducation": "Education",
+  "taskCategoryHealth": "Health",
+  "taskCategorySocial": "Social",
+  "taskCategoryCreative": "Creative",
+  "taskCategoryOther": "Other",
+
+  "taskDifficultyEasy": "Easy",
+  "taskDifficultyMedium": "Medium", 
+  "taskDifficultyHard": "Hard",
+
+  "petTitle": "Your Virtual Pet",
+  "petName": "Pet Name",
+  "petHappiness": "Happiness",
+  "petHealth": "Health",
+  "petEnergy": "Energy",
+  "petHunger": "Hunger",
+  "petEmotion": "Emotion",
+  "petAge": "Age",
+  "petLevel": "Level",
+  "petMood": "Mood",
+  "petStatus": "Status",
+  "petEvolution": "Evolution",
+
+  "petMoodVeryVeryHappy": "Ecstatic",
+  "petMoodVeryHappy": "Very Happy",
+  "petMoodHappy": "Happy",
+  "petMoodContent": "Content",
+  "petMoodNeutral": "Neutral",
+  "petMoodSad": "Sad",
+  "petMoodUpset": "Upset",
+  "petMoodHungry": "Hungry",
+  "petMoodVeryHungry": "Very Hungry",
+  "petMoodVeryVeryHungry": "Starving",
+
+  "petStageEgg": "Egg",
+  "petStageBaby": "Baby",
+  "petStageChild": "Child",
+  "petStageTeen": "Teen",
+  "petStageAdult": "Adult",
+
+  "feedPet": "Feed Pet",
+  "playWithPet": "Play with Pet",
+  "petMedicalCare": "Medical Care",
+  "petEvolutionReady": "Ready to Evolve!",
+  "petNeedsAttention": "Needs Attention",
+  "petHappyAndHealthy": "Happy & Healthy",
+
+  "feedPetPoints": "Feed ({points} points)",
+  "feedPetHungry": "Feed ({hunger}%)",
+  "feedPetSuccess": "Pet fed successfully!",
+  "feedPetNoPoints": "Not enough points to feed pet",
+
+  "familyTitle": "Family Members",
+  "familyEmpty": "No family members yet",
+  "familyEmptyDescription": "Invite family members to get started!",
+  "inviteMember": "Invite Member",
+  "familyCode": "Family Code",
+  "joinFamily": "Join Family",
+  "createFamily": "Create Family",
+  "familyName": "Family Name",
+  "familySettings": "Family Settings",
+  "leaveFamily": "Leave Family",
+  "familyRole": "Role",
+  "familyRoleParent": "Parent",
+  "familyRoleChild": "Child",
+  "familyMemberSince": "Member since {date}",
+
+  "analyticsTitle": "Family Analytics",
+  "analyticsOverview": "Overview",
+  "analyticsDaily": "Daily",
+  "analyticsWeekly": "Weekly", 
+  "analyticsMonthly": "Monthly",
+  "analyticsYearly": "Yearly",
+  
+  "statsTasksCompleted": "Tasks Completed",
+  "statsCompletionRate": "Completion Rate",
+  "statsPointsEarned": "Points Earned",
+  "statsStreak": "Streak",
+  "statsLeaderboard": "Leaderboard",
+  "statsProgress": "Progress",
+  "statsTrends": "Trends",
+
+  "memberStats": "{member} completed {tasks} tasks",
+  "memberStreak": "{days} day streak",
+  "memberPoints": "{points} points earned",
+
+  "settingsTitle": "Settings",
+  "settingsAccount": "Account",
+  "settingsProfile": "Profile",
+  "settingsNotifications": "Notifications",
+  "settingsPrivacy": "Privacy",
+  "settingsAccessibility": "Accessibility",
+  "settingsLanguage": "Language",
+  "settingsTheme": "Theme",
+  "settingsAbout": "About",
+  "settingsHelp": "Help & Support",
+  "settingsLogout": "Logout",
+
+  "themeLight": "Light",
+  "themeDark": "Dark",
+  "themeAuto": "Auto",
+
+  "accessibilityHighContrast": "High Contrast",
+  "accessibilityLargeText": "Large Text",
+  "accessibilityReducedMotion": "Reduced Motion",
+  "accessibilityHapticFeedback": "Haptic Feedback",
+  "accessibilityAudioFeedback": "Audio Feedback",
+  "accessibilityVoiceAnnouncements": "Voice Announcements",
+
+  "notificationsTaskReminders": "Task Reminders",
+  "notificationsDaily": "Daily Summaries",
+  "notificationsPetCare": "Pet Care Alerts",
+  "notificationsFamily": "Family Updates",
+  "notificationsAchievements": "Achievements",
+
+  "loginTitle": "Sign In",
+  "signupTitle": "Create Account",
+  "email": "Email",
+  "password": "Password",
+  "confirmPassword": "Confirm Password",
+  "firstName": "First Name",
+  "lastName": "Last Name",
+  "forgotPassword": "Forgot Password?",
+  "rememberMe": "Remember Me",
+  "signIn": "Sign In",
+  "signUp": "Sign Up",
+  "alreadyHaveAccount": "Already have an account?",
+  "dontHaveAccount": "Don't have an account?",
+
+  "errorGeneral": "An error occurred. Please try again.",
+  "errorNetwork": "Network error. Check your connection.",
+  "errorInvalidEmail": "Please enter a valid email address.",
+  "errorPasswordTooShort": "Password must be at least 6 characters.",
+  "errorPasswordsDontMatch": "Passwords don't match.",
+  "errorEmailAlreadyInUse": "This email is already in use.",
+  "errorUserNotFound": "No user found with this email.",
+  "errorWrongPassword": "Incorrect password.",
+  "errorTooManyRequests": "Too many requests. Please try again later.",
+
+  "successTaskCreated": "Task created successfully!",
+  "successTaskCompleted": "Task completed! Pet is happy!",
+  "successTaskUpdated": "Task updated successfully!",
+  "successTaskDeleted": "Task deleted successfully!",
+  "successFamilyJoined": "Welcome to the family!",
+  "successInviteSent": "Invitation sent successfully!",
+  "successProfileUpdated": "Profile updated successfully!",
+  "successSettingsSaved": "Settings saved successfully!",
+
+  "confirmDeleteTask": "Are you sure you want to delete this task?",
+  "confirmLeaveFamily": "Are you sure you want to leave this family?",
+  "confirmLogout": "Are you sure you want to sign out?",
+  "confirmResetProgress": "This will reset all progress. Are you sure?",
+
+  "tutorialWelcome": "Welcome! Let's show you around.",
+  "tutorialTasks": "This is where you manage family tasks.",
+  "tutorialPet": "Your virtual pet lives here!",
+  "tutorialFamily": "Manage family members in this section.",
+  "tutorialNavigation": "Use these tabs to navigate the app.",
+  "tutorialComplete": "You're all set! Start creating tasks.",
+
+  "achievementFirstTask": "First Task",
+  "achievementTaskMaster": "Task Master",
+  "achievementFamilyBuilder": "Family Builder",
+  "achievementPetLover": "Pet Lover",
+  "achievementStreakChampion": "Streak Champion",
+
+  "loadingTasks": "Loading tasks...",
+  "loadingFamily": "Loading family...",
+  "loadingPet": "Loading pet...",
+  "loadingAnalytics": "Loading analytics...",
+
+  "refreshData": "Pull to refresh",
+  "noInternetConnection": "No internet connection",
+  "retryConnection": "Retry",
+
+  "shareApp": "Share Jhonny",
+  "rateApp": "Rate App",
+  "contactSupport": "Contact Support",
+  "privacyPolicy": "Privacy Policy",
+  "termsOfService": "Terms of Service",
+
+  "today": "Today",
+  "yesterday": "Yesterday",
+  "tomorrow": "Tomorrow",
+  "thisWeek": "This Week",
+  "thisMonth": "This Month",
+  "daysAgo": "{days} days ago",
+  "@daysAgo": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+
+  "pointsCount": "{count, plural, =1{1 point} other{{count} points}}",
+  "@pointsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "tasksCount": "{count, plural, =1{1 task} other{{count} tasks}}",
+  "@tasksCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "familyMembersCount": "{count, plural, =1{1 member} other{{count} members}}",
+  "@familyMembersCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
+} 

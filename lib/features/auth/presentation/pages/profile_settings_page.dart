@@ -336,6 +336,17 @@ class _ProfileSettingsPageState extends ConsumerState<ProfileSettingsPage> {
       title: 'Account Settings',
       child: Column(
         children: [
+          // Language Setting
+          _buildSettingsTile(
+            context,
+            'Language',
+            'Choose your preferred language',
+            Icons.language,
+            onTap: () => _showLanguageDialog(context),
+          ),
+
+          const Divider(height: 1),
+
           // Change Password
           _buildSettingsTile(
             context,
@@ -912,6 +923,48 @@ class _ProfileSettingsPageState extends ConsumerState<ProfileSettingsPage> {
   void _showDeleteAccountDialog() {
     // TODO: Implement delete account dialog
     _showInfoSnackBar('Delete account feature coming soon!');
+  }
+
+  void _showLanguageDialog(BuildContext context) {
+    final languages = [
+      {'code': 'en', 'name': 'English', 'flag': '🇺🇸'},
+      {'code': 'es', 'name': 'Español', 'flag': '🇪🇸'},
+      {'code': 'fr', 'name': 'Français', 'flag': '🇫🇷'},
+    ];
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Choose Language'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: languages.map((language) {
+            return ListTile(
+              leading: Text(
+                language['flag']!,
+                style: const TextStyle(fontSize: 24),
+              ),
+              title: Text(language['name']!),
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Language changed to ${language['name']}'),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              },
+            );
+          }).toList(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
   }
 
   // Utility methods

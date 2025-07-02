@@ -9,6 +9,8 @@ import 'package:jhonny/core/services/theme_service.dart' as theme_service;
 import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jhonny/features/home/presentation/pages/home_page.dart';
 import 'package:jhonny/features/auth/presentation/pages/login_page.dart';
+import 'package:jhonny/features/onboarding/presentation/pages/app_onboarding_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Global services
 final themeService = theme_service.ThemeService();
@@ -194,18 +196,38 @@ class AppWrapper extends ConsumerWidget {
 
     return supabaseState.when(
       data: (supabase) {
-        final authState = ref.watch(authNotifierProvider);
+        return FutureBuilder<bool>(
+          future: _checkOnboardingCompleted(),
+          builder: (context, onboardingSnapshot) {
+            if (onboardingSnapshot.connectionState == ConnectionState.waiting) {
+              return const AppLoadingScreen();
+            }
 
-        // Check if user is authenticated based on authState
-        if (authState.user != null) {
-          return const HomePage();
-        } else {
-          return const LoginPage();
-        }
+            final hasCompletedOnboarding = onboardingSnapshot.data ?? false;
+
+            if (!hasCompletedOnboarding) {
+              return const AppOnboardingPage();
+            }
+
+            final authState = ref.watch(authNotifierProvider);
+
+            // Check if user is authenticated based on authState
+            if (authState.user != null) {
+              return const HomePage();
+            } else {
+              return const LoginPage();
+            }
+          },
+        );
       },
       loading: () => const AppLoadingScreen(),
       error: (error, stack) => AppErrorScreen(error: error.toString()),
     );
+  }
+
+  Future<bool> _checkOnboardingCompleted() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('onboarding_completed') ?? false;
   }
 }
 
