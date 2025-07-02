@@ -45,8 +45,13 @@ class PetState extends Equatable {
 
   // Stat convenience getters
   int get health => petStats['health'] ?? 100;
-  int get happiness => petStats['happiness'] ?? 50;
+  int get happiness => petStats['happiness'] ?? 100;
   int get energy => petStats['energy'] ?? 100;
+  int get hunger => petStats['hunger'] ?? 100;
+  int get emotion => petStats['emotion'] ?? 100;
+
+  // Current mood based on stats
+  PetMood get currentMood => pet?.currentMood ?? PetMood.neutral;
 
   PetState copyWith({
     PetStateStatus? status,

@@ -104,28 +104,48 @@ class SupabasePetRemoteDataSource implements PetRemoteDataSource {
       // Get current pet
       final currentPet = await _getPetById(petId);
 
-      // Calculate new stats
-      final currentHealth = currentPet.stats['health'] ?? 100;
-      final currentHappiness = currentPet.stats['happiness'] ?? 50;
+      // Apply time decay first
+      final petWithDecay = currentPet.toEntity().applyTimeDecay();
 
-      final healthIncrease = 10 + (bonusPoints * 2); // 10 base + bonus
-      final happinessIncrease = 15 + bonusPoints; // 15 base + bonus
+      // Calculate new stats based on new mechanics
+      final currentHunger = petWithDecay.hunger;
+      final currentEnergy = petWithDecay.energy;
+      final currentEmotion = petWithDecay.emotion;
 
-      final newHealth = (currentHealth + healthIncrease).clamp(0, 100);
-      final newHappiness = (currentHappiness + happinessIncrease).clamp(0, 100);
+      // 1 point = 1% hunger increase, energy goes to 100%
+      final hungerIncrease = bonusPoints; // Direct 1:1 mapping
+      final newHunger = (currentHunger + hungerIncrease).clamp(0, 100);
+      const newEnergy = 100; // Energy always goes to 100% when fed
 
-      // Determine mood change
-      final newMood = _calculateMoodFromStats(
-          newHealth, newHappiness, currentPet.stats['energy'] ?? 100);
+      // Improve emotion based on how much hunger was restored
+      final emotionIncrease =
+          (hungerIncrease * 0.5).round(); // Half of hunger increase
+      final newEmotion = (currentEmotion + emotionIncrease).clamp(0, 100);
 
-      final updatedStats = Map<String, int>.from(currentPet.stats);
-      updatedStats['health'] = newHealth;
-      updatedStats['happiness'] = newHappiness;
+      // Keep other stats
+      final newHealth = petWithDecay.health;
+      final newHappiness = petWithDecay.happiness;
 
-      final updatedPet = currentPet.copyWith(
-        lastFedAt: DateTime.now(),
-        mood: newMood.name,
+      final updatedStats = <String, int>{
+        'health': newHealth,
+        'happiness': newHappiness,
+        'energy': newEnergy,
+        'hunger': newHunger,
+        'emotion': newEmotion,
+      };
+
+      // Create updated pet with new mood calculation
+      final updatedPetEntity = petWithDecay.copyWith(
         stats: updatedStats,
+        lastFedAt: DateTime.now(),
+        lastCareAt: DateTime.now(),
+      );
+
+      // Calculate new mood based on updated stats
+      final newMood = updatedPetEntity.currentMood;
+
+      final updatedPet = PetModel.fromEntity(updatedPetEntity).copyWith(
+        mood: newMood.name,
       );
 
       return await updatePet(updatedPet);
@@ -144,7 +164,7 @@ class SupabasePetRemoteDataSource implements PetRemoteDataSource {
 
       // Calculate new stats
       final currentEnergy = currentPet.stats['energy'] ?? 100;
-      final currentHappiness = currentPet.stats['happiness'] ?? 50;
+      final currentHappiness = currentPet.stats['happiness'] ?? 100;
 
       final energyDecrease =
           15 - bonusPoints; // Playing uses energy, bonuses reduce energy cost
@@ -183,7 +203,7 @@ class SupabasePetRemoteDataSource implements PetRemoteDataSource {
 
       // Calculate new stats
       final currentHealth = currentPet.stats['health'] ?? 100;
-      final currentHappiness = currentPet.stats['happiness'] ?? 50;
+      final currentHappiness = currentPet.stats['happiness'] ?? 100;
       final currentEnergy = currentPet.stats['energy'] ?? 100;
 
       final healthIncrease = 25 + (bonusPoints * 3); // Strong health boost

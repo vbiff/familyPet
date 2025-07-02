@@ -4,6 +4,7 @@ import 'package:jhonny/features/family/presentation/providers/family_provider.da
 import 'package:jhonny/features/pet/domain/entities/pet.dart';
 import 'package:jhonny/features/pet/presentation/providers/pet_provider.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
+import 'package:jhonny/features/auth/domain/entities/user.dart';
 
 class VirtualPet extends ConsumerWidget {
   const VirtualPet({super.key});
@@ -12,11 +13,11 @@ class VirtualPet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final petState = ref.watch(petNotifierProvider);
     final familyState = ref.watch(familyNotifierProvider);
-    final petHealthStatus = ref.watch(petHealthStatusProvider);
     final petMoodDisplay = ref.watch(petMoodDisplayProvider);
     final petStageDisplay = ref.watch(petStageDisplayProvider);
     final petAge = ref.watch(petAgeProvider);
     final petEvolutionStatus = ref.watch(petEvolutionStatusProvider);
+    final currentUser = ref.watch(currentUserProvider);
 
     // Load pet data when family is available and valid
     ref.listen(familyNotifierProvider, (previous, next) {
@@ -184,13 +185,14 @@ class VirtualPet extends ConsumerWidget {
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
-                          // Display actual pet image
+                          // Display actual pet image based on mood
                           ClipOval(
                             child: _buildPetImage(
                               context,
                               familyState.family?.petImageUrl,
                               familyState.family?.petStageImages,
                               petState.petStage,
+                              petState.currentMood,
                             ),
                           ),
                           if (petState.isUpdating)
@@ -276,6 +278,36 @@ class VirtualPet extends ConsumerWidget {
                     ),
                     const SizedBox(height: 4),
 
+                    // Show current mood and hunger status
+                    if (petState.currentMood.isHungryState)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                              color: Colors.red.withValues(alpha: 0.3)),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.warning, size: 14, color: Colors.red),
+                            SizedBox(width: 4),
+                            Text(
+                              'Pet needs feeding!',
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    const SizedBox(height: 4),
+
                     Text(
                       petAge,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -359,6 +391,32 @@ class VirtualPet extends ConsumerWidget {
                 Expanded(
                   child: _buildStatCard(
                     context,
+                    icon: Icons.restaurant,
+                    label: 'Hunger',
+                    value: petState.hunger,
+                    color: Colors.green,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStatCard(
+                    context,
+                    icon: Icons.mood,
+                    label: 'Emotion',
+                    value: petState.emotion,
+                    color: Colors.pink,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildStatCard(
+                    context,
                     icon: Icons.school,
                     label: 'Experience',
                     value: petState.petExperience,
@@ -386,11 +444,17 @@ class VirtualPet extends ConsumerWidget {
                   child: _buildActionButton(
                     context,
                     icon: Icons.restaurant,
-                    label: 'Feed',
-                    color: Theme.of(context).colorScheme.primary,
+                    label: petState.hunger < 30
+                        ? 'Feed (${petState.hunger}%)'
+                        : 'Feed',
+                    color: petState.hunger < 30
+                        ? Colors.red
+                        : Theme.of(context).colorScheme.primary,
                     enabled: !petState.isUpdating,
                     onTap: () {
-                      ref.read(petNotifierProvider.notifier).feedPet();
+                      ref
+                          .read(petNotifierProvider.notifier)
+                          .feedPet(bonusPoints: 10);
                     },
                   ),
                 ),
@@ -425,6 +489,24 @@ class VirtualPet extends ConsumerWidget {
                 },
               ),
             ),
+
+            // Temporary reset button to fix happiness
+            const SizedBox(height: 12),
+            if (currentUser?.role == UserRole.parent) ...[
+              SizedBox(
+                width: double.infinity,
+                child: _buildActionButton(
+                  context,
+                  icon: Icons.refresh,
+                  label: 'Reset Stats (Fix Happiness)',
+                  color: Colors.orange,
+                  enabled: !petState.isUpdating,
+                  onTap: () {
+                    ref.read(petNotifierProvider.notifier).resetPetStats();
+                  },
+                ),
+              ),
+            ],
           ], // Close the conditional block for petState.hasPet
         ],
       ),
@@ -494,22 +576,27 @@ class VirtualPet extends ConsumerWidget {
         onTap: enabled ? onTap : null,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 icon,
                 color: enabled ? color : color.withValues(alpha: 0.5),
                 size: 24,
               ),
-              const SizedBox(width: 12),
-              Text(
-                label,
-                style: TextStyle(
-                  color: enabled ? color : color.withValues(alpha: 0.5),
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: enabled ? color : color.withValues(alpha: 0.5),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -524,15 +611,20 @@ class VirtualPet extends ConsumerWidget {
     String? petImageUrl,
     Map<String, String>? petStageImages,
     PetStage stage,
+    PetMood currentMood,
   ) {
-    // Use specific stage image URL if available
-    String? stageImageUrl;
-    if (petStageImages != null) {
-      stageImageUrl = petStageImages[stage.name];
-    }
+    // Try to get mood-based image from Supabase storage first
+    final moodImageUrl = _getMoodImageUrl(currentMood);
 
-    // Prioritize current pet image, then stage image, then fallback to local assets
-    final imageUrl = petImageUrl ?? stageImageUrl;
+    // Use mood-based image if available, otherwise fall back to stage image
+    String? imageUrl;
+    if (moodImageUrl != null) {
+      imageUrl = moodImageUrl;
+    } else if (petStageImages != null) {
+      imageUrl = petStageImages[stage.name];
+    } else {
+      imageUrl = petImageUrl;
+    }
 
     if (imageUrl != null && imageUrl.isNotEmpty) {
       return Image.network(
@@ -586,6 +678,15 @@ class VirtualPet extends ConsumerWidget {
         },
       );
     }
+  }
+
+  String? _getMoodImageUrl(PetMood mood) {
+    // TODO: Replace with your Supabase storage URL
+    const baseUrl =
+        'https://your-supabase-project.supabase.co/storage/v1/object/public/pet-images/';
+
+    // Return the mood-based image URL
+    return baseUrl + mood.imageName;
   }
 
   String _getPetImagePath(PetStage stage) {

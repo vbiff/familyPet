@@ -53,11 +53,14 @@ class SupabasePetRepository implements PetRepository {
         level: 1,
         lastFedAt: now,
         lastPlayedAt: now,
+        lastCareAt: now,
         createdAt: now,
         stats: const {
           'health': 100,
-          'happiness': 50,
+          'happiness': 100,
           'energy': 100,
+          'hunger': 100,
+          'emotion': 100,
         },
       );
 
@@ -171,7 +174,7 @@ class SupabasePetRepository implements PetRepository {
           // Decrease mood over time if not cared for
           if (pet.needsFeeding || pet.needsPlay) {
             final health = pet.stats['health'] ?? 100;
-            final happiness = pet.stats['happiness'] ?? 50;
+            final happiness = pet.stats['happiness'] ?? 100;
             final energy = pet.stats['energy'] ?? 100;
 
             // Reduce stats over time for neglected pets

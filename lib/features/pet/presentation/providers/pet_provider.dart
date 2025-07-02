@@ -13,6 +13,7 @@ import 'package:jhonny/features/pet/domain/usecases/give_medical_care.dart';
 import 'package:jhonny/features/pet/domain/usecases/play_with_pet.dart';
 import 'package:jhonny/features/pet/domain/usecases/create_pet.dart';
 import 'package:jhonny/features/pet/domain/usecases/auto_evolve_pet.dart';
+import 'package:jhonny/features/pet/domain/usecases/update_pet_time_decay.dart';
 import 'package:jhonny/features/pet/presentation/providers/pet_notifier.dart';
 import 'package:jhonny/features/pet/presentation/providers/pet_state.dart';
 
@@ -68,6 +69,11 @@ final autoEvolvePetUseCaseProvider = Provider<AutoEvolvePet>((ref) {
   return AutoEvolvePet(repository);
 });
 
+final updatePetTimeDecayUseCaseProvider = Provider<UpdatePetTimeDecay>((ref) {
+  final repository = ref.watch(petRepositoryProvider);
+  return UpdatePetTimeDecay(repository);
+});
+
 // Logger Provider
 final petLoggerProvider = Provider<Logger>((ref) => Logger());
 
@@ -80,6 +86,7 @@ final petNotifierProvider = StateNotifierProvider<PetNotifier, PetState>((ref) {
   final addExperience = ref.watch(addExperienceUseCaseProvider);
   final createPet = ref.watch(createPetUseCaseProvider);
   final autoEvolvePet = ref.watch(autoEvolvePetUseCaseProvider);
+  final updatePetTimeDecay = ref.watch(updatePetTimeDecayUseCaseProvider);
   final logger = ref.watch(petLoggerProvider);
 
   return PetNotifier(
@@ -90,6 +97,7 @@ final petNotifierProvider = StateNotifierProvider<PetNotifier, PetState>((ref) {
     addExperience,
     createPet,
     autoEvolvePet,
+    updatePetTimeDecay,
     logger,
   );
 });
@@ -125,7 +133,11 @@ final petMoodDisplayProvider = Provider<String>((ref) {
   final petState = ref.watch(petNotifierProvider);
   if (!petState.hasPet) return 'Unknown';
 
-  switch (petState.petMood) {
+  switch (petState.currentMood) {
+    case PetMood.veryVeryHappy:
+      return 'Very Very Happy 🤩';
+    case PetMood.veryHappy:
+      return 'Very Happy 😄';
     case PetMood.happy:
       return 'Happy 😊';
     case PetMood.content:
@@ -136,6 +148,12 @@ final petMoodDisplayProvider = Provider<String>((ref) {
       return 'Sad 😢';
     case PetMood.upset:
       return 'Upset 😡';
+    case PetMood.hungry:
+      return 'Hungry 😋';
+    case PetMood.veryHungry:
+      return 'Very Hungry 🤤';
+    case PetMood.veryVeryHungry:
+      return 'Starving 😵';
   }
 });
 
