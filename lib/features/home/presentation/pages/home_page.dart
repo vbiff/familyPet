@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
+import 'package:jhonny/features/analytics/presentation/pages/family_dashboard_page.dart';
 import 'package:jhonny/features/auth/presentation/pages/login_page.dart';
 import 'package:jhonny/features/auth/presentation/pages/profile_settings_page.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
@@ -13,11 +14,10 @@ import 'package:jhonny/features/home/presentation/providers/home_provider.dart';
 import 'package:jhonny/features/pet/presentation/widgets/virtual_pet.dart';
 import 'package:jhonny/features/pet/presentation/providers/pet_provider.dart';
 import 'package:jhonny/features/task/presentation/widgets/task_list.dart';
+import 'package:jhonny/features/task/presentation/pages/create_task_page.dart';
 import 'package:jhonny/features/task/presentation/providers/task_provider.dart';
 import 'package:jhonny/features/task/presentation/providers/task_state.dart';
 import 'package:jhonny/shared/widgets/widgets.dart';
-import 'package:jhonny/shared/widgets/theme_toggle.dart';
-import 'package:jhonny/main.dart'; // To access themeService
 import 'package:jhonny/shared/widgets/theme_toggle.dart';
 import 'package:jhonny/main.dart'; // To access themeService
 
@@ -217,15 +217,7 @@ class HomePage extends ConsumerWidget {
           );
         }).toList(),
       ),
-      floatingActionButton:
-          _buildFloatingActionButton(context, ref, selectedTab, hasFamily),
     );
-  }
-
-  Widget? _buildFloatingActionButton(
-      BuildContext context, WidgetRef ref, int selectedTab, bool hasFamily) {
-    // No floating action button needed
-    return null;
   }
 
   void _navigateToFamilySetup(BuildContext context) {
@@ -449,6 +441,18 @@ class HomePage extends ConsumerWidget {
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) => const ProfileSettingsPage(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.analytics_outlined),
+              title: const Text('Family Dashboard'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const FamilyDashboardPage(),
                   ),
                 );
               },

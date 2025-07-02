@@ -39,6 +39,8 @@ class TaskDetailPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isUpdating = ref.watch(taskUpdatingProvider);
     final currentTask = _getCurrentTask(ref);
+    final currentUser = ref.watch(currentUserProvider);
+    final isParent = currentUser?.role == UserRole.parent;
 
     return Scaffold(
       appBar: AppBar(
@@ -46,21 +48,23 @@ class TaskDetailPage extends ConsumerWidget {
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         actions: [
-          PopupMenuButton(
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'delete',
-                child: Row(
-                  children: [
-                    Icon(Icons.delete, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text('Delete Task', style: TextStyle(color: Colors.red)),
-                  ],
+          // Only show delete option to parents
+          if (isParent)
+            PopupMenuButton(
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text('Delete Task', style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-            onSelected: (value) => _handleMenuAction(context, ref, value),
-          ),
+              ],
+              onSelected: (value) => _handleMenuAction(context, ref, value),
+            ),
         ],
       ),
       body: SingleChildScrollView(
