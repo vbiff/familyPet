@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jhonny/shared/widgets/animated_interactions.dart';
 
 // Language selection provider
 final selectedLanguageProvider = StateProvider<Locale>((ref) {

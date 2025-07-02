@@ -15,8 +15,8 @@ class UpdatePetTimeDecay {
     }
 
     try {
-      // Get current pet
-      final petResult = await _repository.getPetByOwnerId(params.petId);
+      // Get current pet by ID
+      final petResult = await _repository.getPetById(params.petId);
       return petResult.fold(
         (failure) => left(failure),
         (pet) async {
@@ -29,7 +29,15 @@ class UpdatePetTimeDecay {
 
           // Only update if stats have changed
           if (updatedPet != pet) {
-            return await _repository.updatePet(updatedPet);
+            final updateResult = await _repository.updatePet(updatedPet);
+            return updateResult.fold(
+              (failure) {
+                // If update fails (e.g., pet was deleted), just return the original pet
+                // This prevents cascading errors in the UI
+                return right(pet);
+              },
+              (updated) => right(updated),
+            );
           }
 
           return right(pet);

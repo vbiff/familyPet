@@ -99,6 +99,7 @@ final petNotifierProvider = StateNotifierProvider<PetNotifier, PetState>((ref) {
     autoEvolvePet,
     updatePetTimeDecay,
     logger,
+    ref,
   );
 });
 

@@ -13,6 +13,17 @@ class SupabasePetRepository implements PetRepository {
   SupabasePetRepository(this._remoteDataSource, this._uuid);
 
   @override
+  Future<Either<Failure, Pet?>> getPetById(String petId) async {
+    try {
+      // Use the private _getPetById method from datasource via a public method
+      final petModel = await _remoteDataSource.getPetById(petId);
+      return right(petModel?.toEntity());
+    } catch (e) {
+      return left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, Pet?>> getPetByOwnerId(String ownerId) async {
     try {
       final petModel = await _remoteDataSource.getPetByOwnerId(ownerId);
@@ -159,8 +170,8 @@ class SupabasePetRepository implements PetRepository {
   @override
   Future<Either<Failure, Pet>> updatePetMood(String petId) async {
     try {
-      // Get current pet to check stats and calculate new mood
-      final petResult = await getPetByOwnerId(petId);
+      // Get current pet by ID (not owner ID)
+      final petResult = await getPetById(petId);
       return petResult.fold(
         (failure) => left(failure),
         (pet) async {

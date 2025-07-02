@@ -9,6 +9,7 @@ import 'package:jhonny/features/pet/domain/usecases/create_pet.dart';
 import 'package:jhonny/features/pet/domain/usecases/auto_evolve_pet.dart';
 import 'package:jhonny/features/pet/domain/usecases/update_pet_time_decay.dart';
 import 'package:jhonny/features/pet/presentation/providers/pet_state.dart';
+import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:logger/logger.dart';
 
 class PetNotifier extends StateNotifier<PetState> {
@@ -21,6 +22,7 @@ class PetNotifier extends StateNotifier<PetState> {
   final AutoEvolvePet _autoEvolvePet;
   final UpdatePetTimeDecay _updatePetTimeDecay;
   final Logger _logger;
+  final Ref _ref;
 
   PetNotifier(
     this._getFamilyPet,
@@ -32,6 +34,7 @@ class PetNotifier extends StateNotifier<PetState> {
     this._autoEvolvePet,
     this._updatePetTimeDecay,
     this._logger,
+    this._ref,
   ) : super(const PetState());
 
   /// Load family pet
@@ -71,7 +74,8 @@ class PetNotifier extends StateNotifier<PetState> {
           timeDecayResult.fold(
             (failure) {
               _logger.w('Time decay update failed: ${failure.message}');
-              // Continue with original pet if decay fails
+              // Continue with original pet if decay fails - this is not critical
+              // and shouldn't affect the user experience
             },
             (decayedPet) {
               petWithDecay = decayedPet;
@@ -113,7 +117,8 @@ class PetNotifier extends StateNotifier<PetState> {
             },
           );
         } else {
-          // No pet found
+          // No pet found for family - this is normal and not an error
+          _logger.i('No pet found for family $familyId - this is normal');
           state = state.copyWith(
             status: PetStateStatus.success,
             pet: null,
@@ -134,10 +139,19 @@ class PetNotifier extends StateNotifier<PetState> {
     try {
       _logger.i('Creating pet: $name for family: $familyId');
 
-      // Use the current user's ID as the owner ID
-      // In a real implementation, this should come from the auth state
-      final petOwnerId =
-          ownerId ?? 'current-user-id'; // TODO: Get from auth provider
+      // Get the current user ID from auth provider
+      final currentUser = _ref.read(currentUserProvider);
+      final petOwnerId = ownerId ?? currentUser?.id;
+
+      if (petOwnerId == null) {
+        _logger.e('Cannot create pet: no current user ID available');
+        state = state.copyWith(
+          isUpdating: false,
+          status: PetStateStatus.error,
+          errorMessage: 'User not authenticated',
+        );
+        return;
+      }
 
       final result = await _createPet(CreatePetParams(
         name: name,

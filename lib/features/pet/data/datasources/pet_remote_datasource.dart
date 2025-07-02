@@ -5,6 +5,7 @@ import 'package:jhonny/features/pet/domain/entities/pet.dart';
 import 'package:logger/logger.dart';
 
 abstract class PetRemoteDataSource {
+  Future<PetModel?> getPetById(String petId);
   Future<PetModel?> getPetByOwnerId(String ownerId);
   Future<PetModel?> getFamilyPet(String familyId);
   Future<PetModel> createPet(PetModel pet);
@@ -28,6 +29,20 @@ class SupabasePetRemoteDataSource implements PetRemoteDataSource {
   static final _logger = Logger();
 
   SupabasePetRemoteDataSource(this._client);
+
+  @override
+  Future<PetModel?> getPetById(String petId) async {
+    try {
+      final data =
+          await _client.from(_tableName).select().eq('id', petId).maybeSingle();
+
+      if (data == null) return null;
+      return PetModel.fromJson(data);
+    } catch (e) {
+      _logger.e('Failed to get pet by ID: $e');
+      throw Exception('Failed to get pet: $e');
+    }
+  }
 
   @override
   Future<PetModel?> getPetByOwnerId(String ownerId) async {
@@ -88,9 +103,26 @@ class SupabasePetRemoteDataSource implements PetRemoteDataSource {
           .update(pet.toJson())
           .eq('id', pet.id)
           .select()
-          .single();
+          .maybeSingle();
+
+      if (data == null) {
+        _logger.w(
+            'No pet found for update with id: ${pet.id}. This may be due to RLS policies or the pet may have been deleted.');
+        // Return the original pet model instead of throwing an error
+        // This prevents cascading failures in the UI
+        return pet;
+      }
 
       return PetModel.fromJson(data);
+    } on PostgrestException catch (e) {
+      if (e.code == 'PGRST116' || e.message.contains('0 rows')) {
+        _logger.w(
+            'Pet update blocked by RLS policies or pet not found: ${e.message}');
+        // Return the original pet model to prevent UI errors
+        return pet;
+      }
+      _logger.e('Failed to update pet with Postgrest error: $e');
+      throw Exception('Failed to update pet: $e');
     } catch (e) {
       _logger.e('Failed to update pet: $e');
       throw Exception('Failed to update pet: $e');
@@ -102,7 +134,10 @@ class SupabasePetRemoteDataSource implements PetRemoteDataSource {
       {required String petId, required int bonusPoints}) async {
     try {
       // Get current pet
-      final currentPet = await _getPetById(petId);
+      final currentPet = await getPetById(petId);
+      if (currentPet == null) {
+        throw Exception('Pet not found with id: $petId');
+      }
 
       // Apply time decay first
       final petWithDecay = currentPet.toEntity().applyTimeDecay();
@@ -160,7 +195,10 @@ class SupabasePetRemoteDataSource implements PetRemoteDataSource {
       {required String petId, required int bonusPoints}) async {
     try {
       // Get current pet
-      final currentPet = await _getPetById(petId);
+      final currentPet = await getPetById(petId);
+      if (currentPet == null) {
+        throw Exception('Pet not found with id: $petId');
+      }
 
       // Calculate new stats
       final currentEnergy = currentPet.stats['energy'] ?? 100;
@@ -199,7 +237,10 @@ class SupabasePetRemoteDataSource implements PetRemoteDataSource {
       {required String petId, required int bonusPoints}) async {
     try {
       // Get current pet
-      final currentPet = await _getPetById(petId);
+      final currentPet = await getPetById(petId);
+      if (currentPet == null) {
+        throw Exception('Pet not found with id: $petId');
+      }
 
       // Calculate new stats
       final currentHealth = currentPet.stats['health'] ?? 100;
@@ -239,7 +280,10 @@ class SupabasePetRemoteDataSource implements PetRemoteDataSource {
       {required String petId, required int experiencePoints}) async {
     try {
       // Get current pet
-      final currentPet = await _getPetById(petId);
+      final currentPet = await getPetById(petId);
+      if (currentPet == null) {
+        throw Exception('Pet not found with id: $petId');
+      }
 
       final newExperience = currentPet.experience + experiencePoints;
       final newLevel = _calculateLevel(newExperience);
@@ -262,7 +306,10 @@ class SupabasePetRemoteDataSource implements PetRemoteDataSource {
   Future<PetModel> evolvePet(String petId) async {
     try {
       // Get current pet
-      final currentPet = await _getPetById(petId);
+      final currentPet = await getPetById(petId);
+      if (currentPet == null) {
+        throw Exception('Pet not found with id: $petId');
+      }
 
       // Check if evolution is possible
       final currentStageEnum = PetStage.values.firstWhere(
@@ -327,15 +374,6 @@ class SupabasePetRemoteDataSource implements PetRemoteDataSource {
   }
 
   // Helper methods
-  Future<PetModel> _getPetById(String petId) async {
-    final data =
-        await _client.from(_tableName).select().eq('id', petId).maybeSingle();
-    if (data == null) {
-      throw Exception('Pet not found with id: $petId');
-    }
-    return PetModel.fromJson(data);
-  }
-
   PetMood _calculateMoodFromStats(int health, int happiness, int energy) {
     final average = (health + happiness + energy) / 3;
     if (average >= 80) return PetMood.happy;

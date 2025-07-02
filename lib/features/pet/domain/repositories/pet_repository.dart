@@ -3,6 +3,9 @@ import 'package:jhonny/core/error/failures.dart';
 import 'package:jhonny/features/pet/domain/entities/pet.dart';
 
 abstract class PetRepository {
+  /// Get pet by ID
+  Future<Either<Failure, Pet?>> getPetById(String petId);
+
   /// Get pet by owner ID
   Future<Either<Failure, Pet?>> getPetByOwnerId(String ownerId);
 
