@@ -39,9 +39,9 @@ class NotificationService {
       }
       print('🕐 Timezone initialized');
 
+      // Use the same initialization settings that work in the direct test
       const androidInitializationSettings =
           AndroidInitializationSettings('app_icon');
-
       const darwinInitializationSettings = DarwinInitializationSettings(
         requestAlertPermission: true,
         requestBadgePermission: true,

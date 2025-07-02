@@ -539,10 +539,16 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
 
     final taskState = ref.read(taskNotifierProvider);
     if (taskState.failure == null && mounted) {
+      print('✅ Task creation successful, checking for selectedTask...');
+
       // Task created successfully - try to schedule notifications (but don't fail if they don't work)
       if (taskState.selectedTask != null) {
+        print('✅ Selected task found: ${taskState.selectedTask!.title}');
         // Try notifications in background without blocking UI
         _tryScheduleNotifications(taskState.selectedTask!, user);
+      } else {
+        print('❌ No selectedTask found in taskState');
+        print('📊 TaskState debug: tasks count = ${taskState.tasks.length}');
       }
 
       Navigator.of(context).pop();
@@ -553,26 +559,42 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
         ),
       );
     } else if (taskState.failure != null && mounted) {
+      print('❌ Task creation failed: ${taskState.failure!.message}');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(taskState.failure!.message)),
       );
+    } else {
+      print('⚠️ Task creation completed but mounted = false');
     }
   }
 
   // Background notification scheduling (doesn't block UI)
   void _tryScheduleNotifications(Task task, user) async {
     try {
+      print('🔔 Background: Starting notification scheduling...');
       final notificationService = NotificationService();
+
       await notificationService.initialize();
+      print('🔔 Background: Notification service initialized');
+
       final hasPermissions = await notificationService.requestPermissions();
+      print('🔔 Background: Permissions check: $hasPermissions');
 
       if (hasPermissions) {
+        // Schedule deadline notification
         await notificationService.scheduleTaskDeadlineNotification(task);
+        print('📅 Background: Deadline notification scheduled');
+
+        // Send immediate activity notification
         await notificationService.notifyFamilyActivity(
           'created a new task: "${task.title}"',
           user.displayName.isNotEmpty ? user.displayName : 'Someone',
         );
-        print('✅ Notifications scheduled successfully');
+        print('✅ Background: Activity notification sent');
+
+        print('✅ Background: All notifications scheduled successfully');
+      } else {
+        print('❌ Background: Notification permissions not granted');
       }
     } catch (e) {
       print('❌ Background notification scheduling failed: $e');

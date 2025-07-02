@@ -121,15 +121,19 @@ class HomePage extends ConsumerWidget {
                                   ),
                         ),
                         const SizedBox(height: 2),
-                        Text(
-                          'Manage tasks and care for your virtual pets together',
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onPrimaryContainer
-                                        .withValues(alpha: 0.8),
-                                  ),
+                        FittedBox(
+                          child: Text(
+                            'Manage tasks and care for your virtual pets together',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onPrimaryContainer
+                                      .withValues(alpha: 0.8),
+                                ),
+                          ),
                         ),
                       ],
                     ),
