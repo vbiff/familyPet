@@ -20,8 +20,11 @@ class _FamilyListState extends ConsumerState<FamilyList> {
     final familyState = ref.watch(familyProvider);
     final user = ref.watch(currentUserProvider);
 
-    // Load family data if not loaded yet
-    if (!_hasLoadedFamily && user != null && !familyState.isLoading) {
+    // Load family data if not loaded yet and user has family ID
+    if (!_hasLoadedFamily &&
+        user != null &&
+        user.familyId != null &&
+        !familyState.isLoading) {
       Future.microtask(() {
         ref.read(familyNotifierProvider.notifier).loadCurrentFamily(user.id);
         _hasLoadedFamily = true;

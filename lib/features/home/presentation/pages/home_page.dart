@@ -7,6 +7,7 @@ import 'package:jhonny/features/auth/presentation/pages/profile_settings_page.da
 import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_state.dart';
 import 'package:jhonny/features/family/presentation/pages/family_setup_page.dart';
+import 'package:jhonny/features/family/presentation/pages/family_settings_page.dart';
 import 'package:jhonny/features/family/presentation/providers/family_provider.dart';
 import 'package:jhonny/features/family/presentation/providers/family_state.dart';
 import 'package:jhonny/features/family/presentation/widgets/family_list.dart';
@@ -453,6 +454,18 @@ class HomePage extends ConsumerWidget {
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) => const FamilyDashboardPage(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings_outlined),
+              title: const Text('Family Settings'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const FamilySettingsPage(),
                   ),
                 );
               },

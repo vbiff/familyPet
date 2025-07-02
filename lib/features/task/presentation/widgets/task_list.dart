@@ -295,6 +295,64 @@ class _TaskListState extends ConsumerState<TaskList> {
 
           const SizedBox(height: 8),
 
+          // Category and Difficulty indicators
+          if (task.metadata != null &&
+              (task.metadata!['category'] != null ||
+                  task.metadata!['difficulty'] != null))
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  if (task.metadata!['category'] != null) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        _getCategoryDisplayName(task.metadata!['category']),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onPrimaryContainer,
+                            ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  if (task.metadata!['difficulty'] != null) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: _getDifficultyColor(task.metadata!['difficulty'])
+                            .withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color:
+                              _getDifficultyColor(task.metadata!['difficulty']),
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        _getDifficultyDisplayName(task.metadata!['difficulty']),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: _getDifficultyColor(
+                                  task.metadata!['difficulty']),
+                            ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
           Row(
             children: [
               Icon(
@@ -615,5 +673,45 @@ class _TaskListState extends ConsumerState<TaskList> {
         ],
       ),
     );
+  }
+
+  String _getCategoryDisplayName(String? categoryName) {
+    if (categoryName == null) return '';
+    try {
+      final category =
+          TaskCategory.values.firstWhere((c) => c.name == categoryName);
+      return category.displayName;
+    } catch (e) {
+      return categoryName;
+    }
+  }
+
+  String _getDifficultyDisplayName(String? difficultyName) {
+    if (difficultyName == null) return '';
+    try {
+      final difficulty =
+          TaskDifficulty.values.firstWhere((d) => d.name == difficultyName);
+      return difficulty.displayName;
+    } catch (e) {
+      return difficultyName;
+    }
+  }
+
+  Color _getDifficultyColor(String? difficultyName) {
+    if (difficultyName == null) return Colors.grey;
+    try {
+      final difficulty =
+          TaskDifficulty.values.firstWhere((d) => d.name == difficultyName);
+      switch (difficulty) {
+        case TaskDifficulty.easy:
+          return Colors.green;
+        case TaskDifficulty.medium:
+          return Colors.orange;
+        case TaskDifficulty.hard:
+          return Colors.red;
+      }
+    } catch (e) {
+      return Colors.grey;
+    }
   }
 }

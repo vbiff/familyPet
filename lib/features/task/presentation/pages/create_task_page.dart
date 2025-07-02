@@ -25,6 +25,9 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
 
   DateTime _dueDate = DateTime.now().add(const Duration(days: 1));
   TaskFrequency _frequency = TaskFrequency.once;
+  TaskCategory _category = TaskCategory.other;
+  TaskDifficulty _difficulty = TaskDifficulty.medium;
+  List<String> _selectedTags = [];
   String? _assignedTo;
 
   @override
@@ -75,6 +78,12 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
                         _buildSchedulingSection(),
                         const SizedBox(height: 24),
                         _buildPointsSection(),
+                        const SizedBox(height: 24),
+                        _buildCategorySection(),
+                        const SizedBox(height: 24),
+                        _buildDifficultySection(),
+                        const SizedBox(height: 24),
+                        _buildTagsSection(),
                         const SizedBox(height: 32),
                         _buildActionButtons(isCreating),
                         const SizedBox(height: 16), // Extra bottom padding
@@ -333,6 +342,173 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
     );
   }
 
+  Widget _buildCategorySection() {
+    return EnhancedCard.elevated(
+      title: 'Category',
+      child: Column(
+        children: [
+          DropdownButtonFormField<TaskCategory>(
+            value: _category,
+            decoration: const InputDecoration(
+              labelText: 'Category',
+              border: OutlineInputBorder(),
+            ),
+            isExpanded: true,
+            items: TaskCategory.values
+                .map<DropdownMenuItem<TaskCategory>>((category) {
+              return DropdownMenuItem<TaskCategory>(
+                value: category,
+                child: Row(
+                  children: [
+                    Text(category.icon, style: const TextStyle(fontSize: 18)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        category.displayName,
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+            onChanged: (value) => setState(() {
+              _category = value!;
+            }),
+            validator: (value) {
+              if (value == null) {
+                return 'Please select a category';
+              }
+              return null;
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDifficultySection() {
+    return EnhancedCard.elevated(
+      title: 'Difficulty',
+      child: Column(
+        children: [
+          DropdownButtonFormField<TaskDifficulty>(
+            value: _difficulty,
+            decoration: const InputDecoration(
+              labelText: 'Difficulty',
+              border: OutlineInputBorder(),
+            ),
+            isExpanded: true,
+            items: TaskDifficulty.values
+                .map<DropdownMenuItem<TaskDifficulty>>((difficulty) {
+              return DropdownMenuItem<TaskDifficulty>(
+                value: difficulty,
+                child: Row(
+                  children: [
+                    Icon(
+                      difficulty == TaskDifficulty.easy
+                          ? Icons.sentiment_satisfied
+                          : difficulty == TaskDifficulty.medium
+                              ? Icons.sentiment_neutral
+                              : Icons.sentiment_very_dissatisfied,
+                      color: difficulty == TaskDifficulty.easy
+                          ? Colors.green
+                          : difficulty == TaskDifficulty.medium
+                              ? Colors.orange
+                              : Colors.red,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        difficulty.displayName,
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+            onChanged: (value) => setState(() {
+              _difficulty = value!;
+            }),
+            validator: (value) {
+              if (value == null) {
+                return 'Please select a difficulty';
+              }
+              return null;
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTagsSection() {
+    final commonTags = [
+      'urgent',
+      'fun',
+      'outdoor',
+      'indoor',
+      'study',
+      'chore',
+      'creative',
+      'social'
+    ];
+
+    return EnhancedCard.elevated(
+      title: 'Tags (Optional)',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          EnhancedInput(
+            label: 'Custom Tags',
+            placeholder: 'Enter tags separated by commas',
+            controller: TextEditingController(text: _selectedTags.join(', ')),
+            onChanged: (value) {
+              setState(() {
+                _selectedTags = value
+                    .split(',')
+                    .map((e) => e.trim())
+                    .where((e) => e.isNotEmpty)
+                    .toList();
+              });
+            },
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Quick Tags:',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: commonTags.map((tag) {
+              final isSelected = _selectedTags.contains(tag);
+              return FilterChip(
+                label: Text(tag),
+                selected: isSelected,
+                onSelected: (selected) {
+                  setState(() {
+                    if (selected) {
+                      _selectedTags.add(tag);
+                    } else {
+                      _selectedTags.remove(tag);
+                    }
+                  });
+                },
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildActionButtons(bool isCreating) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -527,15 +703,20 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
     }
 
     await ref.read(taskNotifierProvider.notifier).createNewTask(
-          title: _titleController.text.trim(),
-          description: _descriptionController.text.trim(),
-          points: int.parse(_pointsController.text),
-          assignedTo: _assignedTo!,
-          createdBy: user!.id,
-          dueDate: _dueDate,
-          frequency: _frequency,
-          familyId: user.familyId!,
-        );
+      title: _titleController.text.trim(),
+      description: _descriptionController.text.trim(),
+      points: int.parse(_pointsController.text),
+      assignedTo: _assignedTo!,
+      createdBy: user!.id,
+      dueDate: _dueDate,
+      frequency: _frequency,
+      familyId: user.familyId!,
+      metadata: {
+        'category': _category.name,
+        'difficulty': _difficulty.name,
+        'tags': _selectedTags,
+      },
+    );
 
     final taskState = ref.read(taskNotifierProvider);
     if (taskState.failure == null && mounted) {

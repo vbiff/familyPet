@@ -23,11 +23,13 @@ class _FamilySettingsPageState extends ConsumerState<FamilySettingsPage> {
   @override
   void initState() {
     super.initState();
-    // Load family members when page opens
-    final family = ref.read(familyProvider).family;
-    if (family != null) {
-      ref.read(familyNotifierProvider.notifier).loadFamilyMembers(family.id);
-    }
+    // Load family members after the widget tree is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final family = ref.read(familyProvider).family;
+      if (family != null) {
+        ref.read(familyNotifierProvider.notifier).loadFamilyMembers(family.id);
+      }
+    });
   }
 
   @override
@@ -221,14 +223,16 @@ class _FamilySettingsPageState extends ConsumerState<FamilySettingsPage> {
                   text: 'Copy Code',
                   onPressed: () => _copyInviteCode(family.inviteCode),
                   leadingIcon: Icons.copy,
+                  size: EnhancedButtonSize.small,
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Expanded(
                 child: EnhancedButton.outline(
-                  text: 'Generate New',
+                  text: 'Generate',
                   onPressed: () => _generateNewInviteCode(family),
                   leadingIcon: Icons.refresh,
+                  size: EnhancedButtonSize.small,
                 ),
               ),
             ],
