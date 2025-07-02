@@ -21,6 +21,9 @@ import 'package:jhonny/features/task/presentation/providers/task_state.dart';
 import 'package:jhonny/shared/widgets/widgets.dart';
 import 'package:jhonny/shared/widgets/theme_toggle.dart';
 import 'package:jhonny/main.dart'; // To access themeService
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'dart:io';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -473,9 +476,10 @@ class HomePage extends ConsumerWidget {
             ListTile(
               leading: const Icon(Icons.notifications_outlined),
               title: const Text('Notifications'),
+              subtitle: const Text('Manage app notification settings'),
               onTap: () {
                 Navigator.pop(context);
-                // TODO: Navigate to notifications settings
+                _openNotificationSettings(context);
               },
             ),
             ListTile(
@@ -508,5 +512,92 @@ class HomePage extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  void _openNotificationSettings(BuildContext context) async {
+    // Store the scaffold messenger reference before async operations
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final theme = Theme.of(context);
+
+    try {
+      // First, show a dialog explaining what will happen
+      final shouldOpen = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Notification Settings'),
+          content: const Text(
+            'This will open your phone\'s notification settings for Jhonny. '
+            'You can enable or disable notifications, set notification sounds, '
+            'and customize notification preferences.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Open Settings'),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldOpen == true) {
+        // Open the notification settings for this app
+        await _openPlatformNotificationSettings();
+      }
+    } catch (e) {
+      // If opening notification settings fails, show an error
+      // Use the stored scaffold messenger reference
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('Could not open notification settings: $e'),
+          backgroundColor: theme.colorScheme.error,
+        ),
+      );
+    }
+  }
+
+  Future<void> _openPlatformNotificationSettings() async {
+    try {
+      if (Platform.isIOS) {
+        // For iOS, open the app's notification settings in Settings app
+        final url = Uri.parse('app-settings:');
+        if (await canLaunchUrl(url)) {
+          await launchUrl(url, mode: LaunchMode.externalApplication);
+        } else {
+          // Fallback to general Settings app
+          final settingsUrl = Uri.parse('app-settings:root=NOTIFICATIONS_ID');
+          if (await canLaunchUrl(settingsUrl)) {
+            await launchUrl(settingsUrl, mode: LaunchMode.externalApplication);
+          } else {
+            throw Exception('Could not open iOS settings');
+          }
+        }
+      } else if (Platform.isAndroid) {
+        // For Android, open the app's notification settings
+        const packageName = 'com.example.jhonny';
+        final url = Uri.parse(
+            'android.settings.APP_NOTIFICATION_SETTINGS?package=$packageName');
+
+        if (await canLaunchUrl(url)) {
+          await launchUrl(url, mode: LaunchMode.externalApplication);
+        } else {
+          // Fallback to general notification settings
+          final fallbackUrl =
+              Uri.parse('android.settings.NOTIFICATION_SETTINGS');
+          if (await canLaunchUrl(fallbackUrl)) {
+            await launchUrl(fallbackUrl, mode: LaunchMode.externalApplication);
+          } else {
+            throw Exception('Could not open Android settings');
+          }
+        }
+      } else {
+        throw Exception('Platform not supported');
+      }
+    } catch (e) {
+      rethrow;
+    }
   }
 }
