@@ -454,7 +454,7 @@ class QuickStatsSection extends StatelessWidget {
         final taskValue =
             hasFamily && user?.familyId != null ? '$userPendingTasks' : '--';
         final taskSubtitle =
-            hasFamily && user?.familyId != null ? 'Your Tasks' : 'Setup Needed';
+            hasFamily && user?.familyId != null ? 'Tasks' : 'Setup Needed';
 
         // Calculate pet stats
         final pet = petState.pet;
@@ -469,8 +469,12 @@ class QuickStatsSection extends StatelessWidget {
             : 'No Pet';
 
         // Calculate completed tasks
-        final completedTasks = ref.watch(completedTasksProvider).length;
-        final familyValue = hasFamily ? '$completedTasks' : '0';
+        final userId = ref.watch(currentUserProvider)?.id;
+        final completedTasks = ref
+            .watch(completedTasksProvider)
+            .where((task) => task.assignedTo == userId)
+            .length;
+        final numberOfCompletedTasks = hasFamily ? '$completedTasks' : '0';
 
         return EnhancedCard.elevated(
           child: Padding(
@@ -511,8 +515,8 @@ class QuickStatsSection extends StatelessWidget {
                   child: StatItem(
                     icon: Icons.check_circle_outline,
                     label: 'Completed',
-                    value: familyValue,
-                    subtitle: 'Tasks Done',
+                    value: numberOfCompletedTasks,
+                    subtitle: 'Completed',
                     color: Theme.of(context).colorScheme.secondary,
                   ),
                 ),

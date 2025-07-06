@@ -12,23 +12,7 @@ import 'package:jhonny/features/task/presentation/providers/task_state.dart';
 import 'package:jhonny/shared/widgets/widgets.dart';
 import 'package:jhonny/features/family/presentation/pages/family_setup_page.dart';
 
-enum _TaskFilterType { person, status }
-
-class _StatusFilterDialog extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Filter by Status'),
-      content: const Text('Status filter dialog - TODO: Implement'),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-      ],
-    );
-  }
-}
+enum _TaskFilterType { person, date }
 
 class TaskList extends ConsumerStatefulWidget {
   const TaskList({super.key});
@@ -39,6 +23,8 @@ class TaskList extends ConsumerStatefulWidget {
 
 class _TaskListState extends ConsumerState<TaskList> {
   bool _isMyTasks = false;
+  bool _isOverdue = false;
+  List<Task> _sortedTasks = [];
 
   @override
   void initState() {
@@ -102,17 +88,10 @@ class _TaskListState extends ConsumerState<TaskList> {
                           _isMyTasks = !_isMyTasks;
                         });
                         break;
-
-                      case _TaskFilterType.status:
-                        final selectedStatus = await showDialog<TaskStatus>(
-                          context: context,
-                          builder: (context) => _StatusFilterDialog(),
-                        );
-                        if (selectedStatus != null) {
-                          ref
-                              .read(taskNotifierProvider.notifier)
-                              .filterByStatus(selectedStatus);
-                        }
+                      case _TaskFilterType.date:
+                        setState(() {
+                          _isOverdue = !_isOverdue;
+                        });
                         break;
                     }
                   },
@@ -124,11 +103,11 @@ class _TaskListState extends ConsumerState<TaskList> {
                         title: Text(_isMyTasks ? 'All tasks' : 'My tasks'),
                       ),
                     ),
-                    const PopupMenuItem(
-                      value: _TaskFilterType.status,
+                    PopupMenuItem(
+                      value: _TaskFilterType.date,
                       child: ListTile(
-                        leading: Icon(Icons.check_circle_outline),
-                        title: Text('By Status'),
+                        leading: const Icon(Icons.event),
+                        title: Text(_isOverdue ? 'By date' : 'By urgency'),
                       ),
                     ),
                   ],
@@ -248,210 +227,37 @@ class _TaskListState extends ConsumerState<TaskList> {
       displayTasks = tasks.where((task) => task.assignedTo == user.id).toList();
     }
     // Sort tasks by urgency: overdue first, then soonest due date
-    final sortedTasks = List<Task>.from(displayTasks)
-      ..sort((a, b) {
-        if (a.isOverdue && !b.isOverdue) return -1;
-        if (!a.isOverdue && b.isOverdue) return 1;
-        return a.dueDate.compareTo(b.dueDate);
-      });
+    if (_isOverdue) {
+      _sortedTasks = List<Task>.from(displayTasks)
+        ..sort((a, b) {
+          if (a.isOverdue && !b.isOverdue) return -1;
+          if (!a.isOverdue && b.isOverdue) return 1;
+          return a.dueDate.compareTo(b.dueDate);
+        });
+    } else {
+      _sortedTasks = List<Task>.from(displayTasks)
+        ..sort((a, b) => b.createdAt.compareTo(a.dueDate));
+    }
 
     return ListView.builder(
-      itemCount: sortedTasks.length,
+      itemCount: _sortedTasks.length,
       itemBuilder: (context, index) {
-        final task = sortedTasks[index];
-        return _buildTaskCard(context, task);
+        final task = _sortedTasks[index];
+        return TaskCard(
+          task: task,
+          user: user,
+          onTaskTap: onTaskTap,
+          buildQuickActions: _buildQuickActions,
+          getTaskDisplayColor: _getTaskDisplayColor,
+          getTaskDisplayIcon: _getTaskDisplayIcon,
+          getTaskDisplayText: _getTaskDisplayText,
+          getCategoryDisplayName: _getCategoryDisplayName,
+          getDifficultyColor: _getDifficultyColor,
+          getDifficultyDisplayName: _getDifficultyDisplayName,
+          getAssignedUserName: _getAssignedUserName,
+          formatDueDate: formatDueDate,
+        );
       },
-    );
-  }
-
-  Widget _buildTaskCard(BuildContext context, Task task) {
-    return EnhancedCard.outlined(
-      onTap: () => onTaskTap(task),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header with status and points
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: _getTaskDisplayColor(context, task)
-                      .withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  _getTaskDisplayIcon(task),
-                  color: _getTaskDisplayColor(context, task),
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      task.title,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            decoration: task.status.isCompleted
-                                ? TextDecoration.lineThrough
-                                : null,
-                          ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      task.description,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _getTaskDisplayColor(context, task)
-                      .withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  _getTaskDisplayText(task),
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: _getTaskDisplayColor(context, task),
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 12),
-
-          // Task details
-          Row(
-            children: [
-              Icon(
-                Icons.schedule,
-                size: 16,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                formatDueDate(task.dueDate),
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: task.isOverdue
-                          ? Theme.of(context).colorScheme.error
-                          : Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-              ),
-              const Spacer(),
-              const Icon(
-                Icons.stars,
-                size: 16,
-                color: Colors.amber,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '${task.points} pts',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.amber[700],
-                    ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 8),
-
-          // Category and Difficulty indicators
-          if (task.metadata != null &&
-              (task.metadata!['category'] != null ||
-                  task.metadata!['difficulty'] != null))
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: [
-                  if (task.metadata!['category'] != null) ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        _getCategoryDisplayName(task.metadata!['category']),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onPrimaryContainer,
-                            ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                  if (task.metadata!['difficulty'] != null) ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: _getDifficultyColor(task.metadata!['difficulty'])
-                            .withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color:
-                              _getDifficultyColor(task.metadata!['difficulty']),
-                          width: 1,
-                        ),
-                      ),
-                      child: Text(
-                        _getDifficultyDisplayName(task.metadata!['difficulty']),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: _getDifficultyColor(
-                                  task.metadata!['difficulty']),
-                            ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-
-          Row(
-            children: [
-              Icon(
-                Icons.person,
-                size: 16,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                'Assigned to: ${_getAssignedUserName(task.assignedTo)}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-              ),
-            ],
-          ),
-
-          // Quick Action Buttons
-          if (!task.isVerifiedByParent) ...[
-            const SizedBox(height: 16),
-            _buildQuickActions(context, task),
-          ],
-        ],
-      ),
     );
   }
 
@@ -788,5 +594,238 @@ class _TaskListState extends ConsumerState<TaskList> {
     } catch (e) {
       return Colors.grey;
     }
+  }
+}
+
+class TaskCard extends StatelessWidget {
+  final Task task;
+  final User? user;
+  final void Function(Task) onTaskTap;
+  final Widget Function(BuildContext, Task) buildQuickActions;
+  final Color Function(BuildContext, Task) getTaskDisplayColor;
+  final IconData Function(Task) getTaskDisplayIcon;
+  final String Function(Task) getTaskDisplayText;
+  final String Function(String?) getCategoryDisplayName;
+  final Color Function(String?) getDifficultyColor;
+  final String Function(String?) getDifficultyDisplayName;
+  final String Function(String) getAssignedUserName;
+  final String Function(DateTime) formatDueDate;
+
+  const TaskCard({
+    super.key,
+    required this.task,
+    required this.user,
+    required this.onTaskTap,
+    required this.buildQuickActions,
+    required this.getTaskDisplayColor,
+    required this.getTaskDisplayIcon,
+    required this.getTaskDisplayText,
+    required this.getCategoryDisplayName,
+    required this.getDifficultyColor,
+    required this.getDifficultyDisplayName,
+    required this.getAssignedUserName,
+    required this.formatDueDate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return EnhancedCard.outlined(
+      backgroundColor: task.assignedTo == user?.id
+          ? Colors.transparent
+          : const Color.fromARGB(45, 60, 60, 60),
+      onTap: () => onTaskTap(task),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with status and points
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color:
+                      getTaskDisplayColor(context, task).withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  getTaskDisplayIcon(task),
+                  color: getTaskDisplayColor(context, task),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      task.title,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            decoration: task.status.isCompleted
+                                ? TextDecoration.lineThrough
+                                : null,
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      task.description,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color:
+                      getTaskDisplayColor(context, task).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  getTaskDisplayText(task),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: getTaskDisplayColor(context, task),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          // Task details
+          Row(
+            children: [
+              Icon(
+                Icons.schedule,
+                size: 16,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                formatDueDate(task.dueDate),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: task.isOverdue
+                          ? Theme.of(context).colorScheme.error
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+              const Spacer(),
+              const Icon(
+                Icons.stars,
+                size: 16,
+                color: Colors.amber,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '${task.points} pts',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.amber[700],
+                    ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 8),
+
+          // Category and Difficulty indicators
+          if (task.metadata != null &&
+              (task.metadata!['category'] != null ||
+                  task.metadata!['difficulty'] != null))
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  if (task.metadata!['category'] != null) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        getCategoryDisplayName(task.metadata!['category']),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onPrimaryContainer,
+                            ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  if (task.metadata!['difficulty'] != null) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: getDifficultyColor(task.metadata!['difficulty'])
+                            .withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color:
+                              getDifficultyColor(task.metadata!['difficulty']),
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        getDifficultyDisplayName(task.metadata!['difficulty']),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: getDifficultyColor(
+                                  task.metadata!['difficulty']),
+                            ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 12,
+                backgroundColor: Theme.of(context)
+                    .colorScheme
+                    .primary
+                    .withValues(alpha: 0.15),
+                child: Icon(
+                  Icons.person_outline,
+                  size: 12,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'Assigned to: ${getAssignedUserName(task.assignedTo)}',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+            ],
+          ),
+
+          // Quick Action Buttons
+          if (!task.isVerifiedByParent) ...[
+            const SizedBox(height: 16),
+            buildQuickActions(context, task),
+          ],
+        ],
+      ),
+    );
   }
 }
