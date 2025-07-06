@@ -12,6 +12,24 @@ import 'package:jhonny/features/task/presentation/providers/task_state.dart';
 import 'package:jhonny/shared/widgets/widgets.dart';
 import 'package:jhonny/features/family/presentation/pages/family_setup_page.dart';
 
+enum _TaskFilterType { person, status }
+
+class _StatusFilterDialog extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Filter by Status'),
+      content: const Text('Status filter dialog - TODO: Implement'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+      ],
+    );
+  }
+}
+
 class TaskList extends ConsumerStatefulWidget {
   const TaskList({super.key});
 
@@ -20,6 +38,8 @@ class TaskList extends ConsumerStatefulWidget {
 }
 
 class _TaskListState extends ConsumerState<TaskList> {
+  bool _isMyTasks = false;
+
   @override
   void initState() {
     super.initState();
@@ -42,7 +62,7 @@ class _TaskListState extends ConsumerState<TaskList> {
   @override
   Widget build(BuildContext context) {
     final taskState = ref.watch(taskNotifierProvider);
-    final tasks = taskState.tasks;
+    List<Task> tasks = taskState.tasks;
     final user = ref.watch(currentUserProvider);
 
     // Show family setup message if user doesn't have a family
@@ -64,13 +84,55 @@ class _TaskListState extends ConsumerState<TaskList> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Today\'s Tasks',
+              'Tasks',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
             ),
             Row(
               children: [
+                // Filter button with popup menu for person, deadline, and status
+                PopupMenuButton<_TaskFilterType>(
+                  icon: const Icon(Icons.filter_list),
+                  tooltip: 'Filter Tasks',
+                  onSelected: (filterType) async {
+                    switch (filterType) {
+                      case _TaskFilterType.person:
+                        setState(() {
+                          _isMyTasks = !_isMyTasks;
+                        });
+                        break;
+
+                      case _TaskFilterType.status:
+                        final selectedStatus = await showDialog<TaskStatus>(
+                          context: context,
+                          builder: (context) => _StatusFilterDialog(),
+                        );
+                        if (selectedStatus != null) {
+                          ref
+                              .read(taskNotifierProvider.notifier)
+                              .filterByStatus(selectedStatus);
+                        }
+                        break;
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: _TaskFilterType.person,
+                      child: ListTile(
+                        leading: const Icon(Icons.person_outline),
+                        title: Text(_isMyTasks ? 'All tasks' : 'My tasks'),
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: _TaskFilterType.status,
+                      child: ListTile(
+                        leading: Icon(Icons.check_circle_outline),
+                        title: Text('By Status'),
+                      ),
+                    ),
+                  ],
+                ),
                 EnhancedButton.ghost(
                   leadingIcon: Icons.add,
                   text: 'Create',
@@ -180,10 +242,23 @@ class _TaskListState extends ConsumerState<TaskList> {
       );
     }
 
+    final user = ref.read(currentUserProvider);
+    List<Task> displayTasks = tasks;
+    if (_isMyTasks && user != null) {
+      displayTasks = tasks.where((task) => task.assignedTo == user.id).toList();
+    }
+    // Sort tasks by urgency: overdue first, then soonest due date
+    final sortedTasks = List<Task>.from(displayTasks)
+      ..sort((a, b) {
+        if (a.isOverdue && !b.isOverdue) return -1;
+        if (!a.isOverdue && b.isOverdue) return 1;
+        return a.dueDate.compareTo(b.dueDate);
+      });
+
     return ListView.builder(
-      itemCount: tasks.length,
+      itemCount: sortedTasks.length,
       itemBuilder: (context, index) {
-        final task = tasks[index];
+        final task = sortedTasks[index];
         return _buildTaskCard(context, task);
       },
     );

@@ -15,13 +15,11 @@ import 'package:jhonny/features/home/presentation/providers/home_provider.dart';
 import 'package:jhonny/features/pet/presentation/widgets/virtual_pet.dart';
 import 'package:jhonny/features/pet/presentation/providers/pet_provider.dart';
 import 'package:jhonny/features/task/presentation/widgets/task_list.dart';
-import 'package:jhonny/features/task/presentation/pages/create_task_page.dart';
 import 'package:jhonny/features/task/presentation/providers/task_provider.dart';
 import 'package:jhonny/features/task/presentation/providers/task_state.dart';
 import 'package:jhonny/shared/widgets/widgets.dart';
 import 'package:jhonny/shared/widgets/theme_toggle.dart';
 import 'package:jhonny/main.dart'; // To access themeService
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 
@@ -33,7 +31,6 @@ class HomePage extends ConsumerWidget {
     final user = ref.watch(currentUserProvider);
     final authState = ref.watch(authNotifierProvider);
     final selectedTab = ref.watch(selectedTabProvider);
-    final hasFamily = ref.watch(hasFamilyProvider);
     final familyState = ref.watch(familyProvider);
 
     // Load family data when user is authenticated and available
@@ -86,78 +83,24 @@ class HomePage extends ConsumerWidget {
     });
 
     return Scaffold(
+      appBar: AppBar(
+        title: Text(_getGreeting(user?.displayName ?? 'User')),
+        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+        foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+        actions: [
+          CompactThemeToggle(
+            themeService: themeService,
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.account_circle_outlined),
+            onPressed: () => _showProfileMenu(context, ref),
+            tooltip: 'Profile',
+          ),
+        ],
+      ),
       body: CustomScrollView(
         slivers: [
-          SliverAppBar.large(
-            title: Text(_getGreeting(user?.displayName ?? 'User')),
-            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-            foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-            expandedHeight: 140,
-            floating: true,
-            pinned: true,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Theme.of(context).colorScheme.primaryContainer,
-                      Theme.of(context).colorScheme.secondaryContainer,
-                    ],
-                  ),
-                ),
-                child: SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 60, 16, 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Spacer(),
-                        Text(
-                          'Welcome to FamilyPet',
-                          style:
-                              Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onPrimaryContainer,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                        ),
-                        const SizedBox(height: 2),
-                        FittedBox(
-                          child: Text(
-                            'Manage tasks and care for your virtual pets together',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onPrimaryContainer
-                                      .withValues(alpha: 0.8),
-                                ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            actions: [
-              CompactThemeToggle(
-                themeService: themeService,
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: const Icon(Icons.account_circle_outlined),
-                onPressed: () => _showProfileMenu(context, ref),
-                tooltip: 'Profile',
-              ),
-            ],
-          ),
-
           // Error banner if needed
           if (authState.status == AuthStatus.error && authState.failure != null)
             SliverToBoxAdapter(
@@ -189,12 +132,11 @@ class HomePage extends ConsumerWidget {
                 ),
               ),
             ),
-
           // Quick stats section
-          SliverToBoxAdapter(
+          const SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-              child: _buildQuickStatsSection(context, ref),
+              padding: EdgeInsets.fromLTRB(16, 8, 16, 24),
+              child: QuickStatsSection(),
             ),
           ),
 
@@ -202,7 +144,10 @@ class HomePage extends ConsumerWidget {
           SliverFillRemaining(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _buildTabContent(selectedTab),
+              child: TabContentSwitcher(
+                selectedTab: selectedTab,
+                getTabWidget: _getTabWidget,
+              ),
             ),
           ),
         ],
@@ -224,180 +169,23 @@ class HomePage extends ConsumerWidget {
     );
   }
 
-  void _navigateToFamilySetup(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const FamilySetupPage(),
-      ),
-    );
-  }
-
   String _getGreeting(String name) {
     final hour = DateTime.now().hour;
     String greeting;
 
-    if (hour < 12) {
+    if (hour < 5) {
+      greeting = 'Good night';
+    } else if (hour < 12) {
       greeting = 'Good morning';
     } else if (hour < 17) {
       greeting = 'Good afternoon';
-    } else {
+    } else if (hour < 24) {
       greeting = 'Good evening';
+    } else {
+      greeting = 'Welcome';
     }
 
     return '$greeting, ${name.split(' ').first}!';
-  }
-
-  Widget _buildQuickStatsSection(BuildContext context, WidgetRef ref) {
-    final familyMembers = ref.watch(familyMembersProvider);
-    final hasFamily = ref.watch(hasFamilyProvider);
-    final pendingTasks = ref.watch(pendingTasksProvider);
-    final petState = ref.watch(petNotifierProvider);
-
-    // Calculate task stats based on family status
-    final user = ref.watch(currentUserProvider);
-    final pendingCount =
-        hasFamily && user?.familyId != null ? pendingTasks.length : 0;
-    final taskValue =
-        hasFamily && user?.familyId != null ? '$pendingCount' : '--';
-    final taskSubtitle =
-        hasFamily && user?.familyId != null ? 'Pending' : 'Setup Needed';
-
-    // Calculate pet stats
-    final pet = petState.pet;
-    final petHealth = pet?.stats['health'] ?? 0;
-    final petHealthValue = pet != null ? '$petHealth%' : '--';
-    final petHealthSubtitle = pet != null
-        ? (petHealth >= 80
-            ? 'Happy'
-            : petHealth >= 50
-                ? 'OK'
-                : 'Needs Care')
-        : 'No Pet';
-
-    return EnhancedCard.elevated(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          children: [
-            Expanded(
-              child: _buildStatItem(
-                context,
-                icon: Icons.task_alt,
-                label: 'Tasks',
-                value: taskValue,
-                subtitle: taskSubtitle,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-            Container(
-              width: 1,
-              height: 40,
-              color: Theme.of(context).dividerColor,
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-            ),
-            Expanded(
-              child: _buildStatItem(
-                context,
-                icon: Icons.pets,
-                label: 'Pet Health',
-                value: petHealthValue,
-                subtitle: petHealthSubtitle,
-                color: Theme.of(context).colorScheme.tertiary,
-              ),
-            ),
-            Container(
-              width: 1,
-              height: 40,
-              color: Theme.of(context).dividerColor,
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-            ),
-            Expanded(
-              child: _buildStatItem(
-                context,
-                icon: Icons.family_restroom,
-                label: 'Family',
-                value: hasFamily ? '${familyMembers.length}' : '0',
-                subtitle: 'Members',
-                color: Theme.of(context).colorScheme.secondary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatItem(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required String value,
-    required String subtitle,
-    required Color color,
-  }) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            icon,
-            color: color,
-            size: 24,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-        ),
-        Text(
-          subtitle,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTabContent(int selectedTab) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 300),
-      transitionBuilder: (child, animation) {
-        return FadeTransition(
-          opacity: animation,
-          child: SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(0.1, 0),
-              end: Offset.zero,
-            ).animate(animation),
-            child: child,
-          ),
-        );
-      },
-      child: Container(
-        key: ValueKey(selectedTab),
-        child: _getTabWidget(selectedTab),
-      ),
-    );
-  }
-
-  Widget _getTabWidget(int index) {
-    switch (HomeTab.values[index]) {
-      case HomeTab.tasks:
-        return const TaskList();
-      case HomeTab.pet:
-        return const VirtualPet();
-      case HomeTab.family:
-        return const FamilyList();
-    }
   }
 
   IconData _getTabIcon(HomeTab tab) {
@@ -599,5 +387,191 @@ class HomePage extends ConsumerWidget {
     } catch (e) {
       rethrow;
     }
+  }
+}
+
+class TabContentSwitcher extends StatelessWidget {
+  final int selectedTab;
+  final Widget Function(int) getTabWidget;
+
+  const TabContentSwitcher({
+    super.key,
+    required this.selectedTab,
+    required this.getTabWidget,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      transitionBuilder: (child, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.1, 0),
+              end: Offset.zero,
+            ).animate(animation),
+            child: child,
+          ),
+        );
+      },
+      child: Container(
+        key: ValueKey(selectedTab),
+        child: getTabWidget(selectedTab),
+      ),
+    );
+  }
+}
+
+Widget _getTabWidget(int index) {
+  switch (HomeTab.values[index]) {
+    case HomeTab.tasks:
+      return const TaskList();
+    case HomeTab.pet:
+      return const VirtualPet();
+    case HomeTab.family:
+      return const FamilyList();
+  }
+}
+
+class QuickStatsSection extends StatelessWidget {
+  const QuickStatsSection({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer(
+      builder: (context, ref, _) {
+        final hasFamily = ref.watch(hasFamilyProvider);
+        final pendingTasks = ref.watch(pendingTasksProvider);
+        final petState = ref.watch(petNotifierProvider);
+        final user = ref.watch(currentUserProvider);
+
+        // Calculate task stats based on family status
+        final userPendingTasks = hasFamily && user?.familyId != null
+            ? pendingTasks.where((task) => task.assignedTo == user?.id).length
+            : 0;
+        final taskValue =
+            hasFamily && user?.familyId != null ? '$userPendingTasks' : '--';
+        final taskSubtitle =
+            hasFamily && user?.familyId != null ? 'Your Tasks' : 'Setup Needed';
+
+        // Calculate pet stats
+        final pet = petState.pet;
+        final petHealth = pet?.stats['health'] ?? 0;
+        final petHealthValue = pet != null ? '$petHealth%' : '--';
+        final petHealthSubtitle = pet != null
+            ? (petHealth >= 80
+                ? 'Happy'
+                : petHealth >= 50
+                    ? 'OK'
+                    : 'Needs Care')
+            : 'No Pet';
+
+        // Calculate completed tasks
+        final completedTasks = ref.watch(completedTasksProvider).length;
+        final familyValue = hasFamily ? '$completedTasks' : '0';
+
+        return EnhancedCard.elevated(
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Row(
+              children: [
+                Expanded(
+                  child: StatItem(
+                    icon: Icons.task_alt,
+                    label: 'Tasks',
+                    value: taskValue,
+                    subtitle: taskSubtitle,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                Container(
+                  width: 1,
+                  height: 40,
+                  color: Theme.of(context).dividerColor,
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                ),
+                Expanded(
+                  child: StatItem(
+                    icon: Icons.pets,
+                    label: 'Pet Health',
+                    value: petHealthValue,
+                    subtitle: petHealthSubtitle,
+                    color: Theme.of(context).colorScheme.tertiary,
+                  ),
+                ),
+                Container(
+                  width: 1,
+                  height: 40,
+                  color: Theme.of(context).dividerColor,
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                ),
+                Expanded(
+                  child: StatItem(
+                    icon: Icons.check_circle_outline,
+                    label: 'Completed',
+                    value: familyValue,
+                    subtitle: 'Tasks Done',
+                    color: Theme.of(context).colorScheme.secondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class StatItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final String subtitle;
+  final Color color;
+
+  const StatItem({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.subtitle,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            icon,
+            color: color,
+            size: 24,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+        ),
+        Text(
+          subtitle,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+        ),
+      ],
+    );
   }
 }

@@ -201,4 +201,20 @@ class TaskNotifier extends StateNotifier<TaskState> {
 
   List<Task> getTasksForUser(String userId) =>
       state.tasks.where((task) => task.assignedTo == userId).toList();
+
+  // Filter methods for UI
+  void filterByPerson(String personId) {
+    // TODO: Implement filtering by person
+    // For now, just reload tasks with the person filter
+  }
+
+  void filterByDeadline(DateTime deadline) {
+    // TODO: Implement filtering by deadline
+    // For now, just a placeholder
+  }
+
+  void filterByStatus(TaskStatus status) {
+    // TODO: Implement filtering by status
+    // For now, just a placeholder
+  }
 }
