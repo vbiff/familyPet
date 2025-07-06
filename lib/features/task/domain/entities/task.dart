@@ -22,31 +22,25 @@ enum TaskFrequency {
 }
 
 enum TaskCategory {
-  chores,
-  homework,
-  personal,
-  exercise,
-  creative,
-  social,
-  learning,
+  study,
+  work,
+  sport,
+  family,
+  friends,
   other;
 
   String get displayName {
     switch (this) {
-      case TaskCategory.chores:
-        return 'Chores';
-      case TaskCategory.homework:
-        return 'Homework';
-      case TaskCategory.personal:
-        return 'Personal Care';
-      case TaskCategory.exercise:
-        return 'Exercise';
-      case TaskCategory.creative:
-        return 'Creative';
-      case TaskCategory.social:
-        return 'Social';
-      case TaskCategory.learning:
-        return 'Learning';
+      case TaskCategory.study:
+        return 'Study';
+      case TaskCategory.work:
+        return 'Work';
+      case TaskCategory.sport:
+        return 'Sport';
+      case TaskCategory.family:
+        return 'Family';
+      case TaskCategory.friends:
+        return 'Friends';
       case TaskCategory.other:
         return 'Other';
     }
@@ -54,20 +48,16 @@ enum TaskCategory {
 
   String get icon {
     switch (this) {
-      case TaskCategory.chores:
-        return '🧹';
-      case TaskCategory.homework:
+      case TaskCategory.study:
         return '📚';
-      case TaskCategory.personal:
-        return '🧴';
-      case TaskCategory.exercise:
+      case TaskCategory.work:
+        return '💼';
+      case TaskCategory.sport:
         return '🏃‍♂️';
-      case TaskCategory.creative:
-        return '🎨';
-      case TaskCategory.social:
+      case TaskCategory.family:
+        return '👨‍👩‍👧‍👦';
+      case TaskCategory.friends:
         return '👥';
-      case TaskCategory.learning:
-        return '🧠';
       case TaskCategory.other:
         return '📝';
     }

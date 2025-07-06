@@ -41,11 +41,6 @@ class CreateTask {
           const ValidationFailure(message: 'Task title cannot be empty'));
     }
 
-    if (params.description.trim().isEmpty) {
-      return left(
-          const ValidationFailure(message: 'Task description cannot be empty'));
-    }
-
     if (params.points < 0) {
       return left(
           const ValidationFailure(message: 'Task points cannot be negative'));

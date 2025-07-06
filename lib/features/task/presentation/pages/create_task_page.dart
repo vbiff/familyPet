@@ -27,7 +27,7 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
   TaskFrequency _frequency = TaskFrequency.once;
   TaskCategory _category = TaskCategory.other;
   TaskDifficulty _difficulty = TaskDifficulty.medium;
-  List<String> _selectedTags = [];
+  final List<String> _selectedTags = [];
   String? _assignedTo;
 
   @override
@@ -71,19 +71,17 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
                     padding: const EdgeInsets.all(16),
                     sliver: SliverList(
                       delegate: SliverChildListDelegate([
+                        _buildCategorySection(),
+                        const SizedBox(height: 24),
                         _buildTaskInfoSection(),
                         const SizedBox(height: 24),
                         _buildAssignmentSection(),
                         const SizedBox(height: 24),
                         _buildSchedulingSection(),
                         const SizedBox(height: 24),
-                        _buildPointsSection(),
-                        const SizedBox(height: 24),
-                        _buildCategorySection(),
-                        const SizedBox(height: 24),
                         _buildDifficultySection(),
                         const SizedBox(height: 24),
-                        _buildTagsSection(),
+                        _buildPointsSection(),
                         const SizedBox(height: 32),
                         _buildActionButtons(isCreating),
                         const SizedBox(height: 16), // Extra bottom padding
@@ -121,12 +119,6 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
             placeholder: 'Describe what needs to be done',
             controller: _descriptionController,
             maxLines: 3,
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Please enter a description';
-              }
-              return null;
-            },
           ),
         ],
       ),
@@ -439,70 +431,6 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
               }
               return null;
             },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTagsSection() {
-    final commonTags = [
-      'urgent',
-      'fun',
-      'outdoor',
-      'indoor',
-      'study',
-      'chore',
-      'creative',
-      'social'
-    ];
-
-    return EnhancedCard.elevated(
-      title: 'Tags (Optional)',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          EnhancedInput(
-            label: 'Custom Tags',
-            placeholder: 'Enter tags separated by commas',
-            controller: TextEditingController(text: _selectedTags.join(', ')),
-            onChanged: (value) {
-              setState(() {
-                _selectedTags = value
-                    .split(',')
-                    .map((e) => e.trim())
-                    .where((e) => e.isNotEmpty)
-                    .toList();
-              });
-            },
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Quick Tags:',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 4,
-            children: commonTags.map((tag) {
-              final isSelected = _selectedTags.contains(tag);
-              return FilterChip(
-                label: Text(tag),
-                selected: isSelected,
-                onSelected: (selected) {
-                  setState(() {
-                    if (selected) {
-                      _selectedTags.add(tag);
-                    } else {
-                      _selectedTags.remove(tag);
-                    }
-                  });
-                },
-              );
-            }).toList(),
           ),
         ],
       ),

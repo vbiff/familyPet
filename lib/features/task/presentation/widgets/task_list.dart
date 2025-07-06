@@ -632,7 +632,7 @@ class TaskCard extends StatelessWidget {
     return EnhancedCard.outlined(
       backgroundColor: task.assignedTo == user?.id
           ? Colors.transparent
-          : const Color.fromARGB(45, 60, 60, 60),
+          : const Color.fromARGB(26, 60, 60, 60),
       onTap: () => onTaskTap(task),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

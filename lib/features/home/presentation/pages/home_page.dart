@@ -6,7 +6,6 @@ import 'package:jhonny/features/auth/presentation/pages/login_page.dart';
 import 'package:jhonny/features/auth/presentation/pages/profile_settings_page.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_state.dart';
-import 'package:jhonny/features/family/presentation/pages/family_setup_page.dart';
 import 'package:jhonny/features/family/presentation/pages/family_settings_page.dart';
 import 'package:jhonny/features/family/presentation/providers/family_provider.dart';
 import 'package:jhonny/features/family/presentation/providers/family_state.dart';
