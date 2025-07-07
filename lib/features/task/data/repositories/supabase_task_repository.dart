@@ -82,10 +82,10 @@ class SupabaseTaskRepository implements TaskRepository {
   }
 
   @override
-  Future<Either<Failure, Task>> updateTask(Task task) async {
+  Future<Either<Failure, Task>> updateTask(
+      String taskId, Map<String, dynamic> data) async {
     try {
-      final taskModel = TaskModel.fromEntity(task);
-      final updatedTask = await _remoteDataSource.updateTask(taskModel);
+      final updatedTask = await _remoteDataSource.updateTask(taskId, data);
       return right(updatedTask.toEntity());
     } catch (e) {
       return left(ServerFailure(message: e.toString()));

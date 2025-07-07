@@ -24,7 +24,8 @@ abstract class TaskRepository {
     Map<String, dynamic>? metadata,
   });
 
-  Future<Either<Failure, Task>> updateTask(Task task);
+  Future<Either<Failure, Task>> updateTask(
+      String taskId, Map<String, dynamic> data);
 
   Future<Either<Failure, void>> deleteTask(String taskId);
 

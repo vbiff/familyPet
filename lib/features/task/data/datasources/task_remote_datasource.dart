@@ -14,7 +14,7 @@ abstract class TaskRemoteDataSource {
 
   Future<TaskModel> createTask(TaskModel task);
 
-  Future<TaskModel> updateTask(TaskModel task);
+  Future<TaskModel> updateTask(String taskId, Map<String, dynamic> data);
 
   Future<void> deleteTask(String taskId);
 
@@ -97,16 +97,16 @@ class SupabaseTaskRemoteDataSource implements TaskRemoteDataSource {
   }
 
   @override
-  Future<TaskModel> updateTask(TaskModel task) async {
+  Future<TaskModel> updateTask(String taskId, Map<String, dynamic> data) async {
     try {
-      final data = await _client
+      final response = await _client
           .from(_tableName)
-          .update(task.toJson())
-          .eq('id', task.id)
+          .update(data)
+          .eq('id', taskId)
           .select()
           .single();
 
-      return TaskModel.fromJson(data);
+      return TaskModel.fromJson(response);
     } catch (e) {
       throw Exception('Failed to update task: $e');
     }

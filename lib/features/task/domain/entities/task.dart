@@ -148,6 +148,7 @@ class Task extends Equatable {
   final String familyId;
   final List<String> imageUrls;
   final DateTime createdAt;
+  final DateTime? updatedAt;
   final DateTime? completedAt;
   final DateTime? verifiedAt;
   final Map<String, dynamic>? metadata;
@@ -176,6 +177,7 @@ class Task extends Equatable {
     required this.familyId,
     this.imageUrls = const [],
     required this.createdAt,
+    this.updatedAt,
     this.completedAt,
     this.verifiedAt,
     this.metadata,
@@ -236,6 +238,7 @@ class Task extends Equatable {
     String? familyId,
     List<String>? imageUrls,
     DateTime? createdAt,
+    DateTime? updatedAt,
     DateTime? completedAt,
     DateTime? verifiedAt,
     Map<String, dynamic>? metadata,
@@ -265,6 +268,7 @@ class Task extends Equatable {
       familyId: familyId ?? this.familyId,
       imageUrls: imageUrls ?? this.imageUrls,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       completedAt: completedAt ?? this.completedAt,
       verifiedAt: clearVerification ? null : (verifiedAt ?? this.verifiedAt),
       metadata: metadata ?? this.metadata,
@@ -294,6 +298,7 @@ class Task extends Equatable {
         familyId,
         imageUrls,
         createdAt,
+        updatedAt,
         completedAt,
         verifiedAt,
         metadata,

@@ -7,6 +7,7 @@ import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jhonny/features/task/domain/entities/task.dart';
 import 'package:jhonny/features/task/presentation/providers/task_provider.dart';
 import 'package:jhonny/features/family/presentation/providers/family_provider.dart';
+import 'package:jhonny/features/task/presentation/pages/create_task_page.dart';
 
 class TaskDetailPage extends ConsumerWidget {
   final Task task;
@@ -53,6 +54,16 @@ class TaskDetailPage extends ConsumerWidget {
             PopupMenuButton(
               itemBuilder: (context) => [
                 const PopupMenuItem(
+                  value: 'edit',
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit, color: Colors.blue),
+                      SizedBox(width: 8),
+                      Text('Edit Task', style: TextStyle(color: Colors.blue)),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
                   value: 'delete',
                   child: Row(
                     children: [
@@ -74,11 +85,11 @@ class TaskDetailPage extends ConsumerWidget {
           children: [
             _buildTaskHeader(context, currentTask),
             const SizedBox(height: 24),
-            _buildTaskInfo(context, ref),
+            _buildTaskInfo(context, ref, currentTask),
             const SizedBox(height: 24),
-            _buildTaskSchedule(context),
+            _buildTaskSchedule(context, currentTask),
             const SizedBox(height: 24),
-            _buildTaskStatus(context, currentTask),
+            _buildTaskStatus(context, ref, currentTask),
             const SizedBox(height: 32),
             _buildActionButtons(context, ref, isUpdating, currentTask),
           ],
@@ -193,7 +204,7 @@ class TaskDetailPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildTaskInfo(BuildContext context, WidgetRef ref) {
+  Widget _buildTaskInfo(BuildContext context, WidgetRef ref, Task currentTask) {
     return Card(
       elevation: 0,
       color: Theme.of(context).colorScheme.surfaceContainerLow,
@@ -213,21 +224,21 @@ class TaskDetailPage extends ConsumerWidget {
               context,
               Icons.person,
               'Assigned to',
-              _getMemberName(ref, task.assignedTo),
+              _getMemberName(ref, currentTask.assignedTo),
             ),
             const Divider(height: 24),
             _buildInfoRow(
               context,
               Icons.person_add,
               'Created by',
-              _getMemberName(ref, task.createdBy),
+              _getMemberName(ref, currentTask.createdBy),
             ),
             const Divider(height: 24),
             _buildInfoRow(
               context,
               Icons.repeat,
               'Frequency',
-              _getFrequencyText(task.frequency),
+              _getFrequencyText(currentTask.frequency),
             ),
           ],
         ),
@@ -235,10 +246,10 @@ class TaskDetailPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildTaskSchedule(BuildContext context) {
+  Widget _buildTaskSchedule(BuildContext context, Task currentTask) {
     final now = DateTime.now();
-    final isOverdue =
-        task.dueDate.isBefore(now) && task.status == TaskStatus.pending;
+    final isOverdue = currentTask.dueDate.isBefore(now) &&
+        currentTask.status == TaskStatus.pending;
 
     return Card(
       elevation: 0,
@@ -258,62 +269,30 @@ class TaskDetailPage extends ConsumerWidget {
             _buildInfoRow(
               context,
               Icons.calendar_today,
-              'Created',
-              DateFormat('MMM dd, yyyy - HH:mm').format(task.createdAt),
+              'Due Date',
+              DateFormat.yMMMMd().add_jm().format(currentTask.dueDate),
+              textColor: isOverdue ? Theme.of(context).colorScheme.error : null,
             ),
             const Divider(height: 24),
             _buildInfoRow(
               context,
-              Icons.schedule,
-              'Due date',
-              DateFormat('MMM dd, yyyy - HH:mm').format(task.dueDate),
-              isHighlight: isOverdue,
-              highlightColor: Colors.red,
+              Icons.update,
+              'Last Updated',
+              currentTask.updatedAt != null
+                  ? DateFormat.yMMMMd().add_jm().format(currentTask.updatedAt!)
+                  : 'Not updated yet',
             ),
-            if (task.completedAt != null) ...[
-              const Divider(height: 24),
-              _buildInfoRow(
-                context,
-                Icons.check_circle,
-                'Completed',
-                DateFormat('MMM dd, yyyy - HH:mm').format(task.completedAt!),
-                highlightColor: Colors.green,
-              ),
-            ],
-            if (task.verifiedAt != null) ...[
-              const Divider(height: 24),
-              _buildInfoRow(
-                context,
-                Icons.verified,
-                'Verified',
-                DateFormat('MMM dd, yyyy - HH:mm').format(task.verifiedAt!),
-                highlightColor: Colors.green,
-              ),
-            ],
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTaskStatus(BuildContext context, Task currentTask) {
-    String statusText;
-    IconData statusIcon;
-    Color statusColor;
-
-    if (currentTask.isVerifiedByParent) {
-      statusText = 'Verified';
-      statusIcon = Icons.verified;
-      statusColor = Colors.green;
-    } else if (currentTask.needsVerification) {
-      statusText = 'Needs Verification';
-      statusIcon = Icons.visibility;
-      statusColor = Colors.blue;
-    } else {
-      statusText = _getStatusText(currentTask.status);
-      statusIcon = _getStatusIcon(currentTask.status);
-      statusColor = _getStatusColor(currentTask.status);
-    }
+  Widget _buildTaskStatus(
+      BuildContext context, WidgetRef ref, Task currentTask) {
+    final verifierName = currentTask.verifiedById != null
+        ? 'by ${_getMemberName(ref, currentTask.verifiedById!)}'
+        : '';
 
     return Card(
       elevation: 0,
@@ -324,36 +303,43 @@ class TaskDetailPage extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Status',
+              'Status Information',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
             ),
             const SizedBox(height: 16),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: statusColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: statusColor.withValues(alpha: 0.3),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(statusIcon, color: statusColor),
-                  const SizedBox(width: 12),
-                  Text(
-                    statusText,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: statusColor,
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                ],
-              ),
+            _buildInfoRow(
+              context,
+              Icons.info_outline,
+              'Current Status',
+              _getStatusText(currentTask),
             ),
+            if (currentTask.isVerifiedByParent) ...[
+              const Divider(height: 24),
+              _buildInfoRow(
+                context,
+                Icons.verified_user,
+                'Verified',
+                currentTask.verifiedAt != null
+                    ? '${DateFormat.yMMMMd().add_jm().format(currentTask.verifiedAt!)} $verifierName'
+                    : 'Yes',
+              ),
+            ],
+            if (currentTask.status.isCompleted &&
+                !currentTask.isVerifiedByParent) ...[
+              const Divider(height: 24),
+              _buildInfoRow(
+                context,
+                Icons.hourglass_top,
+                'Completed At',
+                currentTask.completedAt != null
+                    ? DateFormat.yMMMMd()
+                        .add_jm()
+                        .format(currentTask.completedAt!)
+                    : 'Awaiting verification',
+              ),
+            ]
           ],
         ),
       ),
@@ -361,32 +347,82 @@ class TaskDetailPage extends ConsumerWidget {
   }
 
   Widget _buildActionButtons(
-      BuildContext context, WidgetRef ref, bool isUpdating, Task currentTask) {
-    if (currentTask.isVerifiedByParent) {
-      return _buildVerifiedActions(context, ref, isUpdating, currentTask);
-    } else if (currentTask.needsVerification) {
-      return _buildVerificationActions(context, ref, isUpdating);
-    } else {
-      switch (currentTask.status) {
-        case TaskStatus.pending:
-        case TaskStatus.inProgress:
-          return _buildPendingActions(context, ref, isUpdating);
-        case TaskStatus.completed:
-          return _buildCompletedActions(context, ref, isUpdating);
-        case TaskStatus.expired:
-          return _buildExpiredActions(context, ref, isUpdating);
-      }
+    BuildContext context,
+    WidgetRef ref,
+    bool isUpdating,
+    Task currentTask,
+  ) {
+    final currentUser = ref.watch(currentUserProvider);
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Card(
+        elevation: 0,
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: _buildChildContent(context, ref, isUpdating, currentTask),
+        ),
+      ),
+      if (currentUser?.role == UserRole.parent &&
+          currentTask.status != TaskStatus.expired)
+        Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: _buildParentContent(context, ref, isUpdating, currentTask),
+        ),
+    ]);
+  }
+
+  Widget _buildChildContent(
+    BuildContext context,
+    WidgetRef ref,
+    bool isUpdating,
+    Task currentTask,
+  ) {
+    if (currentTask.needsVerification) {
+      return _waitingForVerification(context);
+    }
+
+    switch (currentTask.status) {
+      case TaskStatus.pending:
+      case TaskStatus.inProgress:
+        return _buildCompleteButton(context, ref, isUpdating, currentTask);
+      case TaskStatus.completed:
+        return _buildMarkAsPendingButton(context, ref, isUpdating, currentTask);
+      case TaskStatus.expired:
+        return _buildExpiredMessage(context);
+      default:
+        return const SizedBox.shrink();
     }
   }
 
-  Widget _buildPendingActions(
-      BuildContext context, WidgetRef ref, bool isUpdating) {
+  Widget _buildParentContent(
+    BuildContext context,
+    WidgetRef ref,
+    bool isUpdating,
+    Task currentTask,
+  ) {
+    if (currentTask.needsVerification) {
+      return _buildVerificationControls(context, ref, isUpdating, currentTask);
+    }
+
+    if (currentTask.isVerifiedByParent) {
+      return _buildRestoreOrUnverifyControls(
+          context, ref, isUpdating, currentTask);
+    }
+
+    return const SizedBox.shrink();
+  }
+
+  // Action Buttons
+  Widget _buildCompleteButton(
+      BuildContext context, WidgetRef ref, bool isUpdating, Task currentTask) {
     return FilledButton.icon(
-      onPressed: isUpdating ? null : () => _markAsCompleted(ref),
+      onPressed: isUpdating
+          ? null
+          : () => _markAsCompleted(context, ref, currentTask, isUpdating),
       icon: isUpdating
           ? const SizedBox(
-              width: 16,
-              height: 16,
+              width: 20,
+              height: 20,
               child: CircularProgressIndicator(strokeWidth: 2),
             )
           : const Icon(Icons.check),
@@ -398,10 +434,12 @@ class TaskDetailPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildCompletedActions(
-      BuildContext context, WidgetRef ref, bool isUpdating) {
+  Widget _buildMarkAsPendingButton(
+      BuildContext context, WidgetRef ref, bool isUpdating, Task currentTask) {
     return OutlinedButton.icon(
-      onPressed: isUpdating ? null : () => _markAsPending(ref),
+      onPressed: isUpdating
+          ? null
+          : () => _markAsPending(context, ref, currentTask, isUpdating),
       icon: const Icon(Icons.undo),
       label: const Text('Mark as Pending'),
       style: OutlinedButton.styleFrom(
@@ -410,42 +448,14 @@ class TaskDetailPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildVerificationActions(
-      BuildContext context, WidgetRef ref, bool isUpdating) {
-    final currentUser = ref.watch(currentUserProvider);
-    final isParent = currentUser?.role == UserRole.parent;
-
-    // Only parents can verify tasks
-    if (!isParent) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.orange.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.hourglass_empty, color: Colors.orange),
-            const SizedBox(width: 8),
-            Text(
-              'Waiting for Parent Verification',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.orange,
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-          ],
-        ),
-      );
-    }
-
+  Widget _buildVerificationControls(
+      BuildContext context, WidgetRef ref, bool isUpdating, Task currentTask) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         FilledButton.icon(
-          onPressed: isUpdating ? null : () => _verifyTask(ref),
+          onPressed:
+              isUpdating ? null : () => _verifyTask(context, ref, currentTask),
           icon: const Icon(Icons.verified),
           label: const Text('Verify & Award Points'),
           style: FilledButton.styleFrom(
@@ -455,7 +465,8 @@ class TaskDetailPage extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         OutlinedButton.icon(
-          onPressed: isUpdating ? null : () => _rejectTask(ref),
+          onPressed:
+              isUpdating ? null : () => _rejectTask(context, ref, currentTask),
           icon: const Icon(Icons.close),
           label: const Text('Mark as Pending'),
           style: OutlinedButton.styleFrom(
@@ -467,61 +478,40 @@ class TaskDetailPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildExpiredActions(
-      BuildContext context, WidgetRef ref, bool isUpdating) {
-    return OutlinedButton.icon(
-      onPressed: isUpdating ? null : () => _markAsPending(ref),
-      icon: const Icon(Icons.restore),
-      label: const Text('Restore Task'),
-      style: OutlinedButton.styleFrom(
-        minimumSize: const Size.fromHeight(52),
-      ),
-    );
-  }
-
-  Widget _buildVerifiedActions(
+  Widget _buildRestoreOrUnverifyControls(
       BuildContext context, WidgetRef ref, bool isUpdating, Task currentTask) {
-    final currentUser = ref.watch(currentUserProvider);
-    final isParent = currentUser?.role == UserRole.parent;
-
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.green.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+        if (currentTask.status == TaskStatus.expired)
+          OutlinedButton.icon(
+            onPressed: isUpdating
+                ? null
+                : () => _markAsPending(context, ref, currentTask, isUpdating),
+            icon: const Icon(Icons.restore),
+            label: const Text('Restore Task'),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(52),
+            ),
+          )
+        else
+          Row(
             children: [
-              const Icon(Icons.verified, color: Colors.green),
-              const SizedBox(width: 8),
-              Text(
-                'Task Verified & Points Awarded',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Colors.green,
-                      fontWeight: FontWeight.bold,
-                    ),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: isUpdating
+                      ? null
+                      : () => _unverifyTask(context, ref, currentTask),
+                  icon: const Icon(Icons.cancel),
+                  label: const Text('Remove Verification'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(52),
+                    foregroundColor: Colors.orange,
+                  ),
+                ),
               ),
             ],
           ),
-        ),
-        // Only parents can remove verification
-        if (isParent) ...[
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: isUpdating ? null : () => _unverifyTask(ref),
-            icon: const Icon(Icons.cancel),
-            label: const Text('Remove Verification'),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(52),
-              foregroundColor: Colors.orange,
-            ),
-          ),
-        ],
       ],
     );
   }
@@ -531,20 +521,13 @@ class TaskDetailPage extends ConsumerWidget {
     IconData icon,
     String label,
     String value, {
-    bool isHighlight = false,
-    Color? highlightColor,
+    Color? textColor,
   }) {
-    final textColor = isHighlight
-        ? (highlightColor ?? Theme.of(context).colorScheme.error)
-        : Theme.of(context).colorScheme.onSurface;
-
     return Row(
       children: [
         Icon(
           icon,
-          color: isHighlight
-              ? (highlightColor ?? Theme.of(context).colorScheme.error)
-              : Theme.of(context).colorScheme.primary,
+          color: textColor ?? Theme.of(context).colorScheme.primary,
           size: 20,
         ),
         const SizedBox(width: 12),
@@ -560,7 +543,6 @@ class TaskDetailPage extends ConsumerWidget {
             value,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: textColor,
-                  fontWeight: isHighlight ? FontWeight.bold : null,
                 ),
             textAlign: TextAlign.end,
           ),
@@ -583,68 +565,56 @@ class TaskDetailPage extends ConsumerWidget {
     }
   }
 
-  String _getStatusText(TaskStatus status) {
-    switch (status) {
-      case TaskStatus.pending:
-        return 'Pending';
-      case TaskStatus.inProgress:
-        return 'In Progress';
-      case TaskStatus.completed:
-        return 'Completed';
-      case TaskStatus.expired:
-        return 'Expired';
-    }
-  }
-
-  IconData _getStatusIcon(TaskStatus status) {
-    switch (status) {
-      case TaskStatus.pending:
-        return Icons.pending;
-      case TaskStatus.inProgress:
-        return Icons.hourglass_empty;
-      case TaskStatus.completed:
-        return Icons.check_circle;
-      case TaskStatus.expired:
-        return Icons.error;
-    }
-  }
-
-  Color _getStatusColor(TaskStatus status) {
-    switch (status) {
-      case TaskStatus.pending:
-        return Colors.orange;
-      case TaskStatus.inProgress:
-        return Colors.blue;
-      case TaskStatus.completed:
-        return Colors.green;
-      case TaskStatus.expired:
-        return Colors.red;
+  String _getStatusText(Task currentTask) {
+    if (currentTask.needsVerification) {
+      return 'Needs parent verification';
+    } else if (currentTask.isVerifiedByParent) {
+      return 'Completed and verified';
+    } else {
+      switch (currentTask.status) {
+        case TaskStatus.pending:
+          return 'Pending';
+        case TaskStatus.inProgress:
+          return 'In Progress';
+        case TaskStatus.completed:
+          return 'Completed';
+        case TaskStatus.expired:
+          return 'Expired';
+      }
     }
   }
 
   // Action methods
-  Future<void> _markAsCompleted(WidgetRef ref) async {
-    await ref
-        .read(taskNotifierProvider.notifier)
-        .updateTaskStatus(taskId: task.id, status: TaskStatus.completed);
+  Future<void> _markAsCompleted(BuildContext context, WidgetRef ref,
+      Task currentTask, bool isUpdating) async {
+    if (isUpdating) return;
+
+    await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
+          taskId: currentTask.id,
+          status: TaskStatus.completed,
+        );
   }
 
-  Future<void> _markAsPending(WidgetRef ref) async {
-    await ref
-        .read(taskNotifierProvider.notifier)
-        .updateTaskStatus(taskId: task.id, status: TaskStatus.pending);
+  Future<void> _markAsPending(BuildContext context, WidgetRef ref,
+      Task currentTask, bool isUpdating) async {
+    if (isUpdating) return;
+
+    await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
+          taskId: currentTask.id,
+          status: TaskStatus.pending,
+        );
   }
 
-  Future<void> _verifyTask(WidgetRef ref) async {
+  Future<void> _verifyTask(
+      BuildContext context, WidgetRef ref, Task currentTask) async {
     try {
-      final currentTask = _getCurrentTask(ref);
       final currentUser = ref.read(currentUserProvider);
 
       // Validate user is a parent
       if (currentUser?.role != UserRole.parent) {
         _logger.w('Non-parent user attempted to verify task');
-        if (ref.context.mounted) {
-          ScaffoldMessenger.of(ref.context).showSnackBar(
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('❌ Only parents can verify tasks'),
               backgroundColor: Colors.red,
@@ -668,7 +638,7 @@ class TaskDetailPage extends ConsumerWidget {
         _logger.d('Current user ID: $verifiedById');
 
         await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
-              taskId: task.id,
+              taskId: currentTask.id,
               status: TaskStatus.completed,
               verifiedById: verifiedById,
             );
@@ -676,8 +646,8 @@ class TaskDetailPage extends ConsumerWidget {
         _logger.i('Verification request sent');
 
         // Show success feedback
-        if (ref.context.mounted) {
-          ScaffoldMessenger.of(ref.context).showSnackBar(
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('✅ Task verified and points awarded!'),
               backgroundColor: Colors.green,
@@ -690,8 +660,8 @@ class TaskDetailPage extends ConsumerWidget {
         _logger.w('Already verified: ${currentTask.isVerifiedByParent}');
 
         // Show why verification failed
-        if (ref.context.mounted) {
-          ScaffoldMessenger.of(ref.context).showSnackBar(
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
                   'Cannot verify: Status=${currentTask.status.name}, Verified=${currentTask.isVerifiedByParent}'),
@@ -703,8 +673,8 @@ class TaskDetailPage extends ConsumerWidget {
     } catch (e) {
       _logger.e('Verification error: $e');
       // Show error feedback
-      if (ref.context.mounted) {
-        ScaffoldMessenger.of(ref.context).showSnackBar(
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('❌ Failed to verify task: $e'),
             backgroundColor: Colors.red,
@@ -714,16 +684,16 @@ class TaskDetailPage extends ConsumerWidget {
     }
   }
 
-  Future<void> _unverifyTask(WidgetRef ref) async {
+  Future<void> _unverifyTask(
+      BuildContext context, WidgetRef ref, Task currentTask) async {
     try {
-      final currentTask = _getCurrentTask(ref);
       final currentUser = ref.read(currentUserProvider);
 
       // Validate user is a parent
       if (currentUser?.role != UserRole.parent) {
         _logger.w('Non-parent user attempted to unverify task');
-        if (ref.context.mounted) {
-          ScaffoldMessenger.of(ref.context).showSnackBar(
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('❌ Only parents can remove verification'),
               backgroundColor: Colors.red,
@@ -739,14 +709,14 @@ class TaskDetailPage extends ConsumerWidget {
       // Only unverify if task is currently verified
       if (currentTask.isVerifiedByParent) {
         await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
-              taskId: task.id,
+              taskId: currentTask.id,
               status: TaskStatus.completed,
               clearVerification: true, // Clear verification
             );
 
         // Show success feedback
-        if (ref.context.mounted) {
-          ScaffoldMessenger.of(ref.context).showSnackBar(
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('🔄 Task verification removed'),
               backgroundColor: Colors.orange,
@@ -756,8 +726,8 @@ class TaskDetailPage extends ConsumerWidget {
       }
     } catch (e) {
       // Show error feedback
-      if (ref.context.mounted) {
-        ScaffoldMessenger.of(ref.context).showSnackBar(
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('❌ Failed to unverify task: $e'),
             backgroundColor: Colors.red,
@@ -767,14 +737,19 @@ class TaskDetailPage extends ConsumerWidget {
     }
   }
 
-  Future<void> _rejectTask(WidgetRef ref) async {
-    await ref
-        .read(taskNotifierProvider.notifier)
-        .updateTaskStatus(taskId: task.id, status: TaskStatus.pending);
+  Future<void> _rejectTask(
+      BuildContext context, WidgetRef ref, Task currentTask) async {
+    await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
+          taskId: currentTask.id,
+          status: TaskStatus.pending,
+        );
   }
 
   void _handleMenuAction(BuildContext context, WidgetRef ref, String action) {
     switch (action) {
+      case 'edit':
+        _showEditTask(context, ref);
+        break;
       case 'delete':
         _showDeleteConfirmation(context, ref);
         break;
@@ -811,5 +786,64 @@ class TaskDetailPage extends ConsumerWidget {
         );
       }
     }
+  }
+
+  Future<void> _showEditTask(BuildContext context, WidgetRef ref) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => CreateTaskPage(task: _getCurrentTask(ref)),
+      ),
+    );
+  }
+
+  Widget _waitingForVerification(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.hourglass_empty, color: Colors.orange),
+          const SizedBox(width: 12),
+          Text(
+            'Waiting for Parent Verification',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Colors.orange,
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExpiredMessage(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.errorContainer.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error, color: Theme.of(context).colorScheme.error),
+          const SizedBox(width: 12),
+          Text(
+            'Task Expired',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onErrorContainer,
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+        ],
+      ),
+    );
   }
 }

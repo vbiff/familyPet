@@ -45,6 +45,7 @@ class TaskModel extends Task {
     required super.familyId,
     super.imageUrls = const [],
     required super.createdAt,
+    super.updatedAt,
     super.completedAt,
     super.verifiedAt,
     super.metadata,
@@ -70,6 +71,9 @@ class TaskModel extends Task {
           ? List<String>.from(json['image_urls'] as List)
           : const [],
       createdAt: DateTime.parse(json['created_at'] as String),
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'] as String)
+          : null,
       completedAt: json['completed_at'] != null
           ? DateTime.parse(json['completed_at'] as String)
           : null,
@@ -95,6 +99,7 @@ class TaskModel extends Task {
       'family_id': familyId,
       'image_urls': imageUrls,
       'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
       'completed_at': completedAt?.toIso8601String(),
       'verified_at': verifiedAt?.toIso8601String(),
       'metadata': metadata,
@@ -132,6 +137,7 @@ class TaskModel extends Task {
       familyId: task.familyId,
       imageUrls: task.imageUrls,
       createdAt: task.createdAt,
+      updatedAt: task.updatedAt,
       completedAt: task.completedAt,
       verifiedAt: task.verifiedAt,
       metadata: task.metadata,
@@ -153,6 +159,7 @@ class TaskModel extends Task {
       familyId: familyId,
       imageUrls: imageUrls,
       createdAt: createdAt,
+      updatedAt: updatedAt,
       completedAt: completedAt,
       verifiedAt: verifiedAt,
       metadata: metadata,

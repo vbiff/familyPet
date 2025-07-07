@@ -3,6 +3,7 @@ import 'package:jhonny/features/task/domain/entities/task.dart';
 import 'package:jhonny/features/task/domain/usecases/create_task.dart';
 import 'package:jhonny/features/task/domain/usecases/delete_task.dart';
 import 'package:jhonny/features/task/domain/usecases/get_tasks.dart';
+import 'package:jhonny/features/task/domain/usecases/update_task.dart';
 import 'package:jhonny/features/task/domain/usecases/update_task_status.dart';
 import 'package:jhonny/features/task/presentation/providers/task_state.dart';
 
@@ -11,16 +12,19 @@ class TaskNotifier extends StateNotifier<TaskState> {
   final CreateTask _createTask;
   final UpdateTaskStatus _updateTaskStatus;
   final DeleteTask _deleteTask;
+  final UpdateTask _updateTask;
 
   TaskNotifier({
     required GetTasks getTasks,
     required CreateTask createTask,
     required UpdateTaskStatus updateTaskStatus,
     required DeleteTask deleteTask,
+    required UpdateTask updateTask,
   })  : _getTasks = getTasks,
         _createTask = createTask,
         _updateTaskStatus = updateTaskStatus,
         _deleteTask = deleteTask,
+        _updateTask = updateTask,
         super(const TaskState());
 
   Future<void> loadTasks({
@@ -169,6 +173,28 @@ class TaskNotifier extends StateNotifier<TaskState> {
           isUpdating: false,
           tasks: updatedTasks,
           clearSelectedTask: state.selectedTask?.id == taskId,
+        );
+      },
+    );
+  }
+
+  Future<void> updateTask(UpdateTaskParams params) async {
+    state = state.copyWith(isUpdating: true, clearFailure: true);
+
+    final result = await _updateTask(params);
+
+    result.fold(
+      (failure) => state = state.copyWith(isUpdating: false, failure: failure),
+      (updatedTask) {
+        final updatedTasks = state.tasks
+            .map((task) => task.id == updatedTask.id ? updatedTask : task)
+            .toList();
+        state = state.copyWith(
+          isUpdating: false,
+          tasks: updatedTasks,
+          selectedTask: state.selectedTask?.id == updatedTask.id
+              ? updatedTask
+              : state.selectedTask,
         );
       },
     );

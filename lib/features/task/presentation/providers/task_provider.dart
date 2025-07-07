@@ -9,6 +9,7 @@ import 'package:jhonny/features/task/domain/usecases/create_task.dart';
 import 'package:jhonny/features/task/domain/usecases/delete_task.dart';
 import 'package:jhonny/features/task/domain/usecases/get_tasks.dart';
 import 'package:jhonny/features/task/domain/usecases/update_task_status.dart';
+import 'package:jhonny/features/task/domain/usecases/update_task.dart';
 import 'package:jhonny/features/task/presentation/providers/task_notifier.dart';
 import 'package:jhonny/features/task/presentation/providers/task_state.dart';
 
@@ -44,6 +45,11 @@ final updateTaskStatusUseCaseProvider = Provider<UpdateTaskStatus>((ref) {
   return UpdateTaskStatus(repository);
 });
 
+final updateTaskUseCaseProvider = Provider<UpdateTask>((ref) {
+  final repository = ref.watch(taskRepositoryProvider);
+  return UpdateTask(repository);
+});
+
 final deleteTaskUseCaseProvider = Provider<DeleteTask>((ref) {
   final repository = ref.watch(taskRepositoryProvider);
   return DeleteTask(repository);
@@ -56,12 +62,14 @@ final taskNotifierProvider =
   final createTask = ref.watch(createTaskUseCaseProvider);
   final updateTaskStatus = ref.watch(updateTaskStatusUseCaseProvider);
   final deleteTask = ref.watch(deleteTaskUseCaseProvider);
+  final updateTask = ref.watch(updateTaskUseCaseProvider);
 
   return TaskNotifier(
     getTasks: getTasks,
     createTask: createTask,
     updateTaskStatus: updateTaskStatus,
     deleteTask: deleteTask,
+    updateTask: updateTask,
   );
 });
 

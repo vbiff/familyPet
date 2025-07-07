@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jhonny/features/task/domain/entities/task.dart';
+import 'package:jhonny/features/task/domain/usecases/update_task.dart';
 import 'package:jhonny/features/task/presentation/providers/task_provider.dart';
 import 'package:jhonny/features/family/presentation/providers/family_provider.dart';
 import 'package:jhonny/shared/widgets/widgets.dart';
@@ -11,7 +12,8 @@ import 'package:jhonny/core/services/notification_service.dart';
 // import 'package:jhonny/features/family/data/models/family_member_model.dart';
 
 class CreateTaskPage extends ConsumerStatefulWidget {
-  const CreateTaskPage({super.key});
+  final Task? task;
+  const CreateTaskPage({super.key, this.task});
 
   @override
   ConsumerState<CreateTaskPage> createState() => _CreateTaskPageState();
@@ -21,7 +23,7 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _pointsController = TextEditingController(text: '10');
+  final _pointsController = TextEditingController();
 
   DateTime _dueDate = DateTime.now().add(const Duration(days: 1));
   TaskFrequency _frequency = TaskFrequency.once;
@@ -30,14 +32,41 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
   final List<String> _selectedTags = [];
   String? _assignedTo;
 
+  bool get _isEditMode => widget.task != null;
+
   @override
   void initState() {
     super.initState();
 
-    // Set initial assignment to current user without triggering provider changes
-    final user = ref.read(currentUserProvider);
-    if (user != null) {
-      _assignedTo = user.id;
+    if (_isEditMode) {
+      final task = widget.task!;
+      _titleController.text = task.title;
+      _descriptionController.text = task.description;
+      _pointsController.text = task.points.toString();
+      _dueDate = task.dueDate;
+      _frequency = task.frequency;
+      _assignedTo = task.assignedTo;
+
+      if (task.metadata != null) {
+        _category = TaskCategory.values.firstWhere(
+          (c) => c.name == task.metadata!['category'],
+          orElse: () => TaskCategory.other,
+        );
+        _difficulty = TaskDifficulty.values.firstWhere(
+          (d) => d.name == task.metadata!['difficulty'],
+          orElse: () => TaskDifficulty.medium,
+        );
+        if (task.metadata!['tags'] is List) {
+          _selectedTags.addAll(List<String>.from(task.metadata!['tags']));
+        }
+      }
+    } else {
+      // Set initial assignment to current user for new tasks
+      final user = ref.read(currentUserProvider);
+      if (user != null) {
+        _assignedTo = user.id;
+      }
+      _pointsController.text = '10';
     }
   }
 
@@ -51,12 +80,13 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isCreating = ref.watch(taskCreatingProvider);
+    final isProcessing =
+        ref.watch(_isEditMode ? taskUpdatingProvider : taskCreatingProvider);
     // final familyMembers = ref.watch(familyMembersProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create New Task'),
+        title: Text(_isEditMode ? 'Edit Task' : 'Create New Task'),
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
       ),
@@ -83,7 +113,7 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
                         const SizedBox(height: 24),
                         _buildPointsSection(),
                         const SizedBox(height: 32),
-                        _buildActionButtons(isCreating),
+                        _buildActionButtons(isProcessing),
                         const SizedBox(height: 16), // Extra bottom padding
                       ]),
                     ),
@@ -437,100 +467,11 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
     );
   }
 
-  Widget _buildActionButtons(bool isCreating) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        EnhancedButton.primary(
-          text: isCreating ? 'Creating...' : 'Create Task',
-          leadingIcon: Icons.add_task,
-          isLoading: isCreating,
-          isExpanded: true,
-          onPressed: isCreating ? null : _createTask,
-        ),
-        const SizedBox(height: 12),
-        EnhancedButton.outline(
-          text: 'Cancel',
-          isExpanded: true,
-          onPressed: isCreating ? null : () => Navigator.of(context).pop(),
-        ),
-        const SizedBox(height: 8),
-        // Test notification button - Direct approach
-        TextButton(
-          onPressed: () async {
-            try {
-              // Import needed for direct test
-              final FlutterLocalNotificationsPlugin
-                  flutterLocalNotificationsPlugin =
-                  FlutterLocalNotificationsPlugin();
-
-              print('🧪 Starting direct notification test...');
-
-              // Basic initialization
-              const AndroidInitializationSettings
-                  initializationSettingsAndroid =
-                  AndroidInitializationSettings('app_icon');
-              const DarwinInitializationSettings initializationSettingsIOS =
-                  DarwinInitializationSettings(
-                requestAlertPermission: true,
-                requestBadgePermission: true,
-                requestSoundPermission: true,
-              );
-              const InitializationSettings initializationSettings =
-                  InitializationSettings(
-                android: initializationSettingsAndroid,
-                iOS: initializationSettingsIOS,
-              );
-
-              await flutterLocalNotificationsPlugin
-                  .initialize(initializationSettings);
-              print('🧪 Plugin initialized directly');
-
-              // Request permissions for iOS
-              if (Platform.isIOS) {
-                final permissions = await flutterLocalNotificationsPlugin
-                    .resolvePlatformSpecificImplementation<
-                        IOSFlutterLocalNotificationsPlugin>()
-                    ?.requestPermissions(alert: true, badge: true, sound: true);
-                print('🧪 iOS permissions: $permissions');
-              }
-
-              // Show simple notification
-              await flutterLocalNotificationsPlugin.show(
-                999,
-                'Direct Test 🧪',
-                'This notification bypassed our service!',
-                const NotificationDetails(
-                  android: AndroidNotificationDetails(
-                    'test_channel',
-                    'Test Channel',
-                    channelDescription: 'Direct test notifications',
-                    importance: Importance.max,
-                    priority: Priority.high,
-                  ),
-                  iOS: DarwinNotificationDetails(),
-                ),
-              );
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Direct notification test sent!'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            } catch (e) {
-              print('🧪 Direct test failed: $e');
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Direct test failed: $e'),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            }
-          },
-          child: const Text('🧪 Direct Test'),
-        ),
-      ],
+  Widget _buildActionButtons(bool isProcessing) {
+    return EnhancedButton.primary(
+      text: _isEditMode ? 'Save Changes' : 'Create Task',
+      onPressed: isProcessing ? null : _submitForm,
+      isLoading: isProcessing,
     );
   }
 
@@ -602,112 +543,54 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
     }
   }
 
-  Future<void> _createTask() async {
-    if (!_formKey.currentState!.validate()) return;
+  Future<void> _submitForm() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
     final user = ref.read(currentUserProvider);
-
-    // Require real user and family IDs
-    if (user?.id == null) {
+    if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('User not authenticated')),
+        const SnackBar(content: Text('Error: User not found')),
       );
       return;
     }
 
-    if (user?.familyId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please create or join a family first')),
+    if (_isEditMode) {
+      final params = UpdateTaskParams(
+        taskId: widget.task!.id,
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim(),
+        points: int.tryParse(_pointsController.text) ?? 0,
+        dueDate: _dueDate,
+        assignedTo: _assignedTo,
+        metadata: {
+          'category': _category.name,
+          'difficulty': _difficulty.name,
+          'tags': _selectedTags,
+        },
       );
-      return;
-    }
-
-    if (_assignedTo == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Please select who to assign this task to')),
-      );
-      return;
-    }
-
-    await ref.read(taskNotifierProvider.notifier).createNewTask(
-      title: _titleController.text.trim(),
-      description: _descriptionController.text.trim(),
-      points: int.parse(_pointsController.text),
-      assignedTo: _assignedTo!,
-      createdBy: user!.id,
-      dueDate: _dueDate,
-      frequency: _frequency,
-      familyId: user.familyId!,
-      metadata: {
-        'category': _category.name,
-        'difficulty': _difficulty.name,
-        'tags': _selectedTags,
-      },
-    );
-
-    final taskState = ref.read(taskNotifierProvider);
-    if (taskState.failure == null && mounted) {
-      print('✅ Task creation successful, checking for selectedTask...');
-
-      // Task created successfully - try to schedule notifications (but don't fail if they don't work)
-      if (taskState.selectedTask != null) {
-        print('✅ Selected task found: ${taskState.selectedTask!.title}');
-        // Try notifications in background without blocking UI
-        _tryScheduleNotifications(taskState.selectedTask!, user);
-      } else {
-        print('❌ No selectedTask found in taskState');
-        print('📊 TaskState debug: tasks count = ${taskState.tasks.length}');
-      }
-
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Task created successfully!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } else if (taskState.failure != null && mounted) {
-      print('❌ Task creation failed: ${taskState.failure!.message}');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(taskState.failure!.message)),
-      );
+      await ref.read(taskNotifierProvider.notifier).updateTask(params);
     } else {
-      print('⚠️ Task creation completed but mounted = false');
+      await ref.read(taskNotifierProvider.notifier).createNewTask(
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim(),
+        points: int.tryParse(_pointsController.text) ?? 10,
+        assignedTo: _assignedTo!,
+        createdBy: user.id,
+        dueDate: _dueDate,
+        frequency: _frequency,
+        familyId: user.familyId!,
+        metadata: {
+          'category': _category.name,
+          'difficulty': _difficulty.name,
+          'tags': _selectedTags,
+        },
+      );
     }
-  }
 
-  // Background notification scheduling (doesn't block UI)
-  void _tryScheduleNotifications(Task task, user) async {
-    try {
-      print('🔔 Background: Starting notification scheduling...');
-      final notificationService = NotificationService();
-
-      await notificationService.initialize();
-      print('🔔 Background: Notification service initialized');
-
-      final hasPermissions = await notificationService.requestPermissions();
-      print('🔔 Background: Permissions check: $hasPermissions');
-
-      if (hasPermissions) {
-        // Schedule deadline notification
-        await notificationService.scheduleTaskDeadlineNotification(task);
-        print('📅 Background: Deadline notification scheduled');
-
-        // Send immediate activity notification
-        await notificationService.notifyFamilyActivity(
-          'created a new task: "${task.title}"',
-          user.displayName.isNotEmpty ? user.displayName : 'Someone',
-        );
-        print('✅ Background: Activity notification sent');
-
-        print('✅ Background: All notifications scheduled successfully');
-      } else {
-        print('❌ Background: Notification permissions not granted');
-      }
-    } catch (e) {
-      print('❌ Background notification scheduling failed: $e');
-      // Notifications failed, but task was created successfully
+    if (mounted) {
+      Navigator.of(context).pop();
     }
   }
 }
