@@ -50,9 +50,8 @@ class HomePage extends ConsumerWidget {
       }
     });
 
-    // Auto-load family data when user becomes available and has family ID
+    // Auto-load family data when user becomes available (regardless of family ID)
     if (user != null &&
-        user.familyId != null &&
         authState.status == AuthStatus.authenticated &&
         familyState.status == FamilyStatus.initial &&
         !familyState.isLoading) {
@@ -60,22 +59,26 @@ class HomePage extends ConsumerWidget {
         ref.read(familyNotifierProvider.notifier).loadCurrentFamily(user.id);
       });
 
-      // Auto-load tasks when user becomes available
-      final taskState = ref.read(taskNotifierProvider);
-      if (taskState.status == TaskStateStatus.initial &&
-          !taskState.isCreating &&
-          user.familyId != null) {
-        Future.microtask(() {
-          Logger().i('🏠 Home: Loading tasks for family ID: ${user.familyId}');
-          ref
-              .read(taskNotifierProvider.notifier)
-              .loadTasks(familyId: user.familyId!);
+      // Auto-load tasks only when user has a family
+      if (user.familyId != null) {
+        final taskState = ref.read(taskNotifierProvider);
+        if (taskState.status == TaskStateStatus.initial &&
+            !taskState.isCreating) {
+          Future.microtask(() {
+            Logger()
+                .i('🏠 Home: Loading tasks for family ID: ${user.familyId}');
+            ref
+                .read(taskNotifierProvider.notifier)
+                .loadTasks(familyId: user.familyId!);
 
-          // Set up callback to refresh family statistics when tasks are updated
-          ref.read(taskNotifierProvider.notifier).setOnTaskUpdatedCallback(() {
-            ref.read(familyNotifierProvider.notifier).refreshFamilyMembers();
+            // Set up callback to refresh family statistics when tasks are updated
+            ref
+                .read(taskNotifierProvider.notifier)
+                .setOnTaskUpdatedCallback(() {
+              ref.read(familyNotifierProvider.notifier).refreshFamilyMembers();
+            });
           });
-        });
+        }
       }
     }
 

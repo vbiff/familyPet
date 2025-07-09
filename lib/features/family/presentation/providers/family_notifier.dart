@@ -53,7 +53,12 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
             // Load family members
             loadFamilyMembers(family.id);
           } else {
-            state = FamilyState.initial();
+            // User has no family - set to loaded state with null family
+            state = const FamilyState(
+              status: FamilyStatus.loaded,
+              family: null,
+              members: [],
+            );
           }
         },
       );
