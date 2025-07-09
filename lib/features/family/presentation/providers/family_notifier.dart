@@ -372,4 +372,19 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
   void reset() {
     state = FamilyState.initial();
   }
+
+  // Add method to refresh family member statistics
+  Future<void> refreshFamilyMembers() async {
+    if (state.family != null) {
+      await loadFamilyMembers(state.family!.id);
+    }
+  }
+
+  // Add method to refresh current family data
+  Future<void> refreshCurrentFamily() async {
+    final currentUser = state.family?.createdById;
+    if (currentUser != null) {
+      await loadCurrentFamily(currentUser);
+    }
+  }
 }

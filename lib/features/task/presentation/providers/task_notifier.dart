@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jhonny/features/task/domain/entities/task.dart';
 import 'package:jhonny/features/task/domain/usecases/create_task.dart';
@@ -14,17 +15,22 @@ class TaskNotifier extends StateNotifier<TaskState> {
   final DeleteTask _deleteTask;
   final UpdateTask _updateTask;
 
+  // Callback to refresh family statistics when tasks are updated
+  VoidCallback? _onTaskUpdated;
+
   TaskNotifier({
     required GetTasks getTasks,
     required CreateTask createTask,
     required UpdateTaskStatus updateTaskStatus,
     required DeleteTask deleteTask,
     required UpdateTask updateTask,
+    VoidCallback? onTaskUpdated,
   })  : _getTasks = getTasks,
         _createTask = createTask,
         _updateTaskStatus = updateTaskStatus,
         _deleteTask = deleteTask,
         _updateTask = updateTask,
+        _onTaskUpdated = onTaskUpdated,
         super(const TaskState());
 
   Future<void> loadTasks({
@@ -149,6 +155,9 @@ class TaskNotifier extends StateNotifier<TaskState> {
               ? updatedTask
               : state.selectedTask,
         );
+
+        // Refresh family statistics when task status is updated
+        _onTaskUpdated?.call();
       },
     );
   }
@@ -242,5 +251,10 @@ class TaskNotifier extends StateNotifier<TaskState> {
   void filterByStatus(TaskStatus status) {
     // TODO: Implement filtering by status
     // For now, just a placeholder
+  }
+
+  // Set the callback function for task updates
+  void setOnTaskUpdatedCallback(VoidCallback? callback) {
+    _onTaskUpdated = callback;
   }
 }

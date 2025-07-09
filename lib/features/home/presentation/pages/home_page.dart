@@ -69,6 +69,11 @@ class HomePage extends ConsumerWidget {
           ref
               .read(taskNotifierProvider.notifier)
               .loadTasks(familyId: user.familyId!);
+
+          // Set up callback to refresh family statistics when tasks are updated
+          ref.read(taskNotifierProvider.notifier).setOnTaskUpdatedCallback(() {
+            ref.read(familyNotifierProvider.notifier).refreshFamilyMembers();
+          });
         });
       }
     }
