@@ -27,7 +27,6 @@ class TaskList extends ConsumerStatefulWidget {
 class _TaskListState extends ConsumerState<TaskList> {
   bool _isMyTasks = false;
   bool _isOverdue = false;
-  List<Task> _sortedTasks = [];
 
   @override
   void initState() {
@@ -224,7 +223,13 @@ class _TaskListState extends ConsumerState<TaskList> {
       );
     }
 
+    return buildTaskListContent(context, taskState, tasks);
+  }
+
+  Widget buildTaskListContent(
+      BuildContext context, TaskState taskState, List<Task> tasks) {
     final user = ref.read(currentUserProvider);
+
     // Filter tasks based on user preferences and archived status
     List<Task> displayTasks = tasks
         .where((task) => !task.isArchived)
@@ -235,27 +240,25 @@ class _TaskListState extends ConsumerState<TaskList> {
           displayTasks.where((task) => task.assignedTo == user.id).toList();
     }
 
+    // Rebuild sorted tasks list based on current filters
+    List<Task> sortedTasks;
     if (_isOverdue) {
       displayTasks = displayTasks.where((task) => task.isOverdue).toList();
-      _sortedTasks = List<Task>.from(displayTasks)
+      sortedTasks = List<Task>.from(displayTasks)
         ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
     } else {
-      _sortedTasks = List<Task>.from(displayTasks)
+      sortedTasks = List<Task>.from(displayTasks)
         ..sort((a, b) => b.createdAt.compareTo(a.dueDate));
     }
 
     return ListView.builder(
-      itemCount: _sortedTasks.length,
+      itemCount: sortedTasks.length,
       itemBuilder: (context, index) {
-        final task = _sortedTasks[index];
+        final task = sortedTasks[index];
         return SwipeToArchiveWidget(
           task: task,
-          onArchived: () {
-            // Remove the task from the current list immediately to prevent UI issues
-            setState(() {
-              _sortedTasks.removeWhere((t) => t.id == task.id);
-            });
-          },
+          onArchived:
+              null, // Remove the setState callback to prevent provider modification during build
           child: TaskCard(
             task: task,
             user: user,

@@ -21,6 +21,7 @@ import 'package:jhonny/shared/widgets/theme_toggle.dart';
 import 'package:jhonny/main.dart'; // To access themeService
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
+import 'package:jhonny/features/task/presentation/pages/archive_page.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -268,6 +269,19 @@ class HomePage extends ConsumerWidget {
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) => const FamilySettingsPage(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.archive_outlined),
+              title: const Text('Archived Tasks'),
+              subtitle: const Text('View and manage archived tasks'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const ArchivePage(),
                   ),
                 );
               },

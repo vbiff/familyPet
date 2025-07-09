@@ -90,12 +90,15 @@ class SwipeToArchiveWidget extends ConsumerWidget {
 
   Future<void> _archiveTask(WidgetRef ref, BuildContext context) async {
     try {
-      await ref.read(taskNotifierProvider.notifier).updateTask(
-            UpdateTaskParams(
-              taskId: task.id,
-              isArchived: true,
-            ),
-          );
+      // Use Future.microtask to ensure this happens outside the current build cycle
+      await Future.microtask(() async {
+        await ref.read(taskNotifierProvider.notifier).updateTask(
+              UpdateTaskParams(
+                taskId: task.id,
+                isArchived: true,
+              ),
+            );
+      });
 
       onArchived?.call();
 
@@ -126,12 +129,15 @@ class SwipeToArchiveWidget extends ConsumerWidget {
 
   Future<void> _restoreTask(WidgetRef ref, BuildContext context) async {
     try {
-      await ref.read(taskNotifierProvider.notifier).updateTask(
-            UpdateTaskParams(
-              taskId: task.id,
-              isArchived: false,
-            ),
-          );
+      // Use Future.microtask to ensure this happens outside the current build cycle
+      await Future.microtask(() async {
+        await ref.read(taskNotifierProvider.notifier).updateTask(
+              UpdateTaskParams(
+                taskId: task.id,
+                isArchived: false,
+              ),
+            );
+      });
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

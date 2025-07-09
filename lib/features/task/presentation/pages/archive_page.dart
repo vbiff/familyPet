@@ -21,7 +21,10 @@ class _ArchivePageState extends ConsumerState<ArchivePage> {
   @override
   void initState() {
     super.initState();
-    _loadArchivedTasks();
+    // Use addPostFrameCallback to ensure this happens after the widget tree is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadArchivedTasks();
+    });
   }
 
   Future<void> _loadArchivedTasks() async {
@@ -261,12 +264,15 @@ class _ArchivePageState extends ConsumerState<ArchivePage> {
 
   Future<void> _restoreTask(Task task) async {
     try {
-      await ref.read(taskNotifierProvider.notifier).updateTask(
-            UpdateTaskParams(
-              taskId: task.id,
-              isArchived: false,
-            ),
-          );
+      // Use Future.microtask to ensure this happens outside the current build cycle
+      await Future.microtask(() async {
+        await ref.read(taskNotifierProvider.notifier).updateTask(
+              UpdateTaskParams(
+                taskId: task.id,
+                isArchived: false,
+              ),
+            );
+      });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -312,7 +318,10 @@ class _ArchivePageState extends ConsumerState<ArchivePage> {
 
     if (confirmed == true) {
       try {
-        await ref.read(taskNotifierProvider.notifier).deleteTask(task.id);
+        // Use Future.microtask to ensure this happens outside the current build cycle
+        await Future.microtask(() async {
+          await ref.read(taskNotifierProvider.notifier).deleteTask(task.id);
+        });
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -365,9 +374,12 @@ class _ArchivePageState extends ConsumerState<ArchivePage> {
             .where((task) => task.isArchived)
             .toList();
 
-        for (final task in archivedTasks) {
-          await ref.read(taskNotifierProvider.notifier).deleteTask(task.id);
-        }
+        // Use Future.microtask to ensure this happens outside the current build cycle
+        await Future.microtask(() async {
+          for (final task in archivedTasks) {
+            await ref.read(taskNotifierProvider.notifier).deleteTask(task.id);
+          }
+        });
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
