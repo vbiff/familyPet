@@ -101,57 +101,11 @@ class SwipeToArchiveWidget extends ConsumerWidget {
       });
 
       onArchived?.call();
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ "${task.title}" archived successfully'),
-            backgroundColor: Colors.orange,
-            action: SnackBarAction(
-              label: 'UNDO',
-              textColor: Colors.white,
-              onPressed: () => _restoreTask(ref, context),
-            ),
-          ),
-        );
-      }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Failed to archive task: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _restoreTask(WidgetRef ref, BuildContext context) async {
-    try {
-      // Use Future.microtask to ensure this happens outside the current build cycle
-      await Future.microtask(() async {
-        await ref.read(taskNotifierProvider.notifier).updateTask(
-              UpdateTaskParams(
-                taskId: task.id,
-                isArchived: false,
-              ),
-            );
-      });
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ "${task.title}" restored'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Failed to restore task: $e'),
+            content: Text('Failed to archive task: $e'),
             backgroundColor: Colors.red,
           ),
         );

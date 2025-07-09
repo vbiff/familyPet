@@ -800,14 +800,9 @@ class TaskDetailPage extends ConsumerWidget {
     if (isUpdating) return;
 
     try {
-      print('🔍 DEBUG: Marking task as pending: ${currentTask.title}');
-      print('🔍 DEBUG: Current task status: ${currentTask.status}');
-      print('🔍 DEBUG: Current image URLs: ${currentTask.imageUrls}');
-
       // If task was completed and had photos, clear them when marking as pending
       if (currentTask.status == TaskStatus.completed &&
           currentTask.imageUrls.isNotEmpty) {
-        print('🔍 DEBUG: Task has photos, clearing them...');
         // Clear photos first
         await ref.read(taskNotifierProvider.notifier).updateTask(
               UpdateTaskParams(
@@ -815,42 +810,26 @@ class TaskDetailPage extends ConsumerWidget {
                 imageUrls: [], // Clear all photos
               ),
             );
-        print('🔍 DEBUG: Photos cleared successfully');
       }
 
       // Update the status to pending
-      print('🔍 DEBUG: Updating status to pending...');
       await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
             taskId: currentTask.id,
             status: TaskStatus.pending,
           );
-      print('🔍 DEBUG: Status updated to pending');
 
       // Reload tasks to ensure UI is updated
       final user = ref.read(currentUserProvider);
       if (user?.familyId != null) {
-        print('🔍 DEBUG: Reloading tasks...');
         await ref.read(taskNotifierProvider.notifier).loadTasks(
               familyId: user!.familyId!,
             );
-        print('🔍 DEBUG: Tasks reloaded');
-      }
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('🔄 "${currentTask.title}" marked as pending'),
-            backgroundColor: Colors.orange,
-            duration: const Duration(seconds: 2),
-          ),
-        );
       }
     } catch (e) {
-      print('❌ DEBUG: Error in _markAsPending: $e');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Failed to mark task as pending: $e'),
+            content: Text('Failed to update task: $e'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 2),
           ),
@@ -870,7 +849,7 @@ class TaskDetailPage extends ConsumerWidget {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('❌ Only parents can verify tasks'),
+              content: Text('Only parents can verify tasks'),
               backgroundColor: Colors.red,
             ),
           );
@@ -898,31 +877,10 @@ class TaskDetailPage extends ConsumerWidget {
             );
 
         _logger.i('Verification request sent');
-
-        // Show success feedback
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ Task verified and points awarded!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
       } else {
         _logger.w('Cannot verify task');
         _logger.w('Status: ${currentTask.status.name}');
         _logger.w('Already verified: ${currentTask.isVerifiedByParent}');
-
-        // Show why verification failed
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                  'Cannot verify: Status=${currentTask.status.name}, Verified=${currentTask.isVerifiedByParent}'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
       }
     } catch (e) {
       _logger.e('Verification error: $e');
@@ -930,7 +888,7 @@ class TaskDetailPage extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Failed to verify task: $e'),
+            content: Text('Failed to verify task: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -949,7 +907,7 @@ class TaskDetailPage extends ConsumerWidget {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('❌ Only parents can remove verification'),
+              content: Text('Only parents can remove verification'),
               backgroundColor: Colors.red,
             ),
           );
@@ -967,23 +925,13 @@ class TaskDetailPage extends ConsumerWidget {
               status: TaskStatus.completed,
               clearVerification: true, // Clear verification
             );
-
-        // Show success feedback
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('🔄 Task verification removed'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
       }
     } catch (e) {
       // Show error feedback
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Failed to unverify task: $e'),
+            content: Text('Failed to unverify task: $e'),
             backgroundColor: Colors.red,
           ),
         );

@@ -328,21 +328,11 @@ class _PhotoVerificationWidgetState
         _uploadedImageUrls.addAll(newImageUrls);
         _selectedImages.clear();
       });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-                '✅ ${newImageUrls.length} photo(s) uploaded successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Failed to upload photos: $e'),
+            content: Text('Failed to upload photos: $e'),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );

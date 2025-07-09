@@ -273,20 +273,11 @@ class _ArchivePageState extends ConsumerState<ArchivePage> {
               ),
             );
       });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ "${task.title}" restored successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Failed to restore task: $e'),
+            content: Text('Failed to restore task: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -322,20 +313,11 @@ class _ArchivePageState extends ConsumerState<ArchivePage> {
         await Future.microtask(() async {
           await ref.read(taskNotifierProvider.notifier).deleteTask(task.id);
         });
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('✅ "${task.title}" deleted permanently'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('❌ Failed to delete task: $e'),
+              content: Text('Failed to delete task: $e'),
               backgroundColor: Colors.red,
             ),
           );
@@ -380,21 +362,11 @@ class _ArchivePageState extends ConsumerState<ArchivePage> {
             await ref.read(taskNotifierProvider.notifier).deleteTask(task.id);
           }
         });
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content:
-                  Text('✅ ${archivedTasks.length} tasks deleted permanently'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('❌ Failed to clear archived tasks: $e'),
+              content: Text('Failed to clear archived tasks: $e'),
               backgroundColor: Colors.red,
             ),
           );

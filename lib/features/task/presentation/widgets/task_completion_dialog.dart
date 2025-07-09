@@ -186,17 +186,16 @@ class _TaskCompletionDialogState extends ConsumerState<TaskCompletionDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Failed to complete task: $e'),
+            content: Text('Failed to complete task: $e'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
           ),
         );
       }
     } finally {
-      if (mounted) {
-        setState(() {
-          _isCompleting = false;
-        });
-      }
+      setState(() {
+        _isCompleting = false;
+      });
     }
   }
 }

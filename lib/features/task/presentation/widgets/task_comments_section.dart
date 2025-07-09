@@ -77,26 +77,41 @@ class _TaskCommentsSectionState extends ConsumerState<TaskCommentsSection> {
     final currentUser = ref.read(currentUserProvider);
     if (currentUser == null) return;
 
-    final success =
-        await ref.read(taskCommentNotifierProvider.notifier).createComment(
-              taskId: widget.taskId,
-              authorId: currentUser.id,
-              content: content,
-            );
+    try {
+      final success =
+          await ref.read(taskCommentNotifierProvider.notifier).createComment(
+                taskId: widget.taskId,
+                authorId: currentUser.id,
+                content: content,
+              );
 
-    if (success) {
-      _commentController.clear();
-      _commentFocusNode.unfocus();
-    } else {
-      // Show error if needed
+      if (success) {
+        _commentController.clear();
+        _commentFocusNode.unfocus();
+      } else {
+        // Show error if needed
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to add comment'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Failed to add comment. Please try again.'),
+            content: Text('Failed to add comment'),
             backgroundColor: Colors.red,
           ),
         );
       }
+    } finally {
+      setState(() {
+        // _isSubmitting = false; // This variable was not defined in the original file
+      });
     }
   }
 
@@ -127,7 +142,7 @@ class _TaskCommentsSectionState extends ConsumerState<TaskCommentsSection> {
       if (!success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Failed to delete comment. Please try again.'),
+            content: Text('Failed to delete comment'),
             backgroundColor: Colors.red,
           ),
         );

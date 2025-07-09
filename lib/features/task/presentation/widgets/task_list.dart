@@ -487,11 +487,11 @@ class _TaskListState extends ConsumerState<TaskList> {
                     );
               }
             } catch (e) {
-              // Handle errors gracefully
+              // Handle errors gracefully - only show critical errors
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('❌ Failed to mark task as completed: $e'),
+                    content: Text('Failed to complete task: $e'),
                     backgroundColor: Colors.red,
                     duration: const Duration(seconds: 2),
                   ),
@@ -509,13 +509,8 @@ class _TaskListState extends ConsumerState<TaskList> {
     if (!mounted) return;
 
     try {
-      print('🔍 DEBUG: Marking task as pending: ${task.title}');
-      print('🔍 DEBUG: Current task status: ${task.status}');
-      print('🔍 DEBUG: Current image URLs: ${task.imageUrls}');
-
       // If task was completed and had photos, clear them when marking as pending
       if (task.status == TaskStatus.completed && task.imageUrls.isNotEmpty) {
-        print('🔍 DEBUG: Task has photos, clearing them...');
         // Update both status and clear photos in one operation
         await ref.read(taskNotifierProvider.notifier).updateTask(
               UpdateTaskParams(
@@ -523,43 +518,26 @@ class _TaskListState extends ConsumerState<TaskList> {
                 imageUrls: [], // Clear all photos
               ),
             );
-        print('🔍 DEBUG: Photos cleared successfully');
       }
 
       // Update the status to pending
-      print('🔍 DEBUG: Updating status to pending...');
       await ref
           .read(taskNotifierProvider.notifier)
           .updateTaskStatus(taskId: task.id, status: TaskStatus.pending);
-      print('🔍 DEBUG: Status updated to pending');
 
       // Reload tasks to ensure UI is updated
       final user = ref.read(currentUserProvider);
       if (user?.familyId != null) {
-        print('🔍 DEBUG: Reloading tasks...');
         await ref.read(taskNotifierProvider.notifier).loadTasks(
               familyId: user!.familyId!,
             );
-        print('🔍 DEBUG: Tasks reloaded');
-      }
-
-      // Check again if widget is still mounted before showing snackbar
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('🔄 "${task.title}" marked as pending'),
-            backgroundColor: Colors.orange,
-            duration: const Duration(seconds: 2),
-          ),
-        );
       }
     } catch (e) {
-      print('❌ DEBUG: Error in _markAsPending: $e');
-      // Handle errors gracefully
+      // Handle errors gracefully - only show critical errors
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Failed to mark task as pending: $e'),
+            content: Text('Failed to update task: $e'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 2),
           ),
@@ -580,7 +558,7 @@ class _TaskListState extends ConsumerState<TaskList> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('❌ Only parents can verify tasks'),
+            content: Text('Only parents can verify tasks'),
             backgroundColor: Colors.red,
           ),
         );
@@ -594,22 +572,11 @@ class _TaskListState extends ConsumerState<TaskList> {
             status: TaskStatus.completed,
             verifiedById: currentUser.id,
           );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-                '🏆 "${task.title}" verified! ${task.points} points awarded'),
-            backgroundColor: Colors.blue,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Failed to verify task: $e'),
+            content: Text('Failed to verify task: $e'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 2),
           ),
