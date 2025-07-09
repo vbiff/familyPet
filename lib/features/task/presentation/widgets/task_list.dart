@@ -460,6 +460,9 @@ class _TaskListState extends ConsumerState<TaskList> {
   }
 
   Future<void> _markAsCompleted(Task task) async {
+    // Check if widget is still mounted before starting async operation
+    if (!mounted) return;
+
     // Show completion dialog with optional photo verification
     await showDialog<void>(
       context: context,
@@ -467,17 +470,33 @@ class _TaskListState extends ConsumerState<TaskList> {
         return TaskCompletionDialog(
           task: task,
           onCompleted: (List<String> imageUrls) async {
-            await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
-                taskId: task.id, status: TaskStatus.completed);
+            // Check if widget is still mounted before using ref
+            if (!mounted) return;
 
-            // If there are new images, update the task with them
-            if (imageUrls.isNotEmpty) {
-              await ref.read(taskNotifierProvider.notifier).updateTask(
-                    UpdateTaskParams(
-                      taskId: task.id,
-                      imageUrls: [...task.imageUrls, ...imageUrls],
-                    ),
-                  );
+            try {
+              await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
+                  taskId: task.id, status: TaskStatus.completed);
+
+              // If there are new images, update the task with them
+              if (imageUrls.isNotEmpty && mounted) {
+                await ref.read(taskNotifierProvider.notifier).updateTask(
+                      UpdateTaskParams(
+                        taskId: task.id,
+                        imageUrls: [...task.imageUrls, ...imageUrls],
+                      ),
+                    );
+              }
+            } catch (e) {
+              // Handle errors gracefully
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('❌ Failed to mark task as completed: $e'),
+                    backgroundColor: Colors.red,
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              }
             }
           },
         );
@@ -486,22 +505,42 @@ class _TaskListState extends ConsumerState<TaskList> {
   }
 
   Future<void> _markAsPending(Task task) async {
-    await ref
-        .read(taskNotifierProvider.notifier)
-        .updateTaskStatus(taskId: task.id, status: TaskStatus.pending);
+    // Check if widget is still mounted before starting async operation
+    if (!mounted) return;
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('🔄 "${task.title}" marked as pending'),
-          backgroundColor: Colors.orange,
-          duration: const Duration(seconds: 2),
-        ),
-      );
+    try {
+      await ref
+          .read(taskNotifierProvider.notifier)
+          .updateTaskStatus(taskId: task.id, status: TaskStatus.pending);
+
+      // Check again if widget is still mounted before showing snackbar
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('🔄 "${task.title}" marked as pending'),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      // Handle errors gracefully
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Failed to mark task as pending: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
     }
   }
 
   Future<void> _verifyTask(Task task) async {
+    // Check if widget is still mounted before starting async operation
+    if (!mounted) return;
+
     final currentUser = ref.read(currentUserProvider);
     if (currentUser == null) return;
 
@@ -518,21 +557,33 @@ class _TaskListState extends ConsumerState<TaskList> {
       return;
     }
 
-    await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
-          taskId: task.id,
-          status: TaskStatus.completed,
-          verifiedById: currentUser.id,
-        );
+    try {
+      await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
+            taskId: task.id,
+            status: TaskStatus.completed,
+            verifiedById: currentUser.id,
+          );
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              '🏆 "${task.title}" verified! ${task.points} points awarded'),
-          backgroundColor: Colors.blue,
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                '🏆 "${task.title}" verified! ${task.points} points awarded'),
+            backgroundColor: Colors.blue,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Failed to verify task: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
     }
   }
 

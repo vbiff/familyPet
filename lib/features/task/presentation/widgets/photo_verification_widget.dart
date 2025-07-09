@@ -32,6 +32,13 @@ class _PhotoVerificationWidgetState
 
   @override
   Widget build(BuildContext context) {
+    // Debug: Print task image URLs to see what we're working with
+    debugPrint(
+        '📸 Task "${widget.task.title}" has ${widget.task.imageUrls.length} images:');
+    for (int i = 0; i < widget.task.imageUrls.length; i++) {
+      debugPrint('  [$i]: ${widget.task.imageUrls[i]}');
+    }
+
     return Card(
       elevation: 0,
       color: Theme.of(context).colorScheme.surfaceContainerLow,
@@ -149,6 +156,8 @@ class _PhotoVerificationWidgetState
         scrollDirection: Axis.horizontal,
         itemCount: imageUrls.length,
         itemBuilder: (context, index) {
+          final imageUrl = imageUrls[index];
+
           return Container(
             margin: const EdgeInsets.only(right: 8),
             width: 80, // Reduced from 100
@@ -161,30 +170,80 @@ class _PhotoVerificationWidgetState
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(7),
-              child: Image.network(
-                imageUrls[index],
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: Theme.of(context).colorScheme.errorContainer,
-                    child: Icon(
-                      Icons.error,
-                      color: Theme.of(context).colorScheme.onErrorContainer,
+              child: imageUrl.isEmpty
+                  ? Container(
+                      color: Theme.of(context).colorScheme.errorContainer,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.broken_image,
+                            color:
+                                Theme.of(context).colorScheme.onErrorContainer,
+                            size: 16,
+                          ),
+                          Text(
+                            'Empty URL',
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall
+                                ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onErrorContainer,
+                                ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : Image.network(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        // Debug print to see what's failing
+                        debugPrint('❌ Failed to load image: $imageUrl');
+                        debugPrint('Error: $error');
+
+                        return Container(
+                          color: Theme.of(context).colorScheme.errorContainer,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.broken_image,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onErrorContainer,
+                                size: 16,
+                              ),
+                              Text(
+                                'Load Failed',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .labelSmall
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onErrorContainer,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                                : null,
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Center(
-                    child: CircularProgressIndicator(
-                      value: loadingProgress.expectedTotalBytes != null
-                          ? loadingProgress.cumulativeBytesLoaded /
-                              loadingProgress.expectedTotalBytes!
-                          : null,
-                    ),
-                  );
-                },
-              ),
             ),
           );
         },

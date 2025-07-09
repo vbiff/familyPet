@@ -799,10 +799,32 @@ class TaskDetailPage extends ConsumerWidget {
       Task currentTask, bool isUpdating) async {
     if (isUpdating) return;
 
-    await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
-          taskId: currentTask.id,
-          status: TaskStatus.pending,
+    try {
+      await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
+            taskId: currentTask.id,
+            status: TaskStatus.pending,
+          );
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('🔄 "${currentTask.title}" marked as pending'),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 2),
+          ),
         );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Failed to mark task as pending: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _verifyTask(
