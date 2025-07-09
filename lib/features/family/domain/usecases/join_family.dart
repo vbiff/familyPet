@@ -35,31 +35,10 @@ class JoinFamily {
       return left(const ValidationFailure(message: 'User ID cannot be empty'));
     }
 
-    // Check if user already has a family
-    final existingFamilyResult =
-        await _repository.getCurrentUserFamily(params.userId);
-
-    return existingFamilyResult.fold(
-      (failure) {
-        // If checking existing family fails, still try to join
-        // but the repository will handle duplicate membership
-        return _repository.joinFamily(
-          inviteCode: params.inviteCode.trim().toUpperCase(),
-          userId: params.userId,
-        );
-      },
-      (existingFamily) {
-        if (existingFamily != null) {
-          return left(const ValidationFailure(
-              message: 'You are already a member of a family'));
-        }
-
-        // Join the family
-        return _repository.joinFamily(
-          inviteCode: params.inviteCode.trim().toUpperCase(),
-          userId: params.userId,
-        );
-      },
+    // Join the family - let repository handle duplicate membership validation
+    return _repository.joinFamily(
+      inviteCode: params.inviteCode.trim().toUpperCase(),
+      userId: params.userId,
     );
   }
 }

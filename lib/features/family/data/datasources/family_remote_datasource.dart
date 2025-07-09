@@ -115,11 +115,6 @@ class SupabaseFamilyRemoteDataSource implements FamilyRemoteDataSource {
   @override
   Future<void> addMemberToFamily(String familyId, String userId) async {
     try {
-      // Update user's profile to link them to the family
-      await _client.from('profiles').update({
-        'family_id': familyId,
-      }).eq('id', userId);
-
       // Get the user's role to update family's member lists
       final userResponse = await _client
           .from('profiles')
@@ -151,12 +146,18 @@ class SupabaseFamilyRemoteDataSource implements FamilyRemoteDataSource {
         }
       }
 
-      // Update family with new member lists
+      // Update family with new member lists FIRST
       await _client.from('families').update({
         'parent_ids': parentIds,
         'child_ids': childIds,
         'last_activity_at': DateTime.now().toIso8601String(),
       }).eq('id', familyId);
+
+      // Then update user's profile to link them to the family
+      // This order is important because of the database constraint trigger
+      await _client.from('profiles').update({
+        'family_id': familyId,
+      }).eq('id', userId);
     } catch (e) {
       throw Exception('Failed to add member to family: $e');
     }
@@ -380,7 +381,8 @@ class SupabaseFamilyRemoteDataSource implements FamilyRemoteDataSource {
   }
 
   String _generateInviteCode() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    // Use only characters allowed by database validation: [ACDEFHJKMNPRTUVWXY347]
+    const chars = 'ACDEFHJKMNPRTUVWXY347';
     final random = DateTime.now().millisecondsSinceEpoch;
     String code = '';
 

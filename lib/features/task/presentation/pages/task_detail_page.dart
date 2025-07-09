@@ -8,6 +8,7 @@ import 'package:jhonny/features/task/domain/entities/task.dart';
 import 'package:jhonny/features/task/presentation/providers/task_provider.dart';
 import 'package:jhonny/features/family/presentation/providers/family_provider.dart';
 import 'package:jhonny/features/task/presentation/pages/create_task_page.dart';
+import 'package:jhonny/features/task/presentation/widgets/task_comments_section.dart';
 
 class TaskDetailPage extends ConsumerWidget {
   final Task task;
@@ -90,6 +91,8 @@ class TaskDetailPage extends ConsumerWidget {
             _buildTaskSchedule(context, currentTask),
             const SizedBox(height: 24),
             _buildTaskStatus(context, ref, currentTask),
+            const SizedBox(height: 24),
+            TaskCommentsSection(taskId: currentTask.id),
             const SizedBox(height: 32),
             _buildActionButtons(context, ref, isUpdating, currentTask),
           ],
@@ -389,8 +392,6 @@ class TaskDetailPage extends ConsumerWidget {
         return _buildMarkAsPendingButton(context, ref, isUpdating, currentTask);
       case TaskStatus.expired:
         return _buildExpiredMessage(context);
-      default:
-        return const SizedBox.shrink();
     }
   }
 

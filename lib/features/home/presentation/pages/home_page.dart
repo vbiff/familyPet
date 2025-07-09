@@ -40,6 +40,12 @@ class HomePage extends ConsumerWidget {
             builder: (context) => const LoginPage(),
           ),
         );
+      } else if (next.status == AuthStatus.authenticated &&
+          previous?.user?.id != next.user?.id) {
+        // User changed - reset family provider and refresh user data
+        ref.read(familyNotifierProvider.notifier).reset();
+        // Refresh user data to ensure it's up-to-date
+        ref.read(authNotifierProvider.notifier).refreshUser();
       }
     });
 

@@ -17,10 +17,14 @@ class SupabaseAuthRepository implements AuthRepository {
     required UserRole role,
   }) async {
     try {
-      // First create the user account
+      // First create the user account with display name in metadata
       final response = await _client.auth.signUp(
         email: email,
         password: password,
+        data: {
+          'display_name': displayName,
+          'role': role.name,
+        },
       );
 
       if (response.user == null) {
