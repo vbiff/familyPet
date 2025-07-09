@@ -97,7 +97,7 @@ class _PhotoVerificationWidgetState
               children: [
                 Expanded(
                   child: EnhancedButton.outline(
-                    text: 'Take Photo',
+                    text: 'Photo',
                     leadingIcon: Icons.camera_alt,
                     onPressed: _isUploading
                         ? null
