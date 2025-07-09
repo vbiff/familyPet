@@ -708,8 +708,6 @@ class _FamilyDashboardPageState extends ConsumerState<FamilyDashboardPage>
         return Icons.local_fire_department;
       case InsightType.warning:
         return Icons.warning;
-      default:
-        return Icons.info;
     }
   }
 
@@ -725,8 +723,6 @@ class _FamilyDashboardPageState extends ConsumerState<FamilyDashboardPage>
         return Colors.orange;
       case InsightType.warning:
         return Colors.red;
-      default:
-        return Colors.grey;
     }
   }
 }

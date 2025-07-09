@@ -20,6 +20,7 @@ class UpdateTaskParams {
   final int? points;
   final DateTime? dueDate;
   final String? assignedTo;
+  final List<String>? imageUrls;
   final Map<String, dynamic>? metadata;
 
   UpdateTaskParams({
@@ -29,6 +30,7 @@ class UpdateTaskParams {
     this.points,
     this.dueDate,
     this.assignedTo,
+    this.imageUrls,
     this.metadata,
   });
 
@@ -39,6 +41,7 @@ class UpdateTaskParams {
     if (points != null) map['points'] = points;
     if (dueDate != null) map['due_date'] = dueDate!.toIso8601String();
     if (assignedTo != null) map['assigned_to_id'] = assignedTo;
+    if (imageUrls != null) map['image_urls'] = imageUrls;
     if (metadata != null) map['metadata'] = metadata;
     map['updated_at'] = DateTime.now().toIso8601String();
     return map;

@@ -127,6 +127,65 @@ class ImageUploadService {
     }
   }
 
+  /// Uploads a task verification image to Supabase storage
+  Future<Either<Failure, String>> uploadTaskVerificationImage({
+    required String taskId,
+    required String familyId,
+    required String fileName,
+    required Uint8List fileBytes,
+  }) async {
+    // Guard: Don't upload if task ID or family ID is empty
+    if (taskId.isEmpty || familyId.isEmpty) {
+      return const Left(ServerFailure(
+          message: 'Task ID and Family ID are required for task image upload'));
+    }
+
+    try {
+      final path = 'tasks/$familyId/$taskId/$fileName';
+
+      // Upload to task-images bucket
+      await _supabaseClient.storage
+          .from('task-images')
+          .uploadBinary(path, fileBytes);
+
+      // Get public URL
+      final publicUrl =
+          _supabaseClient.storage.from('task-images').getPublicUrl(path);
+
+      return Right(publicUrl);
+    } catch (e) {
+      return Left(ServerFailure(message: 'Failed to upload task image: $e'));
+    }
+  }
+
+  /// Uploads a task verification image from file
+  Future<Either<Failure, String>> uploadTaskVerificationImageFromFile({
+    required String taskId,
+    required String familyId,
+    required File file,
+  }) async {
+    // Guard: Don't upload if task ID or family ID is empty
+    if (taskId.isEmpty || familyId.isEmpty) {
+      return const Left(ServerFailure(
+          message: 'Task ID and Family ID are required for task image upload'));
+    }
+
+    try {
+      final fileName =
+          'verification_${DateTime.now().millisecondsSinceEpoch}_${file.path.split('/').last}';
+      final fileBytes = await file.readAsBytes();
+
+      return uploadTaskVerificationImage(
+        taskId: taskId,
+        familyId: familyId,
+        fileName: fileName,
+        fileBytes: fileBytes,
+      );
+    } catch (e) {
+      return Left(ServerFailure(message: 'Failed to read task image file: $e'));
+    }
+  }
+
   /// Deletes a pet image from storage
   Future<Either<Failure, void>> deletePetImage({
     required String imagePath,

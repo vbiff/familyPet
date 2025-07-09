@@ -1,6 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:jhonny/features/task/domain/entities/task.dart';
-import 'package:jhonny/features/pet/domain/entities/pet.dart';
 import 'package:jhonny/core/services/analytics_service.dart';
 
 class RealAnalyticsService {

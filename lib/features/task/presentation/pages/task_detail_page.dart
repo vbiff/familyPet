@@ -9,6 +9,10 @@ import 'package:jhonny/features/task/presentation/providers/task_provider.dart';
 import 'package:jhonny/features/family/presentation/providers/family_provider.dart';
 import 'package:jhonny/features/task/presentation/pages/create_task_page.dart';
 import 'package:jhonny/features/task/presentation/widgets/task_comments_section.dart';
+import 'package:jhonny/features/task/domain/usecases/update_task.dart';
+import 'package:jhonny/features/task/presentation/widgets/task_completion_dialog.dart';
+import 'package:jhonny/features/task/presentation/widgets/photo_verification_widget.dart';
+import 'package:jhonny/core/providers/supabase_provider.dart';
 
 class TaskDetailPage extends ConsumerWidget {
   final Task task;
@@ -419,7 +423,7 @@ class TaskDetailPage extends ConsumerWidget {
     return FilledButton.icon(
       onPressed: isUpdating
           ? null
-          : () => _markAsCompleted(context, ref, currentTask, isUpdating),
+          : () => _showCompletionDialog(context, ref, currentTask),
       icon: isUpdating
           ? const SizedBox(
               width: 20,
@@ -454,6 +458,70 @@ class TaskDetailPage extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // Show existing verification photos if any
+        if (currentTask.hasImages) ...[
+          Card(
+            elevation: 0,
+            color: Theme.of(context).colorScheme.surfaceContainerLow,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Verification Photos:',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 100,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: currentTask.imageUrls.length,
+                      itemBuilder: (context, index) {
+                        return Container(
+                          margin: const EdgeInsets.only(right: 8),
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.outline,
+                            ),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(7),
+                            child: _buildAuthenticatedImage(
+                              currentTask.imageUrls[index],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // Add verification photos button for parents
+        OutlinedButton.icon(
+          onPressed: isUpdating
+              ? null
+              : () => _showParentVerificationDialog(context, ref, currentTask),
+          icon: const Icon(Icons.add_a_photo),
+          label: const Text('Add Verification Photos'),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(48),
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
         FilledButton.icon(
           onPressed:
               isUpdating ? null : () => _verifyTask(context, ref, currentTask),
@@ -586,14 +654,145 @@ class TaskDetailPage extends ConsumerWidget {
   }
 
   // Action methods
+  Future<void> _showCompletionDialog(
+      BuildContext context, WidgetRef ref, Task currentTask) async {
+    await showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return TaskCompletionDialog(
+          task: currentTask,
+          onCompleted: (List<String> imageUrls) async {
+            await _markAsCompleted(context, ref, currentTask, imageUrls);
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _showParentVerificationDialog(
+      BuildContext context, WidgetRef ref, Task currentTask) async {
+    await showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(12),
+                      topRight: Radius.circular(12),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.add_a_photo,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        size: 28,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Add Verification Photos',
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onPrimaryContainer,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: Icon(
+                          Icons.close,
+                          color:
+                              Theme.of(context).colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Content
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'As a parent, you can add additional verification photos to document the completed task.',
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Photo verification widget
+                        PhotoVerificationWidget(
+                          task: currentTask,
+                          isRequired: false,
+                          onPhotosUploaded: (imageUrls) async {
+                            // Update task with new images
+                            await ref
+                                .read(taskNotifierProvider.notifier)
+                                .updateTask(
+                                  UpdateTaskParams(
+                                    taskId: currentTask.id,
+                                    imageUrls: imageUrls,
+                                  ),
+                                );
+
+                            if (context.mounted) {
+                              Navigator.of(context).pop();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                      '✅ Verification photos added successfully!'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _markAsCompleted(BuildContext context, WidgetRef ref,
-      Task currentTask, bool isUpdating) async {
-    if (isUpdating) return;
+      Task currentTask, List<String> imageUrls) async {
+    // Update task with completion status and any uploaded images
+    final updatedImageUrls = [...currentTask.imageUrls, ...imageUrls];
 
     await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
           taskId: currentTask.id,
           status: TaskStatus.completed,
         );
+
+    // If there are new images, update the task with them
+    if (imageUrls.isNotEmpty) {
+      await ref.read(taskNotifierProvider.notifier).updateTask(
+            UpdateTaskParams(
+              taskId: currentTask.id,
+              imageUrls: updatedImageUrls,
+            ),
+          );
+    }
   }
 
   Future<void> _markAsPending(BuildContext context, WidgetRef ref,
@@ -846,5 +1045,107 @@ class TaskDetailPage extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildAuthenticatedImage(String imageUrl) {
+    return Consumer(
+      builder: (context, ref, child) {
+        return FutureBuilder<String?>(
+          future: _getAuthenticatedImageUrl(imageUrl, ref),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Container(
+                color: Theme.of(context).colorScheme.surfaceContainerLow,
+                child: const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            }
+
+            if (snapshot.hasError ||
+                !snapshot.hasData ||
+                snapshot.data == null) {
+              return Container(
+                color: Theme.of(context).colorScheme.errorContainer,
+                child: Icon(
+                  Icons.error,
+                  color: Theme.of(context).colorScheme.onErrorContainer,
+                ),
+              );
+            }
+
+            return Image.network(
+              snapshot.data!,
+              fit: BoxFit.cover,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Container(
+                  color: Theme.of(context).colorScheme.surfaceContainerLow,
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      value: loadingProgress.expectedTotalBytes != null
+                          ? loadingProgress.cumulativeBytesLoaded /
+                              loadingProgress.expectedTotalBytes!
+                          : null,
+                    ),
+                  ),
+                );
+              },
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  color: Theme.of(context).colorScheme.errorContainer,
+                  child: Icon(
+                    Icons.error,
+                    color: Theme.of(context).colorScheme.onErrorContainer,
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<String?> _getAuthenticatedImageUrl(
+      String imageUrl, WidgetRef ref) async {
+    try {
+      // If the URL is already a complete URL, check if it's from Supabase storage
+      if (imageUrl.startsWith('http')) {
+        // For Supabase storage URLs, we need to get a signed URL for private buckets
+        final uri = Uri.parse(imageUrl);
+
+        // Check if this is a Supabase storage URL
+        if (uri.path.contains('/storage/v1/object/')) {
+          // Extract the bucket and path from the URL
+          final pathSegments = uri.pathSegments;
+          final storageIndex = pathSegments.indexOf('storage');
+          if (storageIndex >= 0 && pathSegments.length > storageIndex + 4) {
+            final bucket = pathSegments[storageIndex + 4];
+            final filePath = pathSegments.sublist(storageIndex + 5).join('/');
+
+            // Get a signed URL for private buckets
+            if (bucket == 'task-images') {
+              final supabase = ref.read(supabaseClientProvider);
+              return supabase.storage
+                  .from(bucket)
+                  .createSignedUrl(filePath, 3600); // 1 hour expiry
+            }
+          }
+        }
+
+        // For public URLs or non-Supabase URLs, return as-is
+        return imageUrl;
+      }
+
+      // If it's just a path, assume it's a task image and create signed URL
+      final supabase = ref.read(supabaseClientProvider);
+      return supabase.storage
+          .from('task-images')
+          .createSignedUrl(imageUrl, 3600);
+    } catch (e) {
+      _logger.e('Failed to get authenticated image URL: $e');
+      return null;
+    }
   }
 }

@@ -11,6 +11,8 @@ import 'package:jhonny/features/task/presentation/providers/task_provider.dart';
 import 'package:jhonny/features/task/presentation/providers/task_state.dart';
 import 'package:jhonny/shared/widgets/widgets.dart';
 import 'package:jhonny/features/family/presentation/pages/family_setup_page.dart';
+import 'package:jhonny/features/task/domain/usecases/update_task.dart';
+import 'package:jhonny/features/task/presentation/widgets/task_completion_dialog.dart';
 
 enum _TaskFilterType { person, date }
 
@@ -443,19 +445,29 @@ class _TaskListState extends ConsumerState<TaskList> {
   }
 
   Future<void> _markAsCompleted(Task task) async {
-    await ref
-        .read(taskNotifierProvider.notifier)
-        .updateTaskStatus(taskId: task.id, status: TaskStatus.completed);
+    // Show completion dialog with optional photo verification
+    await showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return TaskCompletionDialog(
+          task: task,
+          onCompleted: (List<String> imageUrls) async {
+            await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
+                taskId: task.id, status: TaskStatus.completed);
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('✅ "${task.title}" marked as completed!'),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    }
+            // If there are new images, update the task with them
+            if (imageUrls.isNotEmpty) {
+              await ref.read(taskNotifierProvider.notifier).updateTask(
+                    UpdateTaskParams(
+                      taskId: task.id,
+                      imageUrls: [...task.imageUrls, ...imageUrls],
+                    ),
+                  );
+            }
+          },
+        );
+      },
+    );
   }
 
   Future<void> _markAsPending(Task task) async {
