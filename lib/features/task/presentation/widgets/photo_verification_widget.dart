@@ -265,27 +265,43 @@ class _PhotoVerificationWidgetState
 
   Future<void> _pickImage(ImageSource source) async {
     try {
+      debugPrint('🔍 _pickImage called with source: $source');
       final XFile? image = await _picker.pickImage(
         source: source,
         maxWidth: 1024,
         maxHeight: 1024,
         imageQuality: 85,
       );
-
+      debugPrint('📸 Image picker result: ${image?.path ?? "null"}');
       if (image != null) {
+        debugPrint('✅ Image selected, adding to state');
         setState(() {
           _selectedImages.add(File(image.path));
         });
+        debugPrint('✅ State updated with ${_selectedImages.length} images');
+      } else {
+        debugPrint('ℹ️ No image selected');
       }
     } catch (e) {
+      debugPrint('💥 Error picking image: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to pick image: $e'),
+            content: Text('Failed to pick image: ${_getErrorMessage(e)}'),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
+    }
+  }
+
+  String _getErrorMessage(dynamic error) {
+    if (error.toString().contains('camera_access_denied')) {
+      return 'Camera access denied';
+    } else if (error.toString().contains('photo_access_denied')) {
+      return 'Photo library access denied';
+    } else {
+      return 'Unable to access camera or photo library';
     }
   }
 

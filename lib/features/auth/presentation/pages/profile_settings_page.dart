@@ -549,7 +549,17 @@ class _ProfileSettingsPageState extends ConsumerState<ProfileSettingsPage> {
       }
     } catch (e) {
       _logger.e('Error picking image: $e');
-      _showErrorSnackBar('Failed to pick image');
+      _showErrorSnackBar('Failed to pick image: ${_getErrorMessage(e)}');
+    }
+  }
+
+  String _getErrorMessage(dynamic error) {
+    if (error.toString().contains('camera_access_denied')) {
+      return 'Camera access denied';
+    } else if (error.toString().contains('photo_access_denied')) {
+      return 'Photo library access denied';
+    } else {
+      return 'Unable to access camera or photo library';
     }
   }
 

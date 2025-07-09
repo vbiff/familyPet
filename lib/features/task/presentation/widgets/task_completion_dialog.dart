@@ -98,13 +98,7 @@ class _TaskCompletionDialogState extends ConsumerState<TaskCompletionDialog> {
                       style: Theme.of(context).textTheme.bodyLarge,
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      'You can optionally add photos to show your work. This helps parents verify your completion and can earn you extra recognition!',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                    ),
+
                     const SizedBox(height: 16),
 
                     // Photo verification widget

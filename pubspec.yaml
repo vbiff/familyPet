@@ -65,6 +65,9 @@ dependencies:
   flutter_localizations:
     sdk: flutter
     
+  # Permission handling
+  permission_handler: ^11.3.1
+    
   # Onboarding & Tutorial Features
   introduction_screen: ^3.1.14
   showcaseview: ^3.0.0
