@@ -94,7 +94,8 @@ class HomePage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_getGreeting(user?.displayName ?? 'User')),
+        title:
+            FittedBox(child: Text(_getGreeting(user?.displayName ?? 'User'))),
         backgroundColor: Theme.of(context).colorScheme.primaryContainer,
         foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
         actions: [

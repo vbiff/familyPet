@@ -61,6 +61,29 @@ class TaskNotifier extends StateNotifier<TaskState> {
     );
   }
 
+  Future<void> loadArchivedTasks({required String familyId}) async {
+    state = state.copyWith(
+      status: TaskStateStatus.loading,
+      clearFailure: true,
+    );
+
+    final result = await _getTasks(GetTasksParams(
+      familyId: familyId,
+      includeArchived: true,
+    ));
+
+    result.fold(
+      (failure) => state = state.copyWith(
+        status: TaskStateStatus.error,
+        failure: failure,
+      ),
+      (tasks) => state = state.copyWith(
+        status: TaskStateStatus.success,
+        tasks: tasks,
+      ),
+    );
+  }
+
   Future<void> createNewTask({
     required String title,
     required String description,

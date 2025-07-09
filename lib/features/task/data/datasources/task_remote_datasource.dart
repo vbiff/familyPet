@@ -8,6 +8,7 @@ abstract class TaskRemoteDataSource {
     required String familyId,
     String? assignedTo,
     TaskStatus? status,
+    bool includeArchived = false,
   });
 
   Future<TaskModel> getTaskById(String taskId);
@@ -31,6 +32,7 @@ abstract class TaskRemoteDataSource {
     required String familyId,
     String? assignedTo,
     TaskStatus? status,
+    bool includeArchived = false,
   });
 }
 
@@ -46,13 +48,17 @@ class SupabaseTaskRemoteDataSource implements TaskRemoteDataSource {
     required String familyId,
     String? assignedTo,
     TaskStatus? status,
+    bool includeArchived = false,
   }) async {
     try {
-      var query = _client
-          .from(_tableName)
-          .select()
-          .eq('family_id', familyId)
-          .eq('is_archived', false);
+      var query = _client.from(_tableName).select().eq('family_id', familyId);
+
+      // Filter by archived status
+      if (includeArchived) {
+        query = query.eq('is_archived', true);
+      } else {
+        query = query.eq('is_archived', false);
+      }
 
       if (assignedTo != null) {
         query = query.eq('assigned_to_id', assignedTo);
@@ -182,12 +188,17 @@ class SupabaseTaskRemoteDataSource implements TaskRemoteDataSource {
     required String familyId,
     String? assignedTo,
     TaskStatus? status,
+    bool includeArchived = false,
   }) {
     try {
       return _client.from(_tableName).stream(primaryKey: ['id']).map(
           (data) => data.map((json) => TaskModel.fromJson(json)).where((task) {
                 if (task.familyId != familyId) return false;
-                if (task.metadata?['is_archived'] == true) return false;
+
+                // Filter by archived status using the actual isArchived field
+                if (includeArchived && !task.isArchived) return false;
+                if (!includeArchived && task.isArchived) return false;
+
                 if (assignedTo != null && task.assignedTo != assignedTo) {
                   return false;
                 }

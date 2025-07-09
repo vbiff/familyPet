@@ -22,6 +22,7 @@ class UpdateTaskParams {
   final String? assignedTo;
   final List<String>? imageUrls;
   final Map<String, dynamic>? metadata;
+  final bool? isArchived;
 
   UpdateTaskParams({
     required this.taskId,
@@ -32,6 +33,7 @@ class UpdateTaskParams {
     this.assignedTo,
     this.imageUrls,
     this.metadata,
+    this.isArchived,
   });
 
   Map<String, dynamic> toMap() {
@@ -43,6 +45,7 @@ class UpdateTaskParams {
     if (assignedTo != null) map['assigned_to_id'] = assignedTo;
     if (imageUrls != null) map['image_urls'] = imageUrls;
     if (metadata != null) map['metadata'] = metadata;
+    if (isArchived != null) map['is_archived'] = isArchived;
     map['updated_at'] = DateTime.now().toIso8601String();
     return map;
   }

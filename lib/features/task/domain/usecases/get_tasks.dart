@@ -7,11 +7,13 @@ class GetTasksParams {
   final String familyId;
   final String? assignedTo;
   final TaskStatus? status;
+  final bool includeArchived;
 
   const GetTasksParams({
     required this.familyId,
     this.assignedTo,
     this.status,
+    this.includeArchived = false,
   });
 }
 
@@ -30,6 +32,7 @@ class GetTasks {
       familyId: params.familyId,
       assignedTo: params.assignedTo,
       status: params.status,
+      includeArchived: params.includeArchived,
     );
   }
 }

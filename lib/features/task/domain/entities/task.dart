@@ -152,6 +152,7 @@ class Task extends Equatable {
   final DateTime? completedAt;
   final DateTime? verifiedAt;
   final Map<String, dynamic>? metadata;
+  final bool isArchived;
 
   // Phase 2 enhancements
   final TaskCategory category;
@@ -181,6 +182,7 @@ class Task extends Equatable {
     this.completedAt,
     this.verifiedAt,
     this.metadata,
+    this.isArchived = false,
     // Phase 2 properties with defaults
     this.category = TaskCategory.other,
     this.difficulty = TaskDifficulty.medium,
@@ -242,6 +244,7 @@ class Task extends Equatable {
     DateTime? completedAt,
     DateTime? verifiedAt,
     Map<String, dynamic>? metadata,
+    bool? isArchived,
     TaskCategory? category,
     TaskDifficulty? difficulty,
     List<String>? tags,
@@ -272,6 +275,7 @@ class Task extends Equatable {
       completedAt: completedAt ?? this.completedAt,
       verifiedAt: clearVerification ? null : (verifiedAt ?? this.verifiedAt),
       metadata: metadata ?? this.metadata,
+      isArchived: isArchived ?? this.isArchived,
       category: category ?? this.category,
       difficulty: difficulty ?? this.difficulty,
       tags: tags ?? this.tags,
@@ -302,6 +306,7 @@ class Task extends Equatable {
         completedAt,
         verifiedAt,
         metadata,
+        isArchived,
         category,
         difficulty,
         tags,

@@ -17,12 +17,14 @@ class SupabaseTaskRepository implements TaskRepository {
     required String familyId,
     String? assignedTo,
     TaskStatus? status,
+    bool includeArchived = false,
   }) async {
     try {
       final taskModels = await _remoteDataSource.getTasks(
         familyId: familyId,
         assignedTo: assignedTo,
         status: status,
+        includeArchived: includeArchived,
       );
 
       return right(taskModels.map((model) => model.toEntity()).toList());
@@ -132,12 +134,14 @@ class SupabaseTaskRepository implements TaskRepository {
     required String familyId,
     String? assignedTo,
     TaskStatus? status,
+    bool includeArchived = false,
   }) {
     return _remoteDataSource
         .watchTasks(
           familyId: familyId,
           assignedTo: assignedTo,
           status: status,
+          includeArchived: includeArchived,
         )
         .map((taskModels) =>
             taskModels.map((model) => model.toEntity()).toList());

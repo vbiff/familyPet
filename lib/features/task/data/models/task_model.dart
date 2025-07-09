@@ -49,6 +49,7 @@ class TaskModel extends Task {
     super.completedAt,
     super.verifiedAt,
     super.metadata,
+    super.isArchived = false,
   });
 
   factory TaskModel.fromJson(Map<String, dynamic> json) {
@@ -81,6 +82,7 @@ class TaskModel extends Task {
           ? DateTime.parse(json['verified_at'] as String)
           : null,
       metadata: json['metadata'] as Map<String, dynamic>?,
+      isArchived: json['is_archived'] as bool? ?? false,
     );
   }
 
@@ -103,6 +105,7 @@ class TaskModel extends Task {
       'completed_at': completedAt?.toIso8601String(),
       'verified_at': verifiedAt?.toIso8601String(),
       'metadata': metadata,
+      'is_archived': isArchived,
     };
   }
 
@@ -141,6 +144,7 @@ class TaskModel extends Task {
       completedAt: task.completedAt,
       verifiedAt: task.verifiedAt,
       metadata: task.metadata,
+      isArchived: task.isArchived,
     );
   }
 
@@ -163,6 +167,7 @@ class TaskModel extends Task {
       completedAt: completedAt,
       verifiedAt: verifiedAt,
       metadata: metadata,
+      isArchived: isArchived,
     );
   }
 }

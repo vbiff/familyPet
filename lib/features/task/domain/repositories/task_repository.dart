@@ -7,6 +7,7 @@ abstract class TaskRepository {
     required String familyId,
     String? assignedTo,
     TaskStatus? status,
+    bool includeArchived = false,
   });
 
   Future<Either<Failure, Task>> getTaskById(String taskId);
@@ -42,5 +43,6 @@ abstract class TaskRepository {
     required String familyId,
     String? assignedTo,
     TaskStatus? status,
+    bool includeArchived = false,
   });
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:jhonny/features/settings/presentation/widgets/language_selector.dart';
+import 'package:jhonny/features/task/presentation/pages/archive_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -40,6 +41,24 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
             ),
             const SizedBox(height: 16),
+
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.archive_outlined),
+                title: const Text('Archived Tasks'),
+                subtitle: const Text('View and manage archived tasks'),
+                trailing: const Icon(Icons.arrow_forward_ios),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const ArchivePage(),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            const SizedBox(height: 8),
 
             Card(
               child: ListTile(

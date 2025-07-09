@@ -13,6 +13,7 @@ import 'package:jhonny/shared/widgets/widgets.dart';
 import 'package:jhonny/features/family/presentation/pages/family_setup_page.dart';
 import 'package:jhonny/features/task/domain/usecases/update_task.dart';
 import 'package:jhonny/features/task/presentation/widgets/task_completion_dialog.dart';
+import 'package:jhonny/features/task/presentation/widgets/swipe_to_archive_widget.dart';
 
 enum _TaskFilterType { person, date }
 
@@ -224,18 +225,20 @@ class _TaskListState extends ConsumerState<TaskList> {
     }
 
     final user = ref.read(currentUserProvider);
-    List<Task> displayTasks = tasks;
+    // Filter tasks based on user preferences and archived status
+    List<Task> displayTasks = tasks
+        .where((task) => !task.isArchived)
+        .toList(); // Exclude archived tasks
+
     if (_isMyTasks && user != null) {
-      displayTasks = tasks.where((task) => task.assignedTo == user.id).toList();
+      displayTasks =
+          displayTasks.where((task) => task.assignedTo == user.id).toList();
     }
-    // Sort tasks by urgency: overdue first, then soonest due date
+
     if (_isOverdue) {
+      displayTasks = displayTasks.where((task) => task.isOverdue).toList();
       _sortedTasks = List<Task>.from(displayTasks)
-        ..sort((a, b) {
-          if (a.isOverdue && !b.isOverdue) return -1;
-          if (!a.isOverdue && b.isOverdue) return 1;
-          return a.dueDate.compareTo(b.dueDate);
-        });
+        ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
     } else {
       _sortedTasks = List<Task>.from(displayTasks)
         ..sort((a, b) => b.createdAt.compareTo(a.dueDate));
@@ -245,19 +248,28 @@ class _TaskListState extends ConsumerState<TaskList> {
       itemCount: _sortedTasks.length,
       itemBuilder: (context, index) {
         final task = _sortedTasks[index];
-        return TaskCard(
+        return SwipeToArchiveWidget(
           task: task,
-          user: user,
-          onTaskTap: onTaskTap,
-          buildQuickActions: _buildQuickActions,
-          getTaskDisplayColor: _getTaskDisplayColor,
-          getTaskDisplayIcon: _getTaskDisplayIcon,
-          getTaskDisplayText: _getTaskDisplayText,
-          getCategoryDisplayName: _getCategoryDisplayName,
-          getDifficultyColor: _getDifficultyColor,
-          getDifficultyDisplayName: _getDifficultyDisplayName,
-          getAssignedUserName: _getAssignedUserName,
-          formatDueDate: formatDueDate,
+          onArchived: () {
+            // Remove the task from the current list immediately to prevent UI issues
+            setState(() {
+              _sortedTasks.removeWhere((t) => t.id == task.id);
+            });
+          },
+          child: TaskCard(
+            task: task,
+            user: user,
+            onTaskTap: onTaskTap,
+            buildQuickActions: _buildQuickActions,
+            getTaskDisplayColor: _getTaskDisplayColor,
+            getTaskDisplayIcon: _getTaskDisplayIcon,
+            getTaskDisplayText: _getTaskDisplayText,
+            getCategoryDisplayName: _getCategoryDisplayName,
+            getDifficultyColor: _getDifficultyColor,
+            getDifficultyDisplayName: _getDifficultyDisplayName,
+            getAssignedUserName: _getAssignedUserName,
+            formatDueDate: formatDueDate,
+          ),
         );
       },
     );
