@@ -800,10 +800,41 @@ class TaskDetailPage extends ConsumerWidget {
     if (isUpdating) return;
 
     try {
+      print('🔍 DEBUG: Marking task as pending: ${currentTask.title}');
+      print('🔍 DEBUG: Current task status: ${currentTask.status}');
+      print('🔍 DEBUG: Current image URLs: ${currentTask.imageUrls}');
+
+      // If task was completed and had photos, clear them when marking as pending
+      if (currentTask.status == TaskStatus.completed &&
+          currentTask.imageUrls.isNotEmpty) {
+        print('🔍 DEBUG: Task has photos, clearing them...');
+        // Clear photos first
+        await ref.read(taskNotifierProvider.notifier).updateTask(
+              UpdateTaskParams(
+                taskId: currentTask.id,
+                imageUrls: [], // Clear all photos
+              ),
+            );
+        print('🔍 DEBUG: Photos cleared successfully');
+      }
+
+      // Update the status to pending
+      print('🔍 DEBUG: Updating status to pending...');
       await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
             taskId: currentTask.id,
             status: TaskStatus.pending,
           );
+      print('🔍 DEBUG: Status updated to pending');
+
+      // Reload tasks to ensure UI is updated
+      final user = ref.read(currentUserProvider);
+      if (user?.familyId != null) {
+        print('🔍 DEBUG: Reloading tasks...');
+        await ref.read(taskNotifierProvider.notifier).loadTasks(
+              familyId: user!.familyId!,
+            );
+        print('🔍 DEBUG: Tasks reloaded');
+      }
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -815,6 +846,7 @@ class TaskDetailPage extends ConsumerWidget {
         );
       }
     } catch (e) {
+      print('❌ DEBUG: Error in _markAsPending: $e');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1049,7 +1081,8 @@ class TaskDetailPage extends ConsumerWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.errorContainer.withOpacity(0.5),
+        color:
+            Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(

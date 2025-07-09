@@ -150,18 +150,25 @@ class _PhotoVerificationWidgetState
   }
 
   Widget _buildImageGrid(List<String> imageUrls, {bool isExisting = false}) {
+    // Filter out empty URLs
+    final validUrls = imageUrls.where((url) => url.isNotEmpty).toList();
+
+    if (validUrls.isEmpty) {
+      return const SizedBox.shrink(); // Don't show anything if no valid URLs
+    }
+
     return SizedBox(
-      height: 80, // Reduced from 100
+      height: 80,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: imageUrls.length,
+        itemCount: validUrls.length,
         itemBuilder: (context, index) {
-          final imageUrl = imageUrls[index];
+          final imageUrl = validUrls[index];
 
           return Container(
             margin: const EdgeInsets.only(right: 8),
-            width: 80, // Reduced from 100
-            height: 80, // Reduced from 100
+            width: 80,
+            height: 80,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
@@ -170,80 +177,30 @@ class _PhotoVerificationWidgetState
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(7),
-              child: imageUrl.isEmpty
-                  ? Container(
-                      color: Theme.of(context).colorScheme.errorContainer,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.broken_image,
-                            color:
-                                Theme.of(context).colorScheme.onErrorContainer,
-                            size: 16,
-                          ),
-                          Text(
-                            'Empty URL',
-                            style: Theme.of(context)
-                                .textTheme
-                                .labelSmall
-                                ?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onErrorContainer,
-                                ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        // Debug print to see what's failing
-                        debugPrint('❌ Failed to load image: $imageUrl');
-                        debugPrint('Error: $error');
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  // Debug print but don't show error UI
+                  debugPrint('❌ Failed to load image: $imageUrl');
+                  debugPrint('Error: $error');
 
-                        return Container(
-                          color: Theme.of(context).colorScheme.errorContainer,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.broken_image,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onErrorContainer,
-                                size: 16,
-                              ),
-                              Text(
-                                'Load Failed',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelSmall
-                                    ?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onErrorContainer,
-                                    ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Center(
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded /
-                                    loadingProgress.expectedTotalBytes!
-                                : null,
-                          ),
-                        );
-                      },
+                  // Return empty container that takes no space
+                  return const SizedBox.shrink();
+                },
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Center(
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      value: loadingProgress.expectedTotalBytes != null
+                          ? loadingProgress.cumulativeBytesLoaded /
+                              loadingProgress.expectedTotalBytes!
+                          : null,
                     ),
+                  );
+                },
+              ),
             ),
           );
         },

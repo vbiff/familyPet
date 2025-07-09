@@ -509,9 +509,39 @@ class _TaskListState extends ConsumerState<TaskList> {
     if (!mounted) return;
 
     try {
+      print('🔍 DEBUG: Marking task as pending: ${task.title}');
+      print('🔍 DEBUG: Current task status: ${task.status}');
+      print('🔍 DEBUG: Current image URLs: ${task.imageUrls}');
+
+      // If task was completed and had photos, clear them when marking as pending
+      if (task.status == TaskStatus.completed && task.imageUrls.isNotEmpty) {
+        print('🔍 DEBUG: Task has photos, clearing them...');
+        // Update both status and clear photos in one operation
+        await ref.read(taskNotifierProvider.notifier).updateTask(
+              UpdateTaskParams(
+                taskId: task.id,
+                imageUrls: [], // Clear all photos
+              ),
+            );
+        print('🔍 DEBUG: Photos cleared successfully');
+      }
+
+      // Update the status to pending
+      print('🔍 DEBUG: Updating status to pending...');
       await ref
           .read(taskNotifierProvider.notifier)
           .updateTaskStatus(taskId: task.id, status: TaskStatus.pending);
+      print('🔍 DEBUG: Status updated to pending');
+
+      // Reload tasks to ensure UI is updated
+      final user = ref.read(currentUserProvider);
+      if (user?.familyId != null) {
+        print('🔍 DEBUG: Reloading tasks...');
+        await ref.read(taskNotifierProvider.notifier).loadTasks(
+              familyId: user!.familyId!,
+            );
+        print('🔍 DEBUG: Tasks reloaded');
+      }
 
       // Check again if widget is still mounted before showing snackbar
       if (mounted) {
@@ -524,6 +554,7 @@ class _TaskListState extends ConsumerState<TaskList> {
         );
       }
     } catch (e) {
+      print('❌ DEBUG: Error in _markAsPending: $e');
       // Handle errors gracefully
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
