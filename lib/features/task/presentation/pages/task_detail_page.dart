@@ -776,124 +776,156 @@ class TaskDetailPage extends ConsumerWidget {
 
   Future<void> _markAsCompleted(BuildContext context, WidgetRef ref,
       Task currentTask, List<String> imageUrls) async {
-    // Update task with completion status and any uploaded images
-    final updatedImageUrls = [...currentTask.imageUrls, ...imageUrls];
+    // Use Future.microtask to ensure this happens outside the current build cycle
+    await Future.microtask(() async {
+      // Check if context is still mounted before using ref
+      if (!context.mounted) return;
 
-    await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
-          taskId: currentTask.id,
-          status: TaskStatus.completed,
-        );
+      try {
+        // Update task with completion status and any uploaded images
+        final updatedImageUrls = [...currentTask.imageUrls, ...imageUrls];
 
-    // If there are new images, update the task with them
-    if (imageUrls.isNotEmpty) {
-      await ref.read(taskNotifierProvider.notifier).updateTask(
-            UpdateTaskParams(
+        await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
               taskId: currentTask.id,
-              imageUrls: updatedImageUrls,
+              status: TaskStatus.completed,
+            );
+
+        // If there are new images, update the task with them
+        if (imageUrls.isNotEmpty && context.mounted) {
+          await ref.read(taskNotifierProvider.notifier).updateTask(
+                UpdateTaskParams(
+                  taskId: currentTask.id,
+                  imageUrls: updatedImageUrls,
+                ),
+              );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to complete task: $e'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 2),
             ),
           );
-    }
+        }
+      }
+    });
   }
 
   Future<void> _markAsPending(BuildContext context, WidgetRef ref,
       Task currentTask, bool isUpdating) async {
     if (isUpdating) return;
 
-    try {
-      // If task was completed and had photos, clear them when marking as pending
-      if (currentTask.status == TaskStatus.completed &&
-          currentTask.imageUrls.isNotEmpty) {
-        // Clear photos first
-        await ref.read(taskNotifierProvider.notifier).updateTask(
-              UpdateTaskParams(
+    // Use Future.microtask to ensure this happens outside the current build cycle
+    await Future.microtask(() async {
+      if (!context.mounted) return;
+
+      try {
+        // If task was completed and had photos, clear them when marking as pending
+        if (currentTask.status == TaskStatus.completed &&
+            currentTask.imageUrls.isNotEmpty) {
+          // Clear photos first
+          await ref.read(taskNotifierProvider.notifier).updateTask(
+                UpdateTaskParams(
+                  taskId: currentTask.id,
+                  imageUrls: [], // Clear all photos
+                ),
+              );
+        }
+
+        // Update the status to pending
+        if (context.mounted) {
+          await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
                 taskId: currentTask.id,
-                imageUrls: [], // Clear all photos
-              ),
-            );
-      }
+                status: TaskStatus.pending,
+              );
+        }
 
-      // Update the status to pending
-      await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
-            taskId: currentTask.id,
-            status: TaskStatus.pending,
+        // Reload tasks to ensure UI is updated
+        final user = ref.read(currentUserProvider);
+        if (user?.familyId != null && context.mounted) {
+          await ref.read(taskNotifierProvider.notifier).loadTasks(
+                familyId: user!.familyId!,
+              );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to update task: $e'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 2),
+            ),
           );
-
-      // Reload tasks to ensure UI is updated
-      final user = ref.read(currentUserProvider);
-      if (user?.familyId != null) {
-        await ref.read(taskNotifierProvider.notifier).loadTasks(
-              familyId: user!.familyId!,
-            );
+        }
       }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to update task: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    }
+    });
   }
 
   Future<void> _verifyTask(
       BuildContext context, WidgetRef ref, Task currentTask) async {
-    try {
-      final currentUser = ref.read(currentUserProvider);
+    // Use Future.microtask to ensure this happens outside the current build cycle
+    await Future.microtask(() async {
+      if (!context.mounted) return;
 
-      // Validate user is a parent
-      if (currentUser?.role != UserRole.parent) {
-        _logger.w('Non-parent user attempted to verify task');
+      try {
+        final currentUser = ref.read(currentUserProvider);
+
+        // Validate user is a parent
+        if (currentUser?.role != UserRole.parent) {
+          _logger.w('Non-parent user attempted to verify task');
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Only parents can verify tasks'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return;
+        }
+
+        _logger.d('Current task status: ${currentTask.status.name}');
+        _logger.d('Is verified: ${currentTask.isVerifiedByParent}');
+        _logger.d('Needs verification: ${currentTask.needsVerification}');
+        _logger.d('VerifiedById: ${currentTask.verifiedById}');
+
+        // Only verify if task is completed but not verified yet
+        if (currentTask.status == TaskStatus.completed &&
+            !currentTask.isVerifiedByParent) {
+          _logger.i('Attempting to verify task...');
+
+          final verifiedById = currentUser!.id;
+          _logger.d('Current user ID: $verifiedById');
+
+          if (context.mounted) {
+            await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
+                  taskId: currentTask.id,
+                  status: TaskStatus.completed,
+                  verifiedById: verifiedById,
+                );
+          }
+
+          _logger.i('Verification request sent');
+        } else {
+          _logger.w('Cannot verify task');
+          _logger.w('Status: ${currentTask.status.name}');
+          _logger.w('Already verified: ${currentTask.isVerifiedByParent}');
+        }
+      } catch (e) {
+        _logger.e('Verification error: $e');
+        // Show error feedback
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Only parents can verify tasks'),
+            SnackBar(
+              content: Text('Failed to verify task: $e'),
               backgroundColor: Colors.red,
             ),
           );
         }
-        return;
       }
-
-      _logger.d('Current task status: ${currentTask.status.name}');
-      _logger.d('Is verified: ${currentTask.isVerifiedByParent}');
-      _logger.d('Needs verification: ${currentTask.needsVerification}');
-      _logger.d('VerifiedById: ${currentTask.verifiedById}');
-
-      // Only verify if task is completed but not verified yet
-      if (currentTask.status == TaskStatus.completed &&
-          !currentTask.isVerifiedByParent) {
-        _logger.i('Attempting to verify task...');
-
-        final verifiedById = currentUser!.id;
-        _logger.d('Current user ID: $verifiedById');
-
-        await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
-              taskId: currentTask.id,
-              status: TaskStatus.completed,
-              verifiedById: verifiedById,
-            );
-
-        _logger.i('Verification request sent');
-      } else {
-        _logger.w('Cannot verify task');
-        _logger.w('Status: ${currentTask.status.name}');
-        _logger.w('Already verified: ${currentTask.isVerifiedByParent}');
-      }
-    } catch (e) {
-      _logger.e('Verification error: $e');
-      // Show error feedback
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to verify task: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
+    });
   }
 
   Future<void> _unverifyTask(

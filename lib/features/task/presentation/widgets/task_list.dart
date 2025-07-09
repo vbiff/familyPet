@@ -470,34 +470,37 @@ class _TaskListState extends ConsumerState<TaskList> {
         return TaskCompletionDialog(
           task: task,
           onCompleted: (List<String> imageUrls) async {
-            // Check if widget is still mounted before using ref
-            if (!mounted) return;
+            // Use Future.microtask to ensure this happens outside the current build cycle
+            await Future.microtask(() async {
+              // Check if widget is still mounted before using ref
+              if (!mounted) return;
 
-            try {
-              await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
-                  taskId: task.id, status: TaskStatus.completed);
+              try {
+                await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
+                    taskId: task.id, status: TaskStatus.completed);
 
-              // If there are new images, update the task with them
-              if (imageUrls.isNotEmpty && mounted) {
-                await ref.read(taskNotifierProvider.notifier).updateTask(
-                      UpdateTaskParams(
-                        taskId: task.id,
-                        imageUrls: [...task.imageUrls, ...imageUrls],
-                      ),
-                    );
+                // If there are new images, update the task with them
+                if (imageUrls.isNotEmpty && mounted) {
+                  await ref.read(taskNotifierProvider.notifier).updateTask(
+                        UpdateTaskParams(
+                          taskId: task.id,
+                          imageUrls: [...task.imageUrls, ...imageUrls],
+                        ),
+                      );
+                }
+              } catch (e) {
+                // Handle errors gracefully - only show critical errors
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to complete task: $e'),
+                      backgroundColor: Colors.red,
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                }
               }
-            } catch (e) {
-              // Handle errors gracefully - only show critical errors
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Failed to complete task: $e'),
-                    backgroundColor: Colors.red,
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
-              }
-            }
+            });
           },
         );
       },
