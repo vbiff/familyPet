@@ -1,21 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jhonny/core/services/real_analytics_service.dart';
 import 'package:jhonny/core/services/analytics_service.dart';
 import 'package:jhonny/features/task/domain/entities/task.dart';
+import 'package:jhonny/features/family/presentation/providers/family_provider.dart';
 import 'package:jhonny/shared/widgets/enhanced_card.dart';
 import 'package:jhonny/shared/widgets/loading_indicators.dart';
 
-class FamilyDashboardPage extends StatefulWidget {
+class FamilyDashboardPage extends ConsumerStatefulWidget {
   const FamilyDashboardPage({super.key});
 
   @override
-  State<FamilyDashboardPage> createState() => _FamilyDashboardPageState();
+  ConsumerState<FamilyDashboardPage> createState() =>
+      _FamilyDashboardPageState();
 }
 
-class _FamilyDashboardPageState extends State<FamilyDashboardPage>
+class _FamilyDashboardPageState extends ConsumerState<FamilyDashboardPage>
     with TickerProviderStateMixin {
-  final AnalyticsService _analyticsService = AnalyticsService();
+  final RealAnalyticsService _analyticsService = RealAnalyticsService();
 
   AnalyticsPeriod _selectedPeriod = AnalyticsPeriod.weekly;
   FamilyAnalytics? _analytics;
@@ -66,13 +70,22 @@ class _FamilyDashboardPageState extends State<FamilyDashboardPage>
     setState(() => _isLoading = true);
 
     try {
+      // Get current family ID from the family provider
+      final familyState = ref.read(familyNotifierProvider);
+      final familyId = familyState.family?.id;
+
+      if (familyId == null) {
+        throw Exception(
+            'No family found. Please ensure you are part of a family.');
+      }
+
       final analytics = await _analyticsService.getFamilyAnalytics(
-        'family_123', // This would come from current family context
+        familyId,
         _selectedPeriod,
       );
 
       final insights = await _analyticsService.generateInsights(
-        'family_123',
+        familyId,
         _selectedPeriod,
       );
 
@@ -88,14 +101,44 @@ class _FamilyDashboardPageState extends State<FamilyDashboardPage>
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading analytics: $error')),
+          SnackBar(
+            content: Text('Error loading analytics: $error'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
   }
 
+  void _changePeriod(AnalyticsPeriod period) {
+    setState(() {
+      _selectedPeriod = period;
+    });
+    _loadAnalytics();
+  }
+
+  String _getPeriodLabel(AnalyticsPeriod period) {
+    switch (period) {
+      case AnalyticsPeriod.daily:
+        return 'Today';
+      case AnalyticsPeriod.weekly:
+        return 'This Week';
+      case AnalyticsPeriod.monthly:
+        return 'This Month';
+      case AnalyticsPeriod.yearly:
+        return 'This Year';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Watch family state to reload analytics when family changes
+    ref.listen(familyNotifierProvider, (previous, next) {
+      if (previous?.family?.id != next.family?.id && next.family?.id != null) {
+        _loadAnalytics();
+      }
+    });
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Family Dashboard'),
@@ -142,7 +185,32 @@ class _FamilyDashboardPageState extends State<FamilyDashboardPage>
   Widget _buildDashboard() {
     if (_analytics == null) {
       return const Center(
-        child: Text('No data available'),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.analytics_outlined,
+              size: 64,
+              color: Colors.grey,
+            ),
+            SizedBox(height: 16),
+            Text(
+              'No data available',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.grey,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Complete some tasks to see analytics',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey,
+              ),
+            ),
+          ],
+        ),
       );
     }
 
@@ -160,8 +228,10 @@ class _FamilyDashboardPageState extends State<FamilyDashboardPage>
               children: [
                 _buildStatsOverview(),
                 const SizedBox(height: 24),
-                _buildInsightsSection(),
-                const SizedBox(height: 24),
+                if (_insights != null && _insights!.isNotEmpty) ...[
+                  _buildInsightsSection(),
+                  const SizedBox(height: 24),
+                ],
                 _buildCompletionChart(),
                 const SizedBox(height: 24),
                 _buildCategoryDistribution(),
@@ -610,26 +680,6 @@ class _FamilyDashboardPageState extends State<FamilyDashboardPage>
     );
   }
 
-  void _changePeriod(AnalyticsPeriod period) {
-    if (_selectedPeriod != period) {
-      setState(() => _selectedPeriod = period);
-      _loadAnalytics();
-    }
-  }
-
-  String _getPeriodLabel(AnalyticsPeriod period) {
-    switch (period) {
-      case AnalyticsPeriod.daily:
-        return 'Today';
-      case AnalyticsPeriod.weekly:
-        return 'This Week';
-      case AnalyticsPeriod.monthly:
-        return 'This Month';
-      case AnalyticsPeriod.yearly:
-        return 'This Year';
-    }
-  }
-
   String _getCompletionMessage() {
     final rate = _analytics!.completionRate;
     if (rate >= 0.8) return 'Excellent!';
@@ -658,6 +708,8 @@ class _FamilyDashboardPageState extends State<FamilyDashboardPage>
         return Icons.local_fire_department;
       case InsightType.warning:
         return Icons.warning;
+      default:
+        return Icons.info;
     }
   }
 
@@ -673,6 +725,8 @@ class _FamilyDashboardPageState extends State<FamilyDashboardPage>
         return Colors.orange;
       case InsightType.warning:
         return Colors.red;
+      default:
+        return Colors.grey;
     }
   }
 }
