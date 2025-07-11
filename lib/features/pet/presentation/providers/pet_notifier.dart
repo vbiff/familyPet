@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jhonny/core/services/pet_mood_service.dart';
 import 'package:jhonny/features/pet/domain/entities/pet.dart';
 import 'package:jhonny/features/pet/domain/usecases/add_experience.dart';
 import 'package:jhonny/features/pet/domain/usecases/feed_pet.dart';
@@ -209,47 +210,99 @@ class PetNotifier extends StateNotifier<PetState> {
         );
       },
       (updatedPet) {
+        // Record feeding interaction with mood service for analytics
+        final moodService = PetMoodService();
+        moodService.recordFeedInteraction(currentPet.id);
+
         _logger.i(
-            'Pet fed successfully. Health: ${updatedPet.stats['health']}, Happiness: ${updatedPet.stats['happiness']}');
+            'Pet fed successfully. Health: ${updatedPet.stats['health']}, Happiness: ${updatedPet.stats['happiness']}, Hunger: ${updatedPet.stats['hunger']}');
         state = state.copyWith(
           isUpdating: false,
           pet: updatedPet,
-          lastAction: 'Fed ${updatedPet.name}! Health and happiness increased.',
+          lastAction:
+              '🍖 Fed ${updatedPet.name}! Hunger restored to ${updatedPet.stats['hunger']}%.',
         );
       },
     );
   }
 
-  /// Play with the pet
+  /// Play with the pet (with enhanced mood service constraints)
   Future<void> playWithPet({int bonusPoints = 0}) async {
     final currentPet = state.pet;
     if (currentPet == null) return;
 
+    // Check if pet can play using the mood service (once per hour limit)
+    final moodService = PetMoodService();
+    if (!moodService.canPlayWithPet(currentPet.id)) {
+      final timeUntilNext = moodService.getTimeUntilNextPlay(currentPet.id);
+      final minutesLeft = timeUntilNext?.inMinutes ?? 0;
+
+      _logger.i('Pet play blocked: can play again in $minutesLeft minutes');
+      state = state.copyWith(
+        errorMessage:
+            'You can play with ${currentPet.name} again in $minutesLeft minutes! 🎮',
+      );
+      return;
+    }
+
     state = state.copyWith(isUpdating: true, clearError: true);
 
-    final result = await _playWithPet(PlayWithPetParams(
-      petId: currentPet.id,
-      bonusPoints: bonusPoints,
-    ));
+    try {
+      // Apply mood service happiness increase (5% of max happiness = 5 points)
+      final currentStats = Map<String, int>.from(currentPet.stats);
+      final enhancedStats =
+          moodService.applyPlayHappinessIncrease(currentStats);
 
-    result.fold(
-      (failure) {
-        _logger.e('Failed to play with pet: ${failure.message}');
-        state = state.copyWith(
-          isUpdating: false,
-          errorMessage: failure.message,
-        );
-      },
-      (updatedPet) {
-        _logger.i(
-            'Played with pet successfully. Happiness: ${updatedPet.stats['happiness']}, Energy: ${updatedPet.stats['energy']}');
-        state = state.copyWith(
-          isUpdating: false,
-          pet: updatedPet,
-          lastAction: 'Played with ${updatedPet.name}! Happiness increased.',
-        );
-      },
-    );
+      // Update pet with enhanced happiness first
+      final petWithMoodBoost = currentPet.copyWith(
+        stats: enhancedStats,
+        lastPlayedAt: DateTime.now(),
+      );
+
+      // Record the play interaction in mood service
+      moodService.recordPlayInteraction(currentPet.id);
+
+      // Now use the original play functionality for happiness/other effects
+      final result = await _playWithPet(PlayWithPetParams(
+        petId: currentPet.id,
+        bonusPoints: bonusPoints,
+      ));
+
+      result.fold(
+        (failure) {
+          _logger.e('Failed to play with pet: ${failure.message}');
+          state = state.copyWith(
+            isUpdating: false,
+            errorMessage: failure.message,
+          );
+        },
+        (updatedPet) {
+          // Ensure the mood service happiness boost is preserved
+          final finalPet = updatedPet.copyWith(
+            stats: {
+              ...updatedPet.stats,
+              'happiness':
+                  enhancedStats['happiness']!, // Keep mood service boost
+            },
+          );
+
+          _logger.i(
+              'Played with pet successfully. Happiness: ${finalPet.stats['happiness']}, Hunger: ${finalPet.stats['hunger']}');
+          state = state.copyWith(
+            isUpdating: false,
+            pet: finalPet,
+            lastAction:
+                '🎮 Played with ${finalPet.name}! Happiness increased by 5%.',
+          );
+        },
+      );
+    } catch (e) {
+      _logger.e('Error during enhanced play interaction: $e');
+      state = state.copyWith(
+        isUpdating: false,
+        errorMessage: 'Failed to play with pet: $e',
+      );
+    }
   }
 
   /// Give medical care to the pet
@@ -273,13 +326,17 @@ class PetNotifier extends StateNotifier<PetState> {
         );
       },
       (updatedPet) {
+        // Record medical care interaction with mood service for analytics
+        final moodService = PetMoodService();
+        moodService.recordHealInteraction(currentPet.id);
+
         _logger.i(
-            'Medical care given successfully. Health: ${updatedPet.stats['health']}');
+            'Medical care given successfully. Health: ${updatedPet.stats['health']} (restored to 100%)');
         state = state.copyWith(
           isUpdating: false,
           pet: updatedPet,
           lastAction:
-              'Gave medical care to ${updatedPet.name}! Health restored.',
+              '💊 Gave medical care to ${updatedPet.name}! Health restored to 100%.',
         );
       },
     );
@@ -298,9 +355,7 @@ class PetNotifier extends StateNotifier<PetState> {
         stats: {
           'health': 100,
           'happiness': 100,
-          'energy': 100,
           'hunger': 100,
-          'emotion': 100,
         },
         mood: PetMood.veryVeryHappy, // Set to highest mood
         lastCareAt: DateTime.now(),
@@ -361,6 +416,15 @@ class PetNotifier extends StateNotifier<PetState> {
         _logger.i(
             'Experience added successfully. XP: ${updatedPet.experience}, Level: ${updatedPet.level}, Evolved: $evolved');
 
+        // Task completion restores happiness to 100% and feeds the pet
+        final petWithMaxHappiness = updatedPet.copyWith(
+          stats: {
+            ...updatedPet.stats,
+            'happiness':
+                100, // Task completion always restores happiness to 100%
+          },
+        );
+
         // Feed the pet with task points (1 point = 1% hunger)
         final feedResult = await _feedPet(FeedPetParams(
           petId: currentPet.id,
@@ -371,32 +435,40 @@ class PetNotifier extends StateNotifier<PetState> {
           (failure) {
             _logger.w(
                 'Failed to feed pet after task completion: ${failure.message}');
-            // Still show success for experience gain
+            // Still show success for experience gain and happiness boost
             String actionMessage =
-                'Earned $experiencePoints XP from completing "$taskTitle"!';
+                '🎉 Task completed! Earned $experiencePoints XP and happiness restored to 100%!';
             if (evolved) {
               actionMessage +=
-                  '\n🎉 ${updatedPet.name} evolved to ${updatedPet.stage.name}!';
+                  '\n🌟 ${petWithMaxHappiness.name} evolved to ${petWithMaxHappiness.stage.name}!';
             }
 
             state = state.copyWith(
               isUpdating: false,
-              pet: updatedPet,
+              pet: petWithMaxHappiness,
               hasEvolved: evolved,
               lastAction: actionMessage,
             );
           },
           (fedPet) {
+            // Ensure happiness is still 100% after feeding
+            final finalPet = fedPet.copyWith(
+              stats: {
+                ...fedPet.stats,
+                'happiness': 100, // Always 100% happiness on task completion
+              },
+            );
+
             String actionMessage =
-                'Earned $experiencePoints XP and fed ${fedPet.name} from completing "$taskTitle"!';
+                '🎉 Task completed! Earned $experiencePoints XP, happiness restored to 100%, and fed ${finalPet.name}!';
             if (evolved) {
               actionMessage +=
-                  '\n🎉 ${fedPet.name} evolved to ${fedPet.stage.name}!';
+                  '\n🌟 ${finalPet.name} evolved to ${finalPet.stage.name}!';
             }
 
             state = state.copyWith(
               isUpdating: false,
-              pet: fedPet,
+              pet: finalPet,
               hasEvolved: evolved,
               lastAction: actionMessage,
             );
@@ -404,6 +476,118 @@ class PetNotifier extends StateNotifier<PetState> {
         );
       },
     );
+  }
+
+  /// Apply hourly happiness decay to current pet (called by mood service)
+  void applyHourlyHappinessDecay() {
+    final currentPet = state.pet;
+    if (currentPet == null) return;
+
+    _logger.d('🔄 Applying hourly happiness decay to ${currentPet.name}');
+
+    try {
+      // Use mood service to calculate and apply happiness decay
+      final moodService = PetMoodService();
+      final currentStats = Map<String, int>.from(currentPet.stats);
+      final newStats = moodService.applyHappinessDecay(currentStats);
+
+      // Update pet with new stats
+      final updatedPet = currentPet.copyWith(
+        stats: newStats,
+        lastCareAt: DateTime.now(),
+      );
+
+      // Update state
+      state = state.copyWith(
+        pet: updatedPet,
+        lastAction:
+            '⏰ Time passed - ${updatedPet.name}\'s happiness decreased naturally.',
+      );
+
+      _logger.i(
+          '⏰ Applied happiness decay: ${currentStats['happiness']} → ${newStats['happiness']}');
+    } catch (e) {
+      _logger.e('Failed to apply happiness decay: $e');
+    }
+  }
+
+  /// Apply weekly health decay to current pet (called by mood service)
+  void applyWeeklyHealthDecay() {
+    final currentPet = state.pet;
+    if (currentPet == null) return;
+
+    _logger.d('🏥 Applying weekly health decay to ${currentPet.name}');
+
+    try {
+      // Use mood service to calculate and apply health decay
+      final moodService = PetMoodService();
+      final currentStats = Map<String, int>.from(currentPet.stats);
+      final newStats =
+          moodService.applyHealthDecay(currentStats, currentPet.id);
+
+      // Only update if health actually decayed
+      if (newStats['health'] != currentStats['health']) {
+        // Update pet with new stats
+        final updatedPet = currentPet.copyWith(
+          stats: newStats,
+          lastCareAt: DateTime.now(),
+        );
+
+        // Update state
+        state = state.copyWith(
+          pet: updatedPet,
+          lastAction:
+              '🏥 A week has passed - ${updatedPet.name}\'s health decreased naturally. Give medical care!',
+        );
+
+        _logger.i(
+            '🏥 Applied health decay: ${currentStats['health']} → ${newStats['health']}');
+      } else {
+        _logger.d('🏥 Health decay skipped (not yet time)');
+      }
+    } catch (e) {
+      _logger.e('Failed to apply health decay: $e');
+    }
+  }
+
+  /// Restore health to 100% for testing purposes
+  void restoreHealth() {
+    final currentPet = state.pet;
+    if (currentPet == null) return;
+
+    _logger.i('🏥 Restoring health to 100% for testing');
+
+    try {
+      // Use mood service to apply medical care (health to 100%)
+      final moodService = PetMoodService();
+      final currentStats = Map<String, int>.from(currentPet.stats);
+      final newStats = moodService.applyMedicalCare(currentStats);
+
+      // Update pet with new stats
+      final updatedPet = currentPet.copyWith(
+        stats: newStats,
+        lastCareAt: DateTime.now(),
+      );
+
+      // Update state
+      state = state.copyWith(
+        pet: updatedPet,
+        lastAction: '🏥 Debug: ${updatedPet.name}\'s health restored to 100%!',
+      );
+
+      _logger.i('🏥 Debug health restoration completed');
+    } catch (e) {
+      _logger.e('Failed to restore health: $e');
+    }
+  }
+
+  /// Get pet interaction analytics
+  Map<String, dynamic> getPetAnalytics() {
+    final currentPet = state.pet;
+    if (currentPet == null) return {};
+
+    final moodService = PetMoodService();
+    return moodService.getInteractionAnalytics(currentPet.id);
   }
 
   /// Clear any temporary state

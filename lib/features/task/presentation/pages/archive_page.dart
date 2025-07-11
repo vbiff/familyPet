@@ -266,6 +266,8 @@ class _ArchivePageState extends ConsumerState<ArchivePage> {
     try {
       // Use Future.microtask to ensure this happens outside the current build cycle
       await Future.microtask(() async {
+        if (!context.mounted) return;
+
         await ref.read(taskNotifierProvider.notifier).updateTask(
               UpdateTaskParams(
                 taskId: task.id,
@@ -311,6 +313,8 @@ class _ArchivePageState extends ConsumerState<ArchivePage> {
       try {
         // Use Future.microtask to ensure this happens outside the current build cycle
         await Future.microtask(() async {
+          if (!context.mounted) return;
+
           await ref.read(taskNotifierProvider.notifier).deleteTask(task.id);
         });
       } catch (e) {
@@ -358,6 +362,8 @@ class _ArchivePageState extends ConsumerState<ArchivePage> {
 
         // Use Future.microtask to ensure this happens outside the current build cycle
         await Future.microtask(() async {
+          if (!context.mounted) return;
+
           for (final task in archivedTasks) {
             await ref.read(taskNotifierProvider.notifier).deleteTask(task.id);
           }

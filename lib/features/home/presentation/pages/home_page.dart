@@ -484,14 +484,14 @@ class QuickStatsSection extends StatelessWidget {
         final taskSubtitle =
             hasFamily && user?.familyId != null ? 'Tasks' : 'Setup Needed';
 
-        // Calculate pet stats
+        // Calculate pet stats - showing happiness instead of health
         final pet = petState.pet;
-        final petHealth = pet?.stats['health'] ?? 0;
-        final petHealthValue = pet != null ? '$petHealth%' : '--';
-        final petHealthSubtitle = pet != null
-            ? (petHealth >= 80
+        final petHappiness = pet?.stats['happiness'] ?? 0;
+        final petHappinessValue = pet != null ? '$petHappiness%' : '--';
+        final petHappinessSubtitle = pet != null
+            ? (petHappiness >= 80
                 ? 'Happy'
-                : petHealth >= 50
+                : petHappiness >= 50
                     ? 'OK'
                     : 'Needs Care')
             : 'No Pet';
@@ -527,9 +527,9 @@ class QuickStatsSection extends StatelessWidget {
                 Expanded(
                   child: StatItem(
                     icon: Icons.pets,
-                    label: 'Pet Health',
-                    value: petHealthValue,
-                    subtitle: petHealthSubtitle,
+                    label: 'Pet Happiness',
+                    value: petHappinessValue,
+                    subtitle: petHappinessSubtitle,
                     color: Theme.of(context).colorScheme.tertiary,
                   ),
                 ),

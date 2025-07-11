@@ -19,29 +19,13 @@ class PlayWithPet {
           const ValidationFailure(message: 'Bonus points cannot be negative'));
     }
 
-    // Get current pet state to check if we need to fetch by ID
-    final petResult = await _repository.getPetByOwnerId(params.petId);
+    // Get current pet state using the correct method
+    final petResult = await _repository.getPetById(params.petId);
     return petResult.fold(
       (failure) => left(failure),
       (pet) async {
         if (pet == null) {
           return left(const ValidationFailure(message: 'Pet not found'));
-        }
-
-        // Check if pet needs play (business rule)
-        if (!pet.needsPlay && params.bonusPoints == 0) {
-          return left(const ValidationFailure(
-            message:
-                'Pet is not in the mood to play right now. Try again later!',
-          ));
-        }
-
-        // Check pet energy level
-        final currentEnergy = pet.stats['energy'] ?? 0;
-        if (currentEnergy < 20) {
-          return left(const ValidationFailure(
-            message: 'Pet is too tired to play. Feed your pet first!',
-          ));
         }
 
         // Play with the pet

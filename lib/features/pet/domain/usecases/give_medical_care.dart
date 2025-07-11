@@ -19,8 +19,8 @@ class GiveMedicalCare {
           const ValidationFailure(message: 'Bonus points cannot be negative'));
     }
 
-    // Get current pet state
-    final petResult = await _repository.getPetByOwnerId(params.petId);
+    // Get current pet state using the correct method
+    final petResult = await _repository.getPetById(params.petId);
     return petResult.fold(
       (failure) => left(failure),
       (pet) async {
@@ -28,20 +28,7 @@ class GiveMedicalCare {
           return left(const ValidationFailure(message: 'Pet not found'));
         }
 
-        // Check if pet needs medical care (business rule)
-        final currentHealth = pet.stats['health'] ?? 100;
-        if (currentHealth >= 90 && params.bonusPoints == 0) {
-          return left(const ValidationFailure(
-            message: 'Pet is already healthy! Medical care not needed.',
-          ));
-        }
-
-        // Check if pet is in negative mood and needs care
-        if (pet.mood.isNegative || currentHealth < 50) {
-          // Medical care is always beneficial for sick pets
-        }
-
-        // Give medical care
+        // Give medical care to the pet
         return await _repository.giveMedicalCare(
           petId: params.petId,
           bonusPoints: params.bonusPoints,

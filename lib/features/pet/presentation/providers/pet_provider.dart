@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 import 'package:uuid/uuid.dart';
 import 'package:jhonny/core/providers/supabase_provider.dart';
+import 'package:jhonny/core/services/pet_mood_service.dart';
 import 'package:jhonny/features/pet/domain/entities/pet.dart';
 import 'package:jhonny/features/pet/data/datasources/pet_remote_datasource.dart';
 import 'package:jhonny/features/pet/data/repositories/supabase_pet_repository.dart';
@@ -89,7 +90,7 @@ final petNotifierProvider = StateNotifierProvider<PetNotifier, PetState>((ref) {
   final updatePetTimeDecay = ref.watch(updatePetTimeDecayUseCaseProvider);
   final logger = ref.watch(petLoggerProvider);
 
-  return PetNotifier(
+  final notifier = PetNotifier(
     getFamilyPet,
     feedPet,
     playWithPet,
@@ -101,6 +102,21 @@ final petNotifierProvider = StateNotifierProvider<PetNotifier, PetState>((ref) {
     logger,
     ref,
   );
+
+  // Set up the mood service callback for hourly happiness decay
+  PetMoodService.setHappinessDecayCallback(() {
+    notifier.applyHourlyHappinessDecay();
+  });
+
+  // Set up the mood service callback for weekly health decay
+  PetMoodService.setHealthDecayCallback(() {
+    notifier.applyWeeklyHealthDecay();
+  });
+
+  logger
+      .d('🎮 Pet Mood Service callbacks set up for happiness and health decay');
+
+  return notifier;
 });
 
 // Convenience Providers for UI

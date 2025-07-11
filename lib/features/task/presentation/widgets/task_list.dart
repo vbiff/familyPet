@@ -523,10 +523,9 @@ class _TaskListState extends ConsumerState<TaskList> {
             );
       }
 
-      // Update the status to pending
-      await ref
-          .read(taskNotifierProvider.notifier)
-          .updateTaskStatus(taskId: task.id, status: TaskStatus.pending);
+      // Update the status to pending and clear verification flags
+      await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
+          taskId: task.id, status: TaskStatus.pending, clearVerification: true);
 
       // Reload tasks to ensure UI is updated
       final user = ref.read(currentUserProvider);

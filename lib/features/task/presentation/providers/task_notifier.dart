@@ -18,6 +18,10 @@ class TaskNotifier extends StateNotifier<TaskState> {
   // Callback to refresh family statistics when tasks are updated
   VoidCallback? _onTaskUpdated;
 
+  // Callback to award pet experience when task is completed
+  final Future<void> Function(int experiencePoints, String taskTitle)?
+      _onTaskCompleted;
+
   TaskNotifier({
     required GetTasks getTasks,
     required CreateTask createTask,
@@ -25,12 +29,15 @@ class TaskNotifier extends StateNotifier<TaskState> {
     required DeleteTask deleteTask,
     required UpdateTask updateTask,
     VoidCallback? onTaskUpdated,
+    Future<void> Function(int experiencePoints, String taskTitle)?
+        onTaskCompleted,
   })  : _getTasks = getTasks,
         _createTask = createTask,
         _updateTaskStatus = updateTaskStatus,
         _deleteTask = deleteTask,
         _updateTask = updateTask,
         _onTaskUpdated = onTaskUpdated,
+        _onTaskCompleted = onTaskCompleted,
         super(const TaskState());
 
   Future<void> loadTasks({
@@ -178,6 +185,16 @@ class TaskNotifier extends StateNotifier<TaskState> {
               ? updatedTask
               : state.selectedTask,
         );
+
+        // If task was just completed, award pet experience and happiness
+        if (status == TaskStatus.completed && _onTaskCompleted != null) {
+          // Don't wait for pet experience to complete to avoid blocking UI
+          _onTaskCompleted!(updatedTask.points, updatedTask.title)
+              .catchError((e) {
+            // Log error but don't block task completion
+            debugPrint('Failed to award pet experience: $e');
+          });
+        }
 
         // Refresh family statistics when task status is updated
         _onTaskUpdated?.call();

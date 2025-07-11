@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:jhonny/core/config/app_config.dart';
 import 'package:jhonny/core/providers/supabase_provider.dart';
 import 'package:jhonny/core/services/notification_service.dart';
+import 'package:jhonny/core/services/pet_mood_service.dart';
 import 'package:jhonny/core/services/theme_service.dart' as theme_service;
 import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jhonny/features/home/presentation/pages/home_page.dart';
@@ -51,6 +52,15 @@ Future<void> _initializeServices() async {
 
     // Initialize theme service
     await themeService.initialize();
+
+    // Initialize pet mood service with hourly happiness decay
+    try {
+      PetMoodService().initialize();
+      debugPrint('✅ Pet mood service initialized successfully');
+    } catch (e) {
+      debugPrint('❌ Pet mood service initialization failed: $e');
+      // App continues to work without the mood service
+    }
 
     // Initialize notification service
     try {

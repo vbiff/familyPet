@@ -69,9 +69,7 @@ class SupabasePetRepository implements PetRepository {
         stats: const {
           'health': 100,
           'happiness': 100,
-          'energy': 100,
           'hunger': 100,
-          'emotion': 100,
         },
       );
 
@@ -186,15 +184,15 @@ class SupabasePetRepository implements PetRepository {
           if (pet.needsFeeding || pet.needsPlay) {
             final health = pet.stats['health'] ?? 100;
             final happiness = pet.stats['happiness'] ?? 100;
-            final energy = pet.stats['energy'] ?? 100;
+            final hunger = pet.stats['hunger'] ?? 100;
 
             // Reduce stats over time for neglected pets
             final newHealth = (health - 5).clamp(0, 100);
             final newHappiness = (happiness - 10).clamp(0, 100);
-            final newEnergy = (energy - 5).clamp(0, 100);
+            final newHunger = (hunger - 5).clamp(0, 100);
 
             // Calculate new mood from degraded stats
-            final average = (newHealth + newHappiness + newEnergy) / 3;
+            final average = (newHealth + newHappiness + (100 - newHunger)) / 3;
             if (average >= 80)
               newMood = PetMood.happy;
             else if (average >= 60)
@@ -211,7 +209,7 @@ class SupabasePetRepository implements PetRepository {
               stats: {
                 'health': newHealth,
                 'happiness': newHappiness,
-                'energy': newEnergy,
+                'hunger': newHunger,
               },
             );
 

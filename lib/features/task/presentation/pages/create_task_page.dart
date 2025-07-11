@@ -552,41 +552,57 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
       return;
     }
 
-    if (_isEditMode) {
-      final params = UpdateTaskParams(
-        taskId: widget.task!.id,
-        title: _titleController.text.trim(),
-        description: _descriptionController.text.trim(),
-        points: int.tryParse(_pointsController.text) ?? 0,
-        dueDate: _dueDate,
-        assignedTo: _assignedTo,
-        metadata: {
-          'category': _category.name,
-          'difficulty': _difficulty.name,
-          'tags': _selectedTags,
-        },
-      );
-      await ref.read(taskNotifierProvider.notifier).updateTask(params);
-    } else {
-      await ref.read(taskNotifierProvider.notifier).createNewTask(
-        title: _titleController.text.trim(),
-        description: _descriptionController.text.trim(),
-        points: int.tryParse(_pointsController.text) ?? 10,
-        assignedTo: _assignedTo!,
-        createdBy: user.id,
-        dueDate: _dueDate,
-        frequency: _frequency,
-        familyId: user.familyId!,
-        metadata: {
-          'category': _category.name,
-          'difficulty': _difficulty.name,
-          'tags': _selectedTags,
-        },
-      );
-    }
+    // Use Future.microtask to ensure this happens outside the current build cycle
+    await Future.microtask(() async {
+      if (!context.mounted) return;
 
-    if (mounted) {
-      Navigator.of(context).pop();
-    }
+      try {
+        if (_isEditMode) {
+          final params = UpdateTaskParams(
+            taskId: widget.task!.id,
+            title: _titleController.text.trim(),
+            description: _descriptionController.text.trim(),
+            points: int.tryParse(_pointsController.text) ?? 0,
+            dueDate: _dueDate,
+            assignedTo: _assignedTo,
+            metadata: {
+              'category': _category.name,
+              'difficulty': _difficulty.name,
+              'tags': _selectedTags,
+            },
+          );
+          await ref.read(taskNotifierProvider.notifier).updateTask(params);
+        } else {
+          await ref.read(taskNotifierProvider.notifier).createNewTask(
+            title: _titleController.text.trim(),
+            description: _descriptionController.text.trim(),
+            points: int.tryParse(_pointsController.text) ?? 10,
+            assignedTo: _assignedTo!,
+            createdBy: user.id,
+            dueDate: _dueDate,
+            frequency: _frequency,
+            familyId: user.familyId!,
+            metadata: {
+              'category': _category.name,
+              'difficulty': _difficulty.name,
+              'tags': _selectedTags,
+            },
+          );
+        }
+
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to save task: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    });
   }
 }

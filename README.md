@@ -17,7 +17,7 @@ A beautiful Flutter app that brings families together through virtual pet care a
 - Beautiful card-based task list with status indicators
 
 ### 🐕 **Virtual Pet Care**
-- Interactive virtual pet with health, happiness, energy, and experience stats
+- Interactive virtual pet with health, happiness, and hunger stats
 - Pet care actions: Feed, Play, Medical Care
 - Visual progress indicators for pet stats
 - Engaging pet avatar with gradient design
@@ -152,68 +152,4 @@ The app implements Material Design 3 with:
 
 Run tests with:
 
-```bash
-# Unit tests
-flutter test
-
-# Widget tests
-flutter test test/widget_test.dart
-
-# Integration tests (if available)
-flutter test integration_test/
 ```
-
-## 📱 Supported Platforms
-
-- ✅ Android
-- ✅ iOS
-- ✅ Web
-- ✅ macOS
-- ✅ Windows
-- ✅ Linux
-
-## 🔒 Security
-
-- **Authentication**: Secure user authentication via Supabase Auth
-- **Authorization**: Role-based access control
-- **Data Protection**: Row Level Security (RLS) in database
-- **API Security**: Secure API calls with proper authentication headers
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Development Guidelines
-
-- Follow the established architecture patterns
-- Write tests for new features
-- Use conventional commits
-- Ensure code passes `flutter analyze`
-- Follow Flutter best practices
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- [Flutter](https://flutter.dev) for the amazing framework
-- [Supabase](https://supabase.com) for the backend infrastructure
-- [Material Design 3](https://m3.material.io) for design guidance
-- [Riverpod](https://riverpod.dev) for state management
-
-## 📞 Support
-
-If you have any questions or issues, please:
-
-1. Check the [Issues](https://github.com/vbiff/familyPet/issues) page
-2. Create a new issue if your problem isn't already reported
-3. Provide detailed information about your environment and the issue
-
----
-
-**Made with ❤️ for families everywhere**

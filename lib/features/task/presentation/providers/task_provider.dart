@@ -12,6 +12,7 @@ import 'package:jhonny/features/task/domain/usecases/update_task_status.dart';
 import 'package:jhonny/features/task/domain/usecases/update_task.dart';
 import 'package:jhonny/features/task/presentation/providers/task_notifier.dart';
 import 'package:jhonny/features/task/presentation/providers/task_state.dart';
+import 'package:jhonny/features/pet/presentation/providers/pet_provider.dart';
 
 // Data Source Provider
 final taskRemoteDataSourceProvider = Provider<TaskRemoteDataSource>((ref) {
@@ -70,6 +71,13 @@ final taskNotifierProvider =
     updateTaskStatus: updateTaskStatus,
     deleteTask: deleteTask,
     updateTask: updateTask,
+    onTaskCompleted: (experiencePoints, taskTitle) async {
+      // Award pet experience when task is completed
+      await ref.read(petNotifierProvider.notifier).addExperienceFromTask(
+            experiencePoints: experiencePoints,
+            taskTitle: taskTitle,
+          );
+    },
   );
 });
 

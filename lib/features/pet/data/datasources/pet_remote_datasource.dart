@@ -144,29 +144,24 @@ class SupabasePetRemoteDataSource implements PetRemoteDataSource {
 
       // Calculate new stats based on new mechanics
       final currentHunger = petWithDecay.hunger;
-      final currentEnergy = petWithDecay.energy;
-      final currentEmotion = petWithDecay.emotion;
+      final currentHappiness = petWithDecay.happiness;
 
-      // 1 point = 1% hunger increase, energy goes to 100%
-      final hungerIncrease = bonusPoints; // Direct 1:1 mapping
-      final newHunger = (currentHunger + hungerIncrease).clamp(0, 100);
-      const newEnergy = 100; // Energy always goes to 100% when fed
+      // Feeding always restores hunger to 100%, plus bonus points if any
+      const newHunger = 100; // Always restore to full hunger
 
-      // Improve emotion based on how much hunger was restored
-      final emotionIncrease =
-          (hungerIncrease * 0.5).round(); // Half of hunger increase
-      final newEmotion = (currentEmotion + emotionIncrease).clamp(0, 100);
+      // Calculate happiness increase based on how much hunger was restored
+      final hungerRestored = newHunger - currentHunger;
+      final happinessIncrease = (hungerRestored * 0.3).round() +
+          bonusPoints; // 30% of hunger restored + bonus
+      final newHappiness = (currentHappiness + happinessIncrease).clamp(0, 100);
 
       // Keep other stats
       final newHealth = petWithDecay.health;
-      final newHappiness = petWithDecay.happiness;
 
       final updatedStats = <String, int>{
         'health': newHealth,
         'happiness': newHappiness,
-        'energy': newEnergy,
         'hunger': newHunger,
-        'emotion': newEmotion,
       };
 
       // Create updated pet with new mood calculation
@@ -201,23 +196,22 @@ class SupabasePetRemoteDataSource implements PetRemoteDataSource {
       }
 
       // Calculate new stats
-      final currentEnergy = currentPet.stats['energy'] ?? 100;
       final currentHappiness = currentPet.stats['happiness'] ?? 100;
+      final currentHunger = currentPet.stats['hunger'] ?? 100;
 
-      final energyDecrease =
-          15 - bonusPoints; // Playing uses energy, bonuses reduce energy cost
       final happinessIncrease = 20 + bonusPoints; // 20 base + bonus
+      const hungerDecrease = 5; // Playing makes the pet a bit hungry
 
-      final newEnergy = (currentEnergy - energyDecrease).clamp(0, 100);
       final newHappiness = (currentHappiness + happinessIncrease).clamp(0, 100);
+      final newHunger = (currentHunger - hungerDecrease).clamp(0, 100);
 
       // Determine mood change
       final newMood = _calculateMoodFromStats(
-          currentPet.stats['health'] ?? 100, newHappiness, newEnergy);
+          currentPet.stats['health'] ?? 100, newHappiness, newHunger);
 
       final updatedStats = Map<String, int>.from(currentPet.stats);
-      updatedStats['energy'] = newEnergy;
       updatedStats['happiness'] = newHappiness;
+      updatedStats['hunger'] = newHunger;
 
       final updatedPet = currentPet.copyWith(
         lastPlayedAt: DateTime.now(),
@@ -242,30 +236,38 @@ class SupabasePetRemoteDataSource implements PetRemoteDataSource {
         throw Exception('Pet not found with id: $petId');
       }
 
-      // Calculate new stats
-      final currentHealth = currentPet.stats['health'] ?? 100;
-      final currentHappiness = currentPet.stats['happiness'] ?? 100;
-      final currentEnergy = currentPet.stats['energy'] ?? 100;
+      // Apply time decay first
+      final petWithDecay = currentPet.toEntity().applyTimeDecay();
 
-      final healthIncrease = 25 + (bonusPoints * 3); // Strong health boost
-      final happinessIncrease = 10 + bonusPoints; // Small happiness boost
-      final energyIncrease = 5 + bonusPoints; // Small energy boost
+      // Medical care always restores health to 100%, does not affect happiness
+      final currentHealth = petWithDecay.stats['health'] ?? 100;
+      final currentHappiness =
+          petWithDecay.stats['happiness'] ?? 100; // Keep unchanged
+      final currentHunger =
+          petWithDecay.stats['hunger'] ?? 100; // Keep unchanged
 
-      final newHealth = (currentHealth + healthIncrease).clamp(0, 100);
-      final newHappiness = (currentHappiness + happinessIncrease).clamp(0, 100);
-      final newEnergy = (currentEnergy + energyIncrease).clamp(0, 100);
+      // Always restore health to 100% + any bonus points
+      const newHealth = 100; // Always full health
+      final newHappiness = currentHappiness; // Don't change happiness
+      final newHunger = currentHunger; // Don't change hunger
 
-      // Medical care always improves mood significantly if pet was sick
-      final newMood = newHealth >= 80 ? PetMood.content : PetMood.neutral;
+      final updatedStats = <String, int>{
+        'health': newHealth,
+        'happiness': newHappiness,
+        'hunger': newHunger,
+      };
 
-      final updatedStats = Map<String, int>.from(currentPet.stats);
-      updatedStats['health'] = newHealth;
-      updatedStats['happiness'] = newHappiness;
-      updatedStats['energy'] = newEnergy;
-
-      final updatedPet = currentPet.copyWith(
-        mood: newMood.name,
+      // Create updated pet with new stats
+      final updatedPetEntity = petWithDecay.copyWith(
         stats: updatedStats,
+        lastCareAt: DateTime.now(),
+      );
+
+      // Calculate new mood based on updated stats (should improve if health was low)
+      final newMood = updatedPetEntity.currentMood;
+
+      final updatedPet = PetModel.fromEntity(updatedPetEntity).copyWith(
+        mood: newMood.name,
       );
 
       return await updatePet(updatedPet);
@@ -327,7 +329,6 @@ class SupabasePetRemoteDataSource implements PetRemoteDataSource {
       updatedStats['health'] = (updatedStats['health']! + 10).clamp(0, 100);
       updatedStats['happiness'] =
           (updatedStats['happiness']! + 15).clamp(0, 100);
-      updatedStats['energy'] = 100; // Full energy on evolution
 
       final updatedPet = currentPet.copyWith(
         stage: nextStage.name,
@@ -374,8 +375,9 @@ class SupabasePetRemoteDataSource implements PetRemoteDataSource {
   }
 
   // Helper methods
-  PetMood _calculateMoodFromStats(int health, int happiness, int energy) {
-    final average = (health + happiness + energy) / 3;
+  PetMood _calculateMoodFromStats(int health, int happiness, int hunger) {
+    // Use inverse of hunger (higher hunger = worse mood)
+    final average = (health + happiness + (100 - hunger)) / 3;
     if (average >= 80) return PetMood.happy;
     if (average >= 60) return PetMood.content;
     if (average >= 40) return PetMood.neutral;

@@ -740,26 +740,43 @@ class TaskDetailPage extends ConsumerWidget {
                           task: currentTask,
                           isRequired: false,
                           onPhotosUploaded: (imageUrls) async {
-                            // Update task with new images
-                            await ref
-                                .read(taskNotifierProvider.notifier)
-                                .updateTask(
-                                  UpdateTaskParams(
-                                    taskId: currentTask.id,
-                                    imageUrls: imageUrls,
-                                  ),
-                                );
+                            // Use Future.microtask to ensure this happens outside the current build cycle
+                            await Future.microtask(() async {
+                              if (!context.mounted) return;
 
-                            if (context.mounted) {
-                              Navigator.of(context).pop();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                      '✅ Verification photos added successfully!'),
-                                  backgroundColor: Colors.green,
-                                ),
-                              );
-                            }
+                              try {
+                                // Update task with new images
+                                await ref
+                                    .read(taskNotifierProvider.notifier)
+                                    .updateTask(
+                                      UpdateTaskParams(
+                                        taskId: currentTask.id,
+                                        imageUrls: imageUrls,
+                                      ),
+                                    );
+
+                                if (context.mounted) {
+                                  Navigator.of(context).pop();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                          '✅ Verification photos added successfully!'),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content:
+                                          Text('Failed to upload photos: $e'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
+                            });
                           },
                         ),
                       ],
@@ -930,53 +947,75 @@ class TaskDetailPage extends ConsumerWidget {
 
   Future<void> _unverifyTask(
       BuildContext context, WidgetRef ref, Task currentTask) async {
-    try {
-      final currentUser = ref.read(currentUserProvider);
+    // Use Future.microtask to ensure this happens outside the current build cycle
+    await Future.microtask(() async {
+      if (!context.mounted) return;
 
-      // Validate user is a parent
-      if (currentUser?.role != UserRole.parent) {
-        _logger.w('Non-parent user attempted to unverify task');
+      try {
+        final currentUser = ref.read(currentUserProvider);
+
+        // Validate user is a parent
+        if (currentUser?.role != UserRole.parent) {
+          _logger.w('Non-parent user attempted to unverify task');
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Only parents can remove verification'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return;
+        }
+
+        _logger.d('Attempting to unverify task...');
+        _logger.d('Current verified by: ${currentTask.verifiedById}');
+
+        // Only unverify if task is currently verified
+        if (currentTask.isVerifiedByParent && context.mounted) {
+          await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
+                taskId: currentTask.id,
+                status: TaskStatus.completed,
+                clearVerification: true, // Clear verification
+              );
+        }
+      } catch (e) {
+        // Show error feedback
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Only parents can remove verification'),
+            SnackBar(
+              content: Text('Failed to unverify task: $e'),
               backgroundColor: Colors.red,
             ),
           );
         }
-        return;
       }
-
-      _logger.d('Attempting to unverify task...');
-      _logger.d('Current verified by: ${currentTask.verifiedById}');
-
-      // Only unverify if task is currently verified
-      if (currentTask.isVerifiedByParent) {
-        await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
-              taskId: currentTask.id,
-              status: TaskStatus.completed,
-              clearVerification: true, // Clear verification
-            );
-      }
-    } catch (e) {
-      // Show error feedback
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to unverify task: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
+    });
   }
 
   Future<void> _rejectTask(
       BuildContext context, WidgetRef ref, Task currentTask) async {
-    await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
-          taskId: currentTask.id,
-          status: TaskStatus.pending,
-        );
+    // Use Future.microtask to ensure this happens outside the current build cycle
+    await Future.microtask(() async {
+      if (!context.mounted) return;
+
+      try {
+        await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
+              taskId: currentTask.id,
+              status: TaskStatus.pending,
+            );
+      } catch (e) {
+        // Show error feedback
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to reject task: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    });
   }
 
   void _handleMenuAction(BuildContext context, WidgetRef ref, String action) {
@@ -1012,13 +1051,29 @@ class TaskDetailPage extends ConsumerWidget {
     );
 
     if (confirmed == true) {
-      await ref.read(taskNotifierProvider.notifier).deleteTask(task.id);
-      if (context.mounted) {
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Task deleted successfully')),
-        );
-      }
+      // Use Future.microtask to ensure this happens outside the current build cycle
+      await Future.microtask(() async {
+        if (!context.mounted) return;
+
+        try {
+          await ref.read(taskNotifierProvider.notifier).deleteTask(task.id);
+          if (context.mounted) {
+            Navigator.of(context).pop();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Task deleted successfully')),
+            );
+          }
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to delete task: $e'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      });
     }
   }
 

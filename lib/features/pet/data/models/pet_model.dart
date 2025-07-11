@@ -69,10 +69,8 @@ class PetModel {
       'last_care_at': lastCareAt.toIso8601String(),
       'created_at': createdAt.toIso8601String(),
       'happiness': stats['happiness'] ?? 100,
-      'energy': stats['energy'] ?? 100,
       'health': stats['health'] ?? 100,
       'hunger': stats['hunger'] ?? 100,
-      'emotion': stats['emotion'] ?? 100,
     };
   }
 
@@ -126,9 +124,7 @@ class PetModel {
     return {
       'health': json['health'] as int? ?? 100,
       'happiness': json['happiness'] as int? ?? 100,
-      'energy': json['energy'] as int? ?? 100,
       'hunger': json['hunger'] as int? ?? 100,
-      'emotion': json['emotion'] as int? ?? 100,
     };
   }
 

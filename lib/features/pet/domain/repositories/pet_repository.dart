@@ -28,7 +28,7 @@ abstract class PetRepository {
     required int bonusPoints,
   });
 
-  /// Play with the pet - increases happiness and energy
+  /// Play with the pet - increases happiness
   Future<Either<Failure, Pet>> playWithPet({
     required String petId,
     required int bonusPoints,

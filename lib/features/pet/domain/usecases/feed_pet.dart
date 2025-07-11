@@ -19,8 +19,8 @@ class FeedPet {
           const ValidationFailure(message: 'Bonus points cannot be negative'));
     }
 
-    // Get current pet state
-    final petResult = await _repository.getPetByOwnerId(params.petId);
+    // Get current pet state using the correct method
+    final petResult = await _repository.getPetById(params.petId);
     return petResult.fold(
       (failure) => left(failure),
       (pet) async {
@@ -28,12 +28,8 @@ class FeedPet {
           return left(const ValidationFailure(message: 'Pet not found'));
         }
 
-        // Check if pet needs feeding (business rule)
-        if (!pet.needsFeeding && params.bonusPoints == 0) {
-          return left(const ValidationFailure(
-            message: 'Pet doesn\'t need feeding right now. Try again later!',
-          ));
-        }
+        // Allow feeding anytime to restore hunger to 100%
+        // (removed the business rule that blocked feeding when pet doesn't "need" it)
 
         // Feed the pet
         return await _repository.feedPet(

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jhonny/features/family/presentation/providers/family_provider.dart';
 import 'package:jhonny/features/pet/domain/entities/pet.dart';
 import 'package:jhonny/features/pet/presentation/providers/pet_provider.dart';
+import 'package:jhonny/features/pet/presentation/widgets/pet_debug_controls.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jhonny/features/auth/domain/entities/user.dart';
 import 'package:jhonny/shared/widgets/animated_interactions.dart';
@@ -22,13 +23,14 @@ class VirtualPet extends ConsumerWidget {
 
     Color getFeedButtonColor(int? hunger) {
       if (hunger != null) {
-        final percentage = (100 - hunger) / 100;
+        final percentage =
+            hunger / 100; // Use hunger directly, not 100 - hunger
         if (percentage < 0.33) {
-          return Colors.red;
+          return Colors.red; // Low hunger = red (needs feeding)
         } else if (percentage < 0.66) {
-          return Colors.orange;
+          return Colors.orange; // Medium hunger = orange
         } else {
-          return Colors.green;
+          return Colors.green; // High hunger = green (well fed)
         }
       } else {
         return Theme.of(context).colorScheme.primary;
@@ -381,10 +383,10 @@ class VirtualPet extends ConsumerWidget {
                 Expanded(
                   child: _buildStatCard(
                     context,
-                    icon: Icons.sentiment_very_satisfied,
+                    icon: Icons.mood,
                     label: 'Happiness',
                     value: petState.happiness,
-                    color: Colors.orange,
+                    color: Colors.blue,
                   ),
                 ),
               ],
@@ -394,39 +396,13 @@ class VirtualPet extends ConsumerWidget {
 
             Row(
               children: [
-                Expanded(
-                  child: _buildStatCard(
-                    context,
-                    icon: Icons.flash_on,
-                    label: 'Energy',
-                    value: petState.energy,
-                    color: Colors.blue,
-                  ),
-                ),
-                const SizedBox(width: 12),
                 Expanded(
                   child: _buildStatCard(
                     context,
                     icon: Icons.restaurant,
                     label: 'Hunger',
                     value: petState.hunger,
-                    color: Colors.green,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 12),
-
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatCard(
-                    context,
-                    icon: Icons.mood,
-                    label: 'Emotion',
-                    value: petState.emotion,
-                    color: Colors.pink,
+                    color: Colors.orange,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -464,7 +440,7 @@ class VirtualPet extends ConsumerWidget {
                 context,
                 icon: Icons.restaurant,
                 label: petState.pet?.stats['hunger'] != null
-                    ? 'Feed (${100 - petState.pet!.stats['hunger']!}%)'
+                    ? 'Feed (${petState.pet!.stats['hunger']!}% full)'
                     : 'Feed Pet',
                 color: getFeedButtonColor(petState.pet?.stats['hunger']),
                 enabled: !petState.isUpdating,
@@ -692,6 +668,10 @@ class VirtualPet extends ConsumerWidget {
               ),
             ],
           ], // Close the conditional block for petState.hasPet
+
+          // Debug Controls for Testing Enhanced Pet Mood System
+          const SizedBox(height: 24),
+          const PetDebugControls(),
         ],
       ),
     );

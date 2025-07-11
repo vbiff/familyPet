@@ -66,14 +66,14 @@ class AutoEvolvePet {
       Map<String, int> currentStats, PetStage newStage) {
     final stats = Map<String, int>.from(currentStats);
 
-    // Base stat boosts for evolution
+    // Apply stage-based stat boosts
     final healthBoost = _getStatBoost(newStage, 'health');
     final happinessBoost = _getStatBoost(newStage, 'happiness');
-    final energyBoost = _getStatBoost(newStage, 'energy');
+    final hungerBoost = _getStatBoost(newStage, 'hunger');
 
     stats['health'] = (stats['health']! + healthBoost).clamp(0, 100);
     stats['happiness'] = (stats['happiness']! + happinessBoost).clamp(0, 100);
-    stats['energy'] = (stats['energy']! + energyBoost).clamp(0, 100);
+    stats['hunger'] = (stats['hunger']! + hungerBoost).clamp(0, 100);
 
     return stats;
   }

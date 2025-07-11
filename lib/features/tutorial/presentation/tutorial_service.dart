@@ -227,7 +227,7 @@ class TutorialService {
       TutorialStep(
         title: 'Pet Stats',
         description:
-            'Monitor hunger, happiness, and energy levels. Complete tasks to improve these stats!',
+            'Monitor hunger and happiness levels. Complete tasks to improve these stats!',
         targetKey: GlobalKey(),
         icon: Icons.favorite,
         color: Colors.red,
