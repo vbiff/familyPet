@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
@@ -271,6 +272,19 @@ class _FamilyListState extends ConsumerState<FamilyList> {
                     height: 16,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
+                // Debug button to manually refresh family members
+                if (kDebugMode) ...[
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    onPressed: () {
+                      debugPrint('🔄 Manual refresh triggered by user');
+                      ref
+                          .read(familyNotifierProvider.notifier)
+                          .refreshFamilyMembers();
+                    },
+                    tooltip: 'Refresh Members (Debug)',
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: 16),
@@ -284,14 +298,52 @@ class _FamilyListState extends ConsumerState<FamilyList> {
                 child: Padding(
                   padding: const EdgeInsets.all(24),
                   child: Center(
-                    child: Text(
-                      'No family members found',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withValues(alpha: 0.7),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.people_outline,
+                          size: 48,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.5),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No family members found',
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.7),
+                                  ),
+                        ),
+                        if (familyState.errorMessage != null) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            'Error: ${familyState.errorMessage}',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(context).colorScheme.error,
+                                ),
+                            textAlign: TextAlign.center,
                           ),
+                          const SizedBox(height: 12),
+                          ElevatedButton(
+                            onPressed: () {
+                              // Try to reload family members
+                              ref
+                                  .read(familyNotifierProvider.notifier)
+                                  .refreshFamilyMembers();
+                            },
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ),

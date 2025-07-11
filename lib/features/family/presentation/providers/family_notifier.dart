@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jhonny/features/family/domain/usecases/create_family.dart';
 import 'package:jhonny/features/family/domain/usecases/join_family.dart';
@@ -33,11 +34,13 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
 
     // Guard: Don't load if userId is empty
     if (userId.isEmpty) {
+      debugPrint('🚨 Cannot load family: userId is empty');
       state = FamilyState.initial();
       return;
     }
 
     try {
+      debugPrint('🔍 Loading current family for user: $userId');
       state = FamilyState.loading();
 
       final result =
@@ -45,14 +48,19 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
 
       result.fold(
         (failure) {
+          debugPrint('🚨 Failed to load current family: ${failure.message}');
           state = FamilyState.error(failure.message);
         },
         (family) {
           if (family != null) {
+            debugPrint(
+                '✅ Successfully loaded family: ${family.name} (ID: ${family.id})');
+            debugPrint('✅ Family has ${family.totalMembers} members');
             state = FamilyState.loaded(family: family);
             // Load family members
             loadFamilyMembers(family.id);
           } else {
+            debugPrint('ℹ️ User has no family');
             // User has no family - set to loaded state with null family
             state = const FamilyState(
               status: FamilyStatus.loaded,
@@ -63,6 +71,7 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
         },
       );
     } catch (e) {
+      debugPrint('🚨 Exception loading current family: $e');
       state = FamilyState.error('Failed to load family: $e');
     }
   }
@@ -149,15 +158,22 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
 
       result.fold(
         (failure) {
-          // If member loading fails, set empty list and show error in logs
-          // TODO: Use proper logging instead of print
-          // print('Failed to load family members: ${failure.message}');
+          // Log the error for debugging
+          debugPrint('🚨 Failed to load family members: ${failure.message}');
+          debugPrint('🚨 Family ID: $familyId');
+          debugPrint('🚨 Failure type: ${failure.runtimeType}');
+
           state = state.copyWith(
             members: [],
             isLoadingMembers: false,
+            errorMessage: 'Failed to load family members: ${failure.message}',
           );
         },
         (members) {
+          debugPrint('✅ Successfully loaded ${members.length} family members');
+          debugPrint(
+              '✅ Members: ${members.map((m) => '${m.displayName} (${m.role.name})').join(', ')}');
+
           state = state.copyWith(
             members: members,
             isLoadingMembers: false,
@@ -166,11 +182,13 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
       );
     } catch (e) {
       // If member loading fails completely, ensure we have an empty list
-      // TODO: Use proper logging instead of print
-      // print('Exception loading family members: $e');
+      debugPrint('🚨 Exception loading family members: $e');
+      debugPrint('🚨 Stack trace: ${StackTrace.current}');
+
       state = state.copyWith(
         members: [],
         isLoadingMembers: false,
+        errorMessage: 'Exception loading family members: $e',
       );
     }
   }

@@ -671,7 +671,7 @@ class VirtualPet extends ConsumerWidget {
 
           // Debug Controls for Testing Enhanced Pet Mood System
           const SizedBox(height: 24),
-          const PetDebugControls(),
+          // const PetDebugControls(),
         ],
       ),
     );

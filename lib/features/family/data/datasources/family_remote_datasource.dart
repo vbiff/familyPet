@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:jhonny/features/family/data/models/family_model.dart';
 import 'package:jhonny/features/family/data/models/family_member_model.dart';
@@ -200,11 +201,15 @@ class SupabaseFamilyRemoteDataSource implements FamilyRemoteDataSource {
   @override
   Future<List<FamilyMemberModel>> getFamilyMembers(String familyId) async {
     try {
+      debugPrint('🔍 Getting family members for family: $familyId');
+
       // Get all profiles that belong to this family
       final response = await _client.from('profiles').select('''
             id, display_name, email, role, avatar_url, family_id, 
             created_at, last_login_at
           ''').eq('family_id', familyId);
+
+      debugPrint('📊 Database returned ${response.length} profiles');
 
       // Get task statistics for each member
       final List<FamilyMemberModel> members = [];
@@ -247,8 +252,12 @@ class SupabaseFamilyRemoteDataSource implements FamilyRemoteDataSource {
         }
       }
 
+      debugPrint(
+          '✅ Successfully created ${members.length} family member models');
       return members;
     } catch (e) {
+      debugPrint('🚨 Exception in getFamilyMembers: $e');
+      debugPrint('🚨 Family ID: $familyId');
       throw Exception('Failed to get family members: $e');
     }
   }
