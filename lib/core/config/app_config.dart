@@ -49,9 +49,9 @@ class AppConfig {
     }
   }
 
-  static const String storageTaskImagesBucket = 'task_images';
-  static const String storageProfileImagesBucket = 'profile_images';
-  static const String storagePetImagesBucket = 'pet_images';
+  static const String storageTaskImagesBucket = 'task-images';
+  static const String storageProfileImagesBucket = 'profile-images';
+  static const String storagePetImagesBucket = 'pet-images';
 
   // Feature flags
   static const bool enableOfflineSupport = true;

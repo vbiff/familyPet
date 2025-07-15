@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jhonny/core/config/app_config.dart';
 import 'package:jhonny/core/services/pet_mood_service.dart';
+import 'package:jhonny/features/pet/domain/entities/pet.dart';
 import 'package:jhonny/features/pet/presentation/providers/pet_provider.dart';
 import 'package:jhonny/shared/widgets/enhanced_button.dart';
 
@@ -161,10 +163,116 @@ class PetDebugControls extends ConsumerWidget {
               leadingIcon: Icons.analytics,
               onPressed: () => _showAnalytics(context, analytics),
             ),
+            const SizedBox(height: 8),
+
+            // Change Mood (Debug)
+            EnhancedButton.primary(
+              text: 'Change Mood',
+              leadingIcon: Icons.mood,
+              backgroundColor: Colors.purple,
+              onPressed: () => _showMoodDialog(context, ref),
+            ),
+            const SizedBox(height: 8),
+
+            // Test Stage Evolution
+            EnhancedButton.outline(
+              text: 'Test Stage Evolution',
+              leadingIcon: Icons.arrow_upward,
+              onPressed: () => _showStageDialog(context, ref),
+            ),
+            const SizedBox(height: 8),
+
+            // Test Image URL
+            EnhancedButton.outline(
+              text: 'Test Very Happy Image URL',
+              leadingIcon: Icons.image,
+              onPressed: () => _testImageUrl(context, ref),
+            ),
+            const SizedBox(height: 8),
+
+            // Show Config URL
+            EnhancedButton.outline(
+              text: 'Show Supabase Config',
+              leadingIcon: Icons.settings,
+              onPressed: () => _showSupabaseConfig(context),
+            ),
+            const SizedBox(height: 8),
+
+            // Image Type Info
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Image Info:',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 8),
+                  Text('Current Mood: ${petState.currentMood.name}'),
+                  Text('Pet Stage: ${petState.petStage.name}'),
+                  const SizedBox(height: 4),
+                  // Show what type of image should be used based on stage
+                  if (petState.petStage == PetStage.egg ||
+                      petState.petStage == PetStage.baby) ...[
+                    Text('Image Type: Stage-based (${petState.petStage.name})',
+                        style: TextStyle(
+                            color: Colors.green.shade700,
+                            fontWeight: FontWeight.bold)),
+                    Text(
+                        'Expected Image: ${_getExpectedStageImage(petState.petStage)}'),
+                  ] else if (petState.currentMood == PetMood.neutral) ...[
+                    Text(
+                        'Image Type: Stage-based (neutral ${petState.petStage.name})',
+                        style: TextStyle(
+                            color: Colors.green.shade700,
+                            fontWeight: FontWeight.bold)),
+                    Text(
+                        'Expected Image: ${_getExpectedStageImage(petState.petStage)}'),
+                  ] else ...[
+                    Text('Image Type: Mood-based (${petState.petStage.name})',
+                        style: TextStyle(
+                            color: Colors.purple.shade700,
+                            fontWeight: FontWeight.bold)),
+                    Text(
+                        'Expected Mood Image: ${petState.currentMood.imageName}'),
+                  ],
+                  const SizedBox(height: 4),
+                  Text(
+                    'Growth Logic: Egg & Baby → Stage images | Neutral → Stage images | Other moods → Mood images',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.green.shade700,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  String _getExpectedStageImage(PetStage stage) {
+    switch (stage) {
+      case PetStage.egg:
+        return 'pet_egg.png';
+      case PetStage.baby:
+        return 'pet_baby.png';
+      case PetStage.child:
+        return 'pet_child.png';
+      case PetStage.teen:
+        return 'pet_teen.png';
+      case PetStage.adult:
+        return 'pet_adult.png';
+    }
   }
 
   void _forceHappinessDecay(WidgetRef ref) {
@@ -200,7 +308,6 @@ class PetDebugControls extends ConsumerWidget {
 
     // Then immediately clear it to allow instant play again
     // Note: This is a hack for testing - in production this shouldn't be possible
-    final now = DateTime.now().subtract(const Duration(hours: 2));
     // We can't directly manipulate private fields, so this is just for demo
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -243,5 +350,185 @@ class PetDebugControls extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  void _showMoodDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Change Pet Mood'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Select a mood to change your pet to:'),
+              const SizedBox(height: 16),
+              ...PetMood.values.map((mood) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          debugPrint('🎭 Debug: Changing mood to ${mood.name}');
+                          ref
+                              .read(petNotifierProvider.notifier)
+                              .debugChangeMood(mood);
+                          Navigator.of(context).pop();
+                          debugPrint('🎭 Debug: Mood change completed');
+                        },
+                        child: Text(mood.name.toUpperCase()),
+                      ),
+                    ),
+                  )),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _testImageUrl(BuildContext context, WidgetRef ref) {
+    // Test URL construction directly using AppConfig with defaults folder
+    final baseUrl =
+        '${AppConfig.supabaseUrl}/storage/v1/object/public/${AppConfig.storagePetImagesBucket}/defaults/';
+    final testUrl = '${baseUrl}very-happy.png';
+
+    debugPrint('🧪 Testing image URL: $testUrl');
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Test Image URL'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('URL: $testUrl'),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: 100,
+              height: 100,
+              child: Image.network(
+                testUrl,
+                fit: BoxFit.cover,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return const CircularProgressIndicator();
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  debugPrint('❌ Test image failed to load: $error');
+                  return Column(
+                    children: [
+                      const Icon(Icons.error, color: Colors.red),
+                      Text('Failed to load\n$error',
+                          style: const TextStyle(fontSize: 10)),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSupabaseConfig(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Supabase Configuration'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Supabase URL: ${AppConfig.supabaseUrl}'),
+              const Text('Storage Bucket: ${AppConfig.storagePetImagesBucket}'),
+              Text(
+                  'Supabase Anon Key: ${AppConfig.supabaseAnonKey.substring(0, 20)}...'),
+              const SizedBox(height: 8),
+              Text(
+                  'Full Image URL: ${AppConfig.supabaseUrl}/storage/v1/object/public/${AppConfig.storagePetImagesBucket}/defaults/very-happy.png'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showStageDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Test Pet Stage'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Select a stage to test the growth scenario:'),
+              const SizedBox(height: 16),
+              ...PetStage.values.map((stage) {
+                final isEarlyStage =
+                    stage == PetStage.egg || stage == PetStage.baby;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        debugPrint('🔄 Debug: Changing stage to ${stage.name}');
+                        _changeStageForTesting(ref, stage);
+                        Navigator.of(context).pop();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isEarlyStage
+                            ? Colors.orange.shade100
+                            : Colors.purple.shade100,
+                        foregroundColor: isEarlyStage
+                            ? Colors.orange.shade700
+                            : Colors.purple.shade700,
+                      ),
+                      child: Text(
+                          '${stage.name.toUpperCase()} ${isEarlyStage ? "(Stage Image)" : "(Mood Image)"}'),
+                    ),
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _changeStageForTesting(WidgetRef ref, PetStage newStage) {
+    // Use the debug method from pet notifier to change stage
+    ref.read(petNotifierProvider.notifier).debugChangeStage(newStage);
   }
 }

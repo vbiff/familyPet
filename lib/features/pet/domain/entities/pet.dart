@@ -21,11 +21,19 @@ enum PetMood {
   String get imageName {
     switch (this) {
       case PetMood.veryVeryHappy:
-        return 'very-very-happy.png';
+        return 'very-happy.png';
       case PetMood.veryHappy:
         return 'very-happy.png';
       case PetMood.happy:
-        return 'happy.png';
+        return 'happy.png'; // Use happy.png for happy mood
+      case PetMood.content:
+        return 'happy.png'; // Use happy.png for content mood
+      case PetMood.neutral:
+        return 'happy.png'; // Use happy.png for neutral mood
+      case PetMood.sad:
+        return 'hungry.png'; // Use hungry.png as "not happy" fallback
+      case PetMood.upset:
+        return 'very-hungry.png'; // Use very-hungry.png as "very unhappy" fallback
       case PetMood.hungry:
         return 'hungry.png';
       case PetMood.veryHungry:

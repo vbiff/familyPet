@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jhonny/core/config/app_config.dart';
 import 'package:jhonny/features/family/presentation/providers/family_provider.dart';
 import 'package:jhonny/features/pet/domain/entities/pet.dart';
 import 'package:jhonny/features/pet/presentation/providers/pet_provider.dart';
@@ -671,7 +672,7 @@ class VirtualPet extends ConsumerWidget {
 
           // Debug Controls for Testing Enhanced Pet Mood System
           const SizedBox(height: 24),
-          // const PetDebugControls(),
+          const PetDebugControls(),
         ],
       ),
     );
@@ -777,17 +778,53 @@ class VirtualPet extends ConsumerWidget {
     PetStage stage,
     PetMood currentMood,
   ) {
-    // Try to get mood-based image from Supabase storage first
-    final moodImageUrl = _getMoodImageUrl(currentMood);
+    // Use stage-based images for egg and baby stages
+    // Use mood-based images for child, teen, and adult stages (except neutral)
+    const bool useMoodImages = true;
 
-    // Use mood-based image if available, otherwise fall back to stage image
     String? imageUrl;
-    if (moodImageUrl != null) {
+
+    // For egg and baby stages, always use stage-based images
+    if (stage == PetStage.egg || stage == PetStage.baby) {
+      if (petStageImages != null) {
+        imageUrl = petStageImages[stage.name];
+        debugPrint('🥚 Using stage image for ${stage.name}: $imageUrl');
+      } else {
+        imageUrl = petImageUrl;
+        debugPrint('🥚 Using pet image URL for ${stage.name}: $imageUrl');
+      }
+    }
+    // For neutral mood, always use stage-based images (pet-child, pet-teen, pet-adult)
+    else if (currentMood == PetMood.neutral) {
+      if (petStageImages != null) {
+        imageUrl = petStageImages[stage.name];
+        debugPrint('😐 Using stage image for neutral ${stage.name}: $imageUrl');
+      } else {
+        imageUrl = petImageUrl;
+        debugPrint(
+            '😐 Using pet image URL for neutral ${stage.name}: $imageUrl');
+      }
+    }
+    // For child, teen, and adult stages with non-neutral moods, use mood-based images
+    else if (useMoodImages &&
+        (stage == PetStage.child ||
+            stage == PetStage.teen ||
+            stage == PetStage.adult)) {
+      final moodImageUrl = _getMoodImageUrl(currentMood);
       imageUrl = moodImageUrl;
-    } else if (petStageImages != null) {
-      imageUrl = petStageImages[stage.name];
-    } else {
-      imageUrl = petImageUrl;
+      debugPrint(
+          '🎭 Using mood image for ${stage.name} (${currentMood.name}): $imageUrl');
+    }
+    // Fallback to stage images if mood images fail
+    else {
+      if (petStageImages != null) {
+        imageUrl = petStageImages[stage.name];
+        debugPrint(
+            '🐾 Using fallback stage image for ${stage.name}: $imageUrl');
+      } else {
+        imageUrl = petImageUrl;
+        debugPrint('🖼️ Using fallback pet image URL: $imageUrl');
+      }
     }
 
     if (imageUrl != null && imageUrl.isNotEmpty) {
@@ -808,6 +845,7 @@ class VirtualPet extends ConsumerWidget {
           );
         },
         errorBuilder: (context, error, stackTrace) {
+          debugPrint('❌ Failed to load image: $imageUrl, Error: $error');
           // Fallback to local asset if network image fails
           return Image.asset(
             _getPetImagePath(stage),
@@ -815,6 +853,8 @@ class VirtualPet extends ConsumerWidget {
             height: 150,
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) {
+              debugPrint(
+                  '❌ Failed to load local asset: ${_getPetImagePath(stage)}');
               // Final fallback to icon if everything fails
               return Icon(
                 Icons.pets,
@@ -827,12 +867,15 @@ class VirtualPet extends ConsumerWidget {
       );
     } else {
       // Use local asset as default
+      debugPrint('🎨 Using local asset for ${stage.name}');
       return Image.asset(
         _getPetImagePath(stage),
         width: 150,
         height: 150,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
+          debugPrint(
+              '❌ Failed to load local asset: ${_getPetImagePath(stage)}');
           // Fallback to icon if image fails to load
           return Icon(
             Icons.pets,
@@ -845,12 +888,18 @@ class VirtualPet extends ConsumerWidget {
   }
 
   String? _getMoodImageUrl(PetMood mood) {
-    // TODO: Replace with your Supabase storage URL
-    const baseUrl =
-        'https://your-supabase-project.supabase.co/storage/v1/object/public/pet-images/';
+    // Use actual Supabase storage URL with defaults folder
+    final baseUrl =
+        '${AppConfig.supabaseUrl}/storage/v1/object/public/${AppConfig.storagePetImagesBucket}/defaults/';
+    final fullUrl = baseUrl + mood.imageName;
+
+    debugPrint('🔗 Generated mood image URL: $fullUrl');
+    debugPrint('🔗 Base URL: $baseUrl');
+    debugPrint('🔗 Image name: ${mood.imageName}');
+    debugPrint('🔗 Mood: ${mood.name}');
 
     // Return the mood-based image URL
-    return baseUrl + mood.imageName;
+    return fullUrl;
   }
 
   String _getPetImagePath(PetStage stage) {

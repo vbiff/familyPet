@@ -581,6 +581,110 @@ class PetNotifier extends StateNotifier<PetState> {
     }
   }
 
+  /// Debug method to change pet mood by setting specific hunger and happiness values
+  void debugChangeMood(PetMood targetMood) {
+    final currentPet = state.pet;
+    if (currentPet == null) return;
+
+    _logger.i(
+        '🎭 Debug: Changing ${currentPet.name}\'s mood to ${targetMood.name}');
+
+    try {
+      // Calculate stats needed for the target mood
+      Map<String, int> newStats = Map<String, int>.from(currentPet.stats);
+
+      // Set hunger and happiness values based on target mood
+      switch (targetMood) {
+        case PetMood.veryVeryHappy:
+          newStats['happiness'] = 95;
+          newStats['hunger'] = 80;
+          break;
+        case PetMood.veryHappy:
+          newStats['happiness'] = 85;
+          newStats['hunger'] = 80;
+          break;
+        case PetMood.happy:
+          newStats['happiness'] = 75;
+          newStats['hunger'] = 80;
+          break;
+        case PetMood.content:
+          newStats['happiness'] = 65;
+          newStats['hunger'] = 80;
+          break;
+        case PetMood.neutral:
+          newStats['happiness'] = 50;
+          newStats['hunger'] = 80;
+          break;
+        case PetMood.sad:
+          newStats['happiness'] = 30;
+          newStats['hunger'] = 80;
+          break;
+        case PetMood.upset:
+          newStats['happiness'] = 10;
+          newStats['hunger'] = 80;
+          break;
+        case PetMood.hungry:
+          newStats['happiness'] = 80;
+          newStats['hunger'] = 25;
+          break;
+        case PetMood.veryHungry:
+          newStats['happiness'] = 80;
+          newStats['hunger'] = 15;
+          break;
+        case PetMood.veryVeryHungry:
+          newStats['happiness'] = 80;
+          newStats['hunger'] = 5;
+          break;
+      }
+
+      // Update pet with new stats
+      final updatedPet = currentPet.copyWith(
+        stats: newStats,
+        lastCareAt: DateTime.now(),
+      );
+
+      // Update state
+      state = state.copyWith(
+        pet: updatedPet,
+        lastAction:
+            '🎭 Debug: ${updatedPet.name}\'s mood changed to ${targetMood.name}!',
+      );
+
+      _logger.i(
+          '🎭 Debug mood change completed: ${targetMood.name} (H:${newStats['happiness']}, F:${newStats['hunger']})');
+    } catch (e) {
+      _logger.e('Failed to change mood: $e');
+    }
+  }
+
+  /// Debug method to change pet stage for testing growth scenario
+  void debugChangeStage(PetStage targetStage) {
+    final currentPet = state.pet;
+    if (currentPet == null) return;
+
+    _logger.i(
+        '🔄 Debug: Changing ${currentPet.name}\'s stage to ${targetStage.name}');
+
+    try {
+      // Update pet with new stage
+      final updatedPet = currentPet.copyWith(
+        stage: targetStage,
+        lastCareAt: DateTime.now(),
+      );
+
+      // Update state
+      state = state.copyWith(
+        pet: updatedPet,
+        lastAction:
+            '🔄 Debug: ${updatedPet.name}\'s stage changed to ${targetStage.name}!',
+      );
+
+      _logger.i('🔄 Debug stage change completed: ${targetStage.name}');
+    } catch (e) {
+      _logger.e('Failed to change stage: $e');
+    }
+  }
+
   /// Get pet interaction analytics
   Map<String, dynamic> getPetAnalytics() {
     final currentPet = state.pet;
