@@ -253,12 +253,6 @@ class PetNotifier extends StateNotifier<PetState> {
       final enhancedStats =
           moodService.applyPlayHappinessIncrease(currentStats);
 
-      // Update pet with enhanced happiness first
-      final petWithMoodBoost = currentPet.copyWith(
-        stats: enhancedStats,
-        lastPlayedAt: DateTime.now(),
-      );
-
       // Record the play interaction in mood service
       moodService.recordPlayInteraction(currentPet.id);
 
