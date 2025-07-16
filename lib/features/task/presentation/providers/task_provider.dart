@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:jhonny/core/providers/supabase_provider.dart';
@@ -73,10 +74,17 @@ final taskNotifierProvider =
     updateTask: updateTask,
     onTaskCompleted: (experiencePoints, taskTitle) async {
       // Award pet experience when task is completed
-      await ref.read(petNotifierProvider.notifier).addExperienceFromTask(
-            experiencePoints: experiencePoints,
-            taskTitle: taskTitle,
-          );
+      try {
+        await ref.read(petNotifierProvider.notifier).addExperienceFromTask(
+              experiencePoints: experiencePoints,
+              taskTitle: taskTitle,
+            );
+      } catch (e) {
+        // Silently handle disposed ref errors
+        if (!e.toString().contains('disposed')) {
+          debugPrint('Error awarding pet experience: $e');
+        }
+      }
     },
   );
 });

@@ -811,9 +811,24 @@ class VirtualPet extends ConsumerWidget {
             stage == PetStage.teen ||
             stage == PetStage.adult)) {
       final moodImageUrl = _getMoodImageUrl(currentMood);
-      imageUrl = moodImageUrl;
-      debugPrint(
-          '🎭 Using mood image for ${stage.name} (${currentMood.name}): $imageUrl');
+
+      // If mood image is available, use it; otherwise fall back to stage images
+      if (moodImageUrl != null && moodImageUrl.isNotEmpty) {
+        imageUrl = moodImageUrl;
+        debugPrint(
+            '🎭 Using mood image for ${stage.name} (${currentMood.name}): $imageUrl');
+      } else {
+        // Fall back to stage images when no mood image is available
+        if (petStageImages != null) {
+          imageUrl = petStageImages[stage.name];
+          debugPrint(
+              '🔄 No mood image available, using stage image for ${stage.name}: $imageUrl');
+        } else {
+          imageUrl = petImageUrl;
+          debugPrint(
+              '🔄 No mood image available, using pet image URL: $imageUrl');
+        }
+      }
     }
     // Fallback to stage images if mood images fail
     else {
@@ -888,14 +903,21 @@ class VirtualPet extends ConsumerWidget {
   }
 
   String? _getMoodImageUrl(PetMood mood) {
+    // Return null if mood doesn't have a specific image
+    final imageName = mood.moodImageName;
+    if (imageName == null || imageName.isEmpty) {
+      debugPrint('🔗 No mood image available for ${mood.name}, returning null');
+      return null;
+    }
+
     // Use actual Supabase storage URL with defaults folder
     final baseUrl =
         '${AppConfig.supabaseUrl}/storage/v1/object/public/${AppConfig.storagePetImagesBucket}/defaults/';
-    final fullUrl = baseUrl + mood.imageName;
+    final fullUrl = baseUrl + imageName;
 
     debugPrint('🔗 Generated mood image URL: $fullUrl');
     debugPrint('🔗 Base URL: $baseUrl');
-    debugPrint('🔗 Image name: ${mood.imageName}');
+    debugPrint('🔗 Image name: $imageName');
     debugPrint('🔗 Mood: ${mood.name}');
 
     // Return the mood-based image URL

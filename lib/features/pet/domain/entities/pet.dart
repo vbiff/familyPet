@@ -18,22 +18,19 @@ enum PetMood {
       [sad, upset, hungry, veryHungry, veryVeryHungry].contains(this);
   bool get isHungryState => [hungry, veryHungry, veryVeryHungry].contains(this);
 
-  String get imageName {
+  // Mood-based images for negative states
+  String? get moodImageName {
     switch (this) {
       case PetMood.veryVeryHappy:
         return 'very-happy.png';
       case PetMood.veryHappy:
         return 'very-happy.png';
       case PetMood.happy:
-        return 'happy.png'; // Use happy.png for happy mood
-      case PetMood.content:
-        return 'happy.png'; // Use happy.png for content mood
-      case PetMood.neutral:
-        return 'happy.png'; // Use happy.png for neutral mood
+        return 'happy.png';
       case PetMood.sad:
-        return 'hungry.png'; // Use hungry.png as "not happy" fallback
+        return 'hungry.png';
       case PetMood.upset:
-        return 'very-hungry.png'; // Use very-hungry.png as "very unhappy" fallback
+        return 'hungry.png';
       case PetMood.hungry:
         return 'hungry.png';
       case PetMood.veryHungry:
@@ -41,7 +38,7 @@ enum PetMood {
       case PetMood.veryVeryHungry:
         return 'very-very-hungry.png';
       default:
-        return 'happy.png'; // Default fallback
+        return null; // Use age-based image for positive/neutral moods
     }
   }
 }
@@ -56,6 +53,21 @@ enum PetStage {
   bool get canEvolve => this != PetStage.adult;
   PetStage? get nextStage =>
       canEvolve ? PetStage.values[PetStage.values.indexOf(this) + 1] : null;
+
+  String get imageName {
+    switch (this) {
+      case PetStage.egg:
+        return 'pet_egg.png';
+      case PetStage.baby:
+        return 'pet_baby.png';
+      case PetStage.child:
+        return 'pet_child.png';
+      case PetStage.teen:
+        return 'pet_teen.png';
+      case PetStage.adult:
+        return 'pet_adult.png';
+    }
+  }
 }
 
 class Pet extends Equatable {
@@ -118,6 +130,12 @@ class Pet extends Equatable {
     if (happiness >= 40) return PetMood.neutral;
     if (happiness >= 20) return PetMood.sad;
     return PetMood.upset;
+  }
+
+  // Get the appropriate image: mood image for negative states, age image otherwise
+  String get imageName {
+    final moodImage = currentMood.moodImageName;
+    return moodImage ?? stage.imageName;
   }
 
   // Calculate stats decay based on time passed

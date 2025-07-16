@@ -570,19 +570,54 @@ class TaskDetailPage extends ConsumerWidget {
     bool isUpdating,
     Task currentTask,
   ) {
+    // If task needs verification (completed but not verified), child should wait
     if (currentTask.needsVerification) {
       return _waitingForVerification(context);
     }
 
+    // If task is verified by parent, child should see completion confirmation
+    if (currentTask.isVerifiedByParent) {
+      return _buildVerifiedTaskMessage(context);
+    }
+
+    // Handle pending/in-progress tasks - child can mark as completed
     switch (currentTask.status) {
       case TaskStatus.pending:
       case TaskStatus.inProgress:
         return _buildCompleteButton(context, ref, isUpdating, currentTask);
       case TaskStatus.completed:
-        return _buildMarkAsPendingButton(context, ref, isUpdating, currentTask);
+        // This shouldn't happen if logic is correct (would be caught by needsVerification or isVerified above)
+        // But as fallback, show waiting for verification
+        return _waitingForVerification(context);
       case TaskStatus.expired:
         return _buildExpiredMessage(context);
     }
+  }
+
+  Widget _buildVerifiedTaskMessage(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.green.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.verified, color: Colors.green),
+          const SizedBox(width: 12),
+          Text(
+            'Task Completed and Verified!',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Colors.green,
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildParentContent(
@@ -591,13 +626,14 @@ class TaskDetailPage extends ConsumerWidget {
     bool isUpdating,
     Task currentTask,
   ) {
+    // Task is completed but needs verification - show verification controls
     if (currentTask.needsVerification) {
       return _buildVerificationControls(context, ref, isUpdating, currentTask);
     }
 
+    // Task is verified - show unverify controls
     if (currentTask.isVerifiedByParent) {
-      return _buildRestoreOrUnverifyControls(
-          context, ref, isUpdating, currentTask);
+      return _buildVerifiedTaskControls(context, ref, isUpdating, currentTask);
     }
 
     return const SizedBox.shrink();
@@ -625,25 +661,38 @@ class TaskDetailPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildMarkAsPendingButton(
-      BuildContext context, WidgetRef ref, bool isUpdating, Task currentTask) {
-    return OutlinedButton.icon(
-      onPressed: isUpdating
-          ? null
-          : () => _markAsPending(context, ref, currentTask, isUpdating),
-      icon: const Icon(Icons.undo),
-      label: const Text('Mark as Pending'),
-      style: OutlinedButton.styleFrom(
-        minimumSize: const Size.fromHeight(52),
-      ),
-    );
-  }
-
   Widget _buildVerificationControls(
       BuildContext context, WidgetRef ref, bool isUpdating, Task currentTask) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // Status info
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: Colors.orange.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.hourglass_empty, color: Colors.orange),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Task completed by child - awaiting parent verification',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.orange.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
         // Show existing verification photos if any
         if (currentTask.hasImages) ...[
           Card(
@@ -655,7 +704,7 @@ class TaskDetailPage extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Verification Photos:',
+                    'Completion Photos:',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -700,14 +749,15 @@ class TaskDetailPage extends ConsumerWidget {
               ? null
               : () => _showParentVerificationDialog(context, ref, currentTask),
           icon: const Icon(Icons.add_a_photo),
-          label: const Text('Add Verification Photos'),
+          label: const Text('Add Additional Photos'),
           style: OutlinedButton.styleFrom(
             minimumSize: const Size.fromHeight(48),
           ),
         ),
 
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
 
+        // Primary action - Verify
         FilledButton.icon(
           onPressed:
               isUpdating ? null : () => _verifyTask(context, ref, currentTask),
@@ -715,15 +765,18 @@ class TaskDetailPage extends ConsumerWidget {
           label: const Text('Verify & Award Points'),
           style: FilledButton.styleFrom(
             minimumSize: const Size.fromHeight(52),
-            backgroundColor: Colors.blue,
+            backgroundColor: Colors.green,
           ),
         ),
+
         const SizedBox(height: 12),
+
+        // Secondary action - Reject
         OutlinedButton.icon(
           onPressed:
               isUpdating ? null : () => _rejectTask(context, ref, currentTask),
           icon: const Icon(Icons.close),
-          label: const Text('Mark as Pending'),
+          label: const Text('Reject - Mark as Pending'),
           style: OutlinedButton.styleFrom(
             minimumSize: const Size.fromHeight(52),
             foregroundColor: Colors.red,
@@ -733,40 +786,62 @@ class TaskDetailPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildRestoreOrUnverifyControls(
+  Widget _buildVerifiedTaskControls(
       BuildContext context, WidgetRef ref, bool isUpdating, Task currentTask) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (currentTask.status == TaskStatus.expired)
-          OutlinedButton.icon(
-            onPressed: isUpdating
-                ? null
-                : () => _markAsPending(context, ref, currentTask, isUpdating),
-            icon: const Icon(Icons.restore),
-            label: const Text('Restore Task'),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(52),
-            ),
-          )
-        else
-          Row(
+        // Show task verification info
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: Colors.green.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+          ),
+          child: Row(
             children: [
+              const Icon(Icons.verified, color: Colors.green),
+              const SizedBox(width: 12),
               Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: isUpdating
-                      ? null
-                      : () => _unverifyTask(context, ref, currentTask),
-                  icon: const Icon(Icons.cancel),
-                  label: const Text('Remove Verification'),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(52),
-                    foregroundColor: Colors.orange,
-                  ),
+                child: Text(
+                  'Task has been verified and points awarded',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.green.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
                 ),
               ),
             ],
           ),
+        ),
+
+        // Action: Remove verification (required before marking as pending)
+        OutlinedButton.icon(
+          onPressed: isUpdating
+              ? null
+              : () => _unverifyTask(context, ref, currentTask),
+          icon: const Icon(Icons.cancel),
+          label: const Text('Remove Verification'),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(52),
+            foregroundColor: Colors.orange,
+          ),
+        ),
+
+        const SizedBox(height: 8),
+
+        // Help text
+        Text(
+          'To mark this task as pending again, you must first remove the verification.',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontStyle: FontStyle.italic,
+              ),
+          textAlign: TextAlign.center,
+        ),
       ],
     );
   }
@@ -988,6 +1063,8 @@ class TaskDetailPage extends ConsumerWidget {
         // Update task with completion status and any uploaded images
         final updatedImageUrls = [...currentTask.imageUrls, ...imageUrls];
 
+        // Check context before first async operation
+        if (!context.mounted) return;
         await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
               taskId: currentTask.id,
               status: TaskStatus.completed,
@@ -1016,56 +1093,6 @@ class TaskDetailPage extends ConsumerWidget {
     });
   }
 
-  Future<void> _markAsPending(BuildContext context, WidgetRef ref,
-      Task currentTask, bool isUpdating) async {
-    if (isUpdating) return;
-
-    // Use Future.microtask to ensure this happens outside the current build cycle
-    await Future.microtask(() async {
-      if (!context.mounted) return;
-
-      try {
-        // If task was completed and had photos, clear them when marking as pending
-        if (currentTask.status == TaskStatus.completed &&
-            currentTask.imageUrls.isNotEmpty) {
-          // Clear photos first
-          await ref.read(taskNotifierProvider.notifier).updateTask(
-                UpdateTaskParams(
-                  taskId: currentTask.id,
-                  imageUrls: [], // Clear all photos
-                ),
-              );
-        }
-
-        // Update the status to pending
-        if (context.mounted) {
-          await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
-                taskId: currentTask.id,
-                status: TaskStatus.pending,
-              );
-        }
-
-        // Reload tasks to ensure UI is updated
-        final user = ref.read(currentUserProvider);
-        if (user?.familyId != null && context.mounted) {
-          await ref.read(taskNotifierProvider.notifier).loadTasks(
-                familyId: user!.familyId!,
-              );
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to update task: $e'),
-              backgroundColor: Colors.red,
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
-      }
-    });
-  }
-
   Future<void> _verifyTask(
       BuildContext context, WidgetRef ref, Task currentTask) async {
     // Use Future.microtask to ensure this happens outside the current build cycle
@@ -1073,6 +1100,8 @@ class TaskDetailPage extends ConsumerWidget {
       if (!context.mounted) return;
 
       try {
+        // Check if context is still mounted before reading ref
+        if (!context.mounted) return;
         final currentUser = ref.read(currentUserProvider);
 
         // Validate user is a parent
@@ -1102,6 +1131,7 @@ class TaskDetailPage extends ConsumerWidget {
           final verifiedById = currentUser!.id;
           _logger.d('Current user ID: $verifiedById');
 
+          // Check context is mounted before async operation
           if (context.mounted) {
             await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
                   taskId: currentTask.id,
@@ -1138,6 +1168,8 @@ class TaskDetailPage extends ConsumerWidget {
       if (!context.mounted) return;
 
       try {
+        // Check if context is still mounted before reading ref
+        if (!context.mounted) return;
         final currentUser = ref.read(currentUserProvider);
 
         // Validate user is a parent
@@ -1186,6 +1218,9 @@ class TaskDetailPage extends ConsumerWidget {
       if (!context.mounted) return;
 
       try {
+        // Check if context is still mounted before using ref
+        if (!context.mounted) return;
+
         await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
               taskId: currentTask.id,
               status: TaskStatus.pending,

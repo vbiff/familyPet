@@ -281,13 +281,15 @@ class HomePage extends ConsumerWidget {
               leading: const Icon(Icons.archive_outlined),
               title: const Text('Archived Tasks'),
               subtitle: const Text('View and manage archived tasks'),
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(context);
-                Navigator.of(context).push(
+                debugPrint('🔄 Home: Navigating to Archive page');
+                await Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) => const ArchivePage(),
                   ),
                 );
+                debugPrint('✅ Home: Returned from Archive page');
               },
             ),
             ListTile(

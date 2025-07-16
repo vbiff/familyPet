@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jhonny/features/auth/domain/entities/user.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
-import 'package:jhonny/features/family/presentation/providers/family_provider.dart';
 import 'package:jhonny/features/task/domain/entities/task.dart';
 import 'package:jhonny/features/task/presentation/pages/create_task_page.dart';
 import 'package:jhonny/features/task/presentation/pages/task_detail_page.dart';
@@ -14,8 +13,6 @@ import 'package:jhonny/features/task/domain/usecases/update_task.dart';
 import 'package:jhonny/features/task/presentation/widgets/task_completion_dialog.dart';
 import 'package:jhonny/features/task/presentation/widgets/swipe_to_archive_widget.dart';
 
-enum _TaskFilterType { person, date }
-
 class TaskList extends ConsumerStatefulWidget {
   const TaskList({super.key});
 
@@ -23,16 +20,33 @@ class TaskList extends ConsumerStatefulWidget {
   ConsumerState<TaskList> createState() => _TaskListState();
 }
 
-class _TaskListState extends ConsumerState<TaskList> {
-  bool _isMyTasks = false;
-  bool _isOverdue = false;
+class _TaskListState extends ConsumerState<TaskList>
+    with WidgetsBindingObserver {
+  bool _isMyTasks = true;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadTasks();
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Refresh when app comes back to foreground
+    if (state == AppLifecycleState.resumed && mounted) {
+      debugPrint('🔄 TaskList: App resumed, refreshing tasks');
+      _loadTasks();
+    }
   }
 
   void _loadTasks() {
@@ -40,9 +54,12 @@ class _TaskListState extends ConsumerState<TaskList> {
 
     // Only load tasks if user has a real family
     if (user?.familyId != null) {
+      debugPrint('🔄 TaskList: Loading tasks for family ${user!.familyId}');
       ref.read(taskNotifierProvider.notifier).loadTasks(
-            familyId: user!.familyId!,
+            familyId: user.familyId!,
           );
+    } else {
+      debugPrint('⚠️ TaskList: Cannot load tasks - no user or family ID');
     }
   }
 
@@ -60,7 +77,16 @@ class _TaskListState extends ConsumerState<TaskList> {
     // Listen for auth changes and reload tasks when user profile is updated
     ref.listen(currentUserProvider, (previous, next) {
       if (previous?.familyId != next?.familyId) {
+        debugPrint('🔄 TaskList: Family ID changed, reloading tasks');
         _loadTasks();
+      }
+    });
+
+    // Listen for task state changes to detect when provider is invalidated
+    ref.listen(taskNotifierProvider, (previous, next) {
+      if (previous?.status != next.status) {
+        debugPrint(
+            '📋 TaskList: Task state changed from ${previous?.status} to ${next.status}');
       }
     });
 
@@ -78,40 +104,15 @@ class _TaskListState extends ConsumerState<TaskList> {
             ),
             Row(
               children: [
-                // Filter button with popup menu for person, deadline, and status
-                PopupMenuButton<_TaskFilterType>(
-                  icon: const Icon(Icons.filter_list),
-                  tooltip: 'Filter Tasks',
-                  onSelected: (filterType) async {
-                    switch (filterType) {
-                      case _TaskFilterType.person:
-                        setState(() {
-                          _isMyTasks = !_isMyTasks;
-                        });
-                        break;
-                      case _TaskFilterType.date:
-                        setState(() {
-                          _isOverdue = !_isOverdue;
-                        });
-                        break;
-                    }
+                // Filter button for toggling my tasks
+                IconButton(
+                  icon: Icon(_isMyTasks ? Icons.person : Icons.group),
+                  tooltip: _isMyTasks ? 'Show all tasks' : 'Show my tasks',
+                  onPressed: () {
+                    setState(() {
+                      _isMyTasks = !_isMyTasks;
+                    });
                   },
-                  itemBuilder: (context) => [
-                    PopupMenuItem(
-                      value: _TaskFilterType.person,
-                      child: ListTile(
-                        leading: const Icon(Icons.person_outline),
-                        title: Text(_isMyTasks ? 'All tasks' : 'My tasks'),
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: _TaskFilterType.date,
-                      child: ListTile(
-                        leading: const Icon(Icons.event),
-                        title: Text(_isOverdue ? 'By date' : 'By urgency'),
-                      ),
-                    ),
-                  ],
                 ),
                 EnhancedButton.ghost(
                   leadingIcon: Icons.add,
@@ -234,61 +235,104 @@ class _TaskListState extends ConsumerState<TaskList> {
         .where((task) => !task.isArchived)
         .toList(); // Exclude archived tasks
 
+    debugPrint(
+        '📋 TaskList: Total tasks: ${tasks.length}, Non-archived: ${displayTasks.length}');
+
     if (_isMyTasks && user != null) {
       displayTasks =
           displayTasks.where((task) => task.assignedTo == user.id).toList();
+      debugPrint('📋 TaskList: Filtered to my tasks: ${displayTasks.length}');
     }
 
-    // Rebuild sorted tasks list based on current filters
-    List<Task> sortedTasks;
-    if (_isOverdue) {
-      displayTasks = displayTasks.where((task) => task.isOverdue).toList();
-      sortedTasks = List<Task>.from(displayTasks)
-        ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
-    } else {
-      sortedTasks = List<Task>.from(displayTasks)
-        ..sort((a, b) => b.createdAt.compareTo(a.dueDate));
-    }
+    // Separate current tasks from completed tasks
+    List<Task> currentTasks = displayTasks
+        .where((task) => task.status.isPending || task.status.isInProgress)
+        .toList()
+      ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
 
-    return ListView.builder(
-      itemCount: sortedTasks.length,
-      itemBuilder: (context, index) {
-        final task = sortedTasks[index];
-        return SwipeToArchiveWidget(
+    List<Task> completedTasks = displayTasks
+        .where((task) => task.status.isCompleted)
+        .toList()
+      ..sort((a, b) => (b.completedAt ?? b.updatedAt ?? b.createdAt)
+          .compareTo(a.completedAt ?? a.updatedAt ?? a.createdAt));
+
+    // Build list items
+    List<Widget> listItems = [];
+
+    // Add current tasks
+    for (final task in currentTasks) {
+      listItems.add(SwipeToArchiveWidget(
+        task: task,
+        onArchived: null,
+        child: TaskCard(
           task: task,
-          onArchived:
-              null, // Remove the setState callback to prevent provider modification during build
-          child: TaskCard(
-            task: task,
-            user: user,
-            onTaskTap: onTaskTap,
-            onCompleteTask: _markAsCompleted,
+          user: user,
+          onTaskTap: onTaskTap,
+          onCompleteTask: _markAsCompleted,
+          onUncompleteTask: _markAsUncompleted,
+        ),
+      ));
+    }
+
+    // Add divider if both current and completed tasks exist
+    if (currentTasks.isNotEmpty && completedTasks.isNotEmpty) {
+      listItems.add(
+        Container(
+          margin: const EdgeInsets.symmetric(vertical: 16),
+          child: Row(
+            children: [
+              Expanded(
+                child: Divider(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .outline
+                      .withValues(alpha: 0.5),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'Completed (${completedTasks.length})',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
+                      ),
+                ),
+              ),
+              Expanded(
+                child: Divider(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .outline
+                      .withValues(alpha: 0.5),
+                ),
+              ),
+            ],
           ),
-        );
-      },
+        ),
+      );
+    }
+
+    // Add completed tasks
+    for (final task in completedTasks) {
+      listItems.add(SwipeToArchiveWidget(
+        task: task,
+        onArchived: null,
+        child: TaskCard(
+          task: task,
+          user: user,
+          onTaskTap: onTaskTap,
+          onCompleteTask: _markAsCompleted,
+          onUncompleteTask: _markAsUncompleted,
+        ),
+      ));
+    }
+
+    return ListView.separated(
+      itemCount: listItems.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 0),
+      itemBuilder: (context, index) => listItems[index],
     );
-  }
-
-  String _getAssignedUserName(String assignedUserId) {
-    final currentUser = ref.read(currentUserProvider);
-    final familyMembers = ref.read(familyMembersProvider);
-
-    // Check if it's the current user
-    if (currentUser != null && assignedUserId == currentUser.id) {
-      return 'You';
-    }
-
-    // Find the assigned user in family members
-    for (final member in familyMembers) {
-      if (member.id == assignedUserId) {
-        return member.displayName.isNotEmpty
-            ? member.displayName
-            : 'Family Member';
-      }
-    }
-
-    // Fallback if user not found
-    return 'Unknown User';
   }
 
   Future<void> _markAsCompleted(Task task) async {
@@ -337,6 +381,28 @@ class _TaskListState extends ConsumerState<TaskList> {
         );
       },
     );
+  }
+
+  Future<void> _markAsUncompleted(Task task) async {
+    // Check if widget is still mounted before starting async operation
+    if (!mounted) return;
+
+    try {
+      await ref
+          .read(taskNotifierProvider.notifier)
+          .updateTaskStatus(taskId: task.id, status: TaskStatus.pending);
+      // No need to update imageUrls here as uncompleting doesn't add new images
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to uncomplete task: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 
   void onTaskTap(Task task) {
@@ -392,6 +458,7 @@ class TaskCard extends StatelessWidget {
   final User? user;
   final void Function(Task) onTaskTap;
   final void Function(Task) onCompleteTask;
+  final void Function(Task) onUncompleteTask; // New callback for uncompleting
 
   const TaskCard({
     super.key,
@@ -399,6 +466,7 @@ class TaskCard extends StatelessWidget {
     required this.user,
     required this.onTaskTap,
     required this.onCompleteTask,
+    required this.onUncompleteTask, // Required parameter
   });
 
   @override
@@ -467,6 +535,7 @@ class TaskCard extends StatelessWidget {
     final bool isCompleted = task.status.isCompleted;
     final bool canComplete =
         task.status == TaskStatus.pending && (user?.id == task.assignedTo);
+    final bool canUncomplete = isCompleted && (user?.id == task.assignedTo);
 
     return Container(
       width: 40,
@@ -490,7 +559,11 @@ class TaskCard extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: canComplete ? () => onCompleteTask(task) : null,
+          onTap: canComplete
+              ? () => onCompleteTask(task)
+              : canUncomplete
+                  ? () => onUncompleteTask(task)
+                  : null,
           borderRadius: BorderRadius.circular(20),
           child: Icon(
             isCompleted ? Icons.check : Icons.circle_outlined,

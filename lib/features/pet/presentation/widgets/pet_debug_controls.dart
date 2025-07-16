@@ -240,7 +240,7 @@ class PetDebugControls extends ConsumerWidget {
                             color: Colors.purple.shade700,
                             fontWeight: FontWeight.bold)),
                     Text(
-                        'Expected Mood Image: ${petState.currentMood.imageName}'),
+                        'Expected Mood Image: ${petState.currentMood.moodImageName ?? "None (uses stage image)"}'),
                   ],
                   const SizedBox(height: 4),
                   Text(

@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jhonny/features/settings/presentation/widgets/language_selector.dart';
 import 'package:jhonny/features/task/presentation/pages/archive_page.dart';
+import 'package:jhonny/features/task/presentation/providers/task_provider.dart';
+import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 
-class SettingsPage extends StatefulWidget {
+class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
 
   @override
-  State<SettingsPage> createState() => _SettingsPageState();
+  ConsumerState<SettingsPage> createState() => _SettingsPageState();
 }
 
-class _SettingsPageState extends State<SettingsPage> {
+class _SettingsPageState extends ConsumerState<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -48,12 +51,14 @@ class _SettingsPageState extends State<SettingsPage> {
                 title: const Text('Archived Tasks'),
                 subtitle: const Text('View and manage archived tasks'),
                 trailing: const Icon(Icons.arrow_forward_ios),
-                onTap: () {
-                  Navigator.of(context).push(
+                onTap: () async {
+                  debugPrint('🔄 Settings: Navigating to Archive page');
+                  await Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) => const ArchivePage(),
                     ),
                   );
+                  debugPrint('✅ Settings: Returned from Archive page');
                 },
               ),
             ),

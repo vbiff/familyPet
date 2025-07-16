@@ -382,7 +382,11 @@ class PetNotifier extends StateNotifier<PetState> {
     required String taskTitle,
   }) async {
     final currentPet = state.pet;
-    if (currentPet == null) return;
+    if (currentPet == null) {
+      _logger.w(
+          'No pet found in state when trying to add experience for task: $taskTitle');
+      return;
+    }
 
     _logger.i(
         'Adding $experiencePoints XP to pet for completing task: $taskTitle');
@@ -398,10 +402,21 @@ class PetNotifier extends StateNotifier<PetState> {
     result.fold(
       (failure) {
         _logger.e('Failed to add experience: ${failure.message}');
-        state = state.copyWith(
-          isUpdating: false,
-          errorMessage: failure.message,
-        );
+
+        // If pet not found, clear the pet from state to prevent future errors
+        if (failure.message.contains('Pet not found')) {
+          _logger.w('Pet not found in database, clearing pet from state');
+          state = state.copyWith(
+            isUpdating: false,
+            pet: null,
+            errorMessage: 'Pet not found. Please create a new pet.',
+          );
+        } else {
+          state = state.copyWith(
+            isUpdating: false,
+            errorMessage: failure.message,
+          );
+        }
       },
       (experienceResult) async {
         final updatedPet = experienceResult.pet;

@@ -30,6 +30,17 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
 
   bool get _isEditMode => widget.task != null;
 
+  int _getPointsForDifficulty(TaskDifficulty difficulty) {
+    switch (difficulty) {
+      case TaskDifficulty.easy:
+        return 5;
+      case TaskDifficulty.medium:
+        return 10;
+      case TaskDifficulty.hard:
+        return 15;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -56,13 +67,16 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
           _selectedTags.addAll(List<String>.from(task.metadata!['tags']));
         }
       }
+      // Override points with difficulty-based points for consistency
+      _pointsController.text = _getPointsForDifficulty(_difficulty).toString();
     } else {
       // Set initial assignment to current user for new tasks
       final user = ref.read(currentUserProvider);
       if (user != null) {
         _assignedTo = user.id;
       }
-      _pointsController.text = '10';
+      // Set points based on default difficulty
+      _pointsController.text = _getPointsForDifficulty(_difficulty).toString();
     }
   }
 
@@ -106,8 +120,6 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
                         _buildSchedulingSection(),
                         const SizedBox(height: 24),
                         _buildDifficultySection(),
-                        const SizedBox(height: 24),
-                        _buildPointsSection(),
                         const SizedBox(height: 32),
                         _buildActionButtons(isProcessing),
                         const SizedBox(height: 16), // Extra bottom padding
@@ -334,32 +346,6 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
     );
   }
 
-  Widget _buildPointsSection() {
-    return EnhancedCard.elevated(
-      title: 'Reward Points',
-      child: Column(
-        children: [
-          EnhancedInput(
-            label: 'Points',
-            placeholder: '10',
-            type: EnhancedInputType.number,
-            controller: _pointsController,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter points';
-              }
-              final points = int.tryParse(value);
-              if (points == null || points < 0) {
-                return 'Please enter a valid number (0 or greater)';
-              }
-              return null;
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildCategorySection() {
     return EnhancedCard.elevated(
       title: 'Category',
@@ -408,7 +394,7 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
 
   Widget _buildDifficultySection() {
     return EnhancedCard.elevated(
-      title: 'Difficulty',
+      title: 'Difficulty & Points',
       child: Column(
         children: [
           DropdownButtonFormField<TaskDifficulty>(
@@ -420,16 +406,17 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
             isExpanded: true,
             items: TaskDifficulty.values
                 .map<DropdownMenuItem<TaskDifficulty>>((difficulty) {
+              final points = _getPointsForDifficulty(difficulty);
               return DropdownMenuItem<TaskDifficulty>(
                 value: difficulty,
                 child: Row(
                   children: [
                     Icon(
                       difficulty == TaskDifficulty.easy
-                          ? Icons.sentiment_satisfied
+                          ? Icons.emoji_emotions
                           : difficulty == TaskDifficulty.medium
-                              ? Icons.sentiment_neutral
-                              : Icons.sentiment_very_dissatisfied,
+                              ? Icons.radio_button_unchecked
+                              : Icons.local_fire_department,
                       color: difficulty == TaskDifficulty.easy
                           ? Colors.green
                           : difficulty == TaskDifficulty.medium
@@ -439,7 +426,7 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        difficulty.displayName,
+                        '${difficulty.displayName} ($points pts)',
                         style: const TextStyle(fontWeight: FontWeight.w500),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -450,6 +437,8 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
             }).toList(),
             onChanged: (value) => setState(() {
               _difficulty = value!;
+              _pointsController.text =
+                  _getPointsForDifficulty(value).toString();
             }),
             validator: (value) {
               if (value == null) {
@@ -457,6 +446,31 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
               }
               return null;
             },
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHigh,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.star,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Points: ${_getPointsForDifficulty(_difficulty)}',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
