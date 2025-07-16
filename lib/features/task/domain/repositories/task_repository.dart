@@ -23,6 +23,10 @@ abstract class TaskRepository {
     required String familyId,
     List<String>? imageUrls,
     Map<String, dynamic>? metadata,
+    // Phase 2 fields
+    TaskCategory? category,
+    TaskDifficulty? difficulty,
+    List<String>? tags,
   });
 
   Future<Either<Failure, Task>> updateTask(

@@ -50,6 +50,15 @@ class TaskModel extends Task {
     super.verifiedAt,
     super.metadata,
     super.isArchived = false,
+    // Phase 2 properties
+    super.category = TaskCategory.other,
+    super.difficulty = TaskDifficulty.medium,
+    super.tags = const [],
+    super.rewards = const [],
+    super.nextDueDate,
+    super.streakCount = 0,
+    super.isTemplate = false,
+    super.parentTaskId,
   });
 
   factory TaskModel.fromJson(Map<String, dynamic> json) {
@@ -83,6 +92,31 @@ class TaskModel extends Task {
           : null,
       metadata: json['metadata'] as Map<String, dynamic>?,
       isArchived: json['is_archived'] as bool? ?? false,
+      // Phase 2 properties
+      category: json['category'] != null
+          ? TaskCategory.values.firstWhere(
+              (c) => c.name == json['category'],
+              orElse: () => TaskCategory.other,
+            )
+          : TaskCategory.other,
+      difficulty: json['difficulty'] != null
+          ? TaskDifficulty.values.firstWhere(
+              (d) => d.name == json['difficulty'],
+              orElse: () => TaskDifficulty.medium,
+            )
+          : TaskDifficulty.medium,
+      tags: json['tags'] != null
+          ? List<String>.from(json['tags'] as List)
+          : const [],
+      rewards: json['rewards'] != null
+          ? [] // TODO: Implement TaskReward deserialization
+          : const [],
+      nextDueDate: json['next_due_date'] != null
+          ? DateTime.parse(json['next_due_date'] as String)
+          : null,
+      streakCount: json['streak_count'] as int? ?? 0,
+      isTemplate: json['is_template'] as bool? ?? false,
+      parentTaskId: json['parent_task_id'] as String?,
     );
   }
 
@@ -106,6 +140,15 @@ class TaskModel extends Task {
       'verified_at': verifiedAt?.toIso8601String(),
       'metadata': metadata,
       'is_archived': isArchived,
+      // Phase 2 properties
+      'category': category.name,
+      'difficulty': difficulty.name,
+      'tags': tags,
+      'rewards': [], // TODO: Implement TaskReward serialization
+      'next_due_date': nextDueDate?.toIso8601String(),
+      'streak_count': streakCount,
+      'is_template': isTemplate,
+      'parent_task_id': parentTaskId,
     };
   }
 
@@ -122,6 +165,15 @@ class TaskModel extends Task {
       'family_id': familyId,
       'image_urls': imageUrls,
       'metadata': metadata,
+      // Phase 2 properties
+      'category': category.name,
+      'difficulty': difficulty.name,
+      'tags': tags,
+      'rewards': [], // TODO: Implement TaskReward serialization
+      'next_due_date': nextDueDate?.toIso8601String(),
+      'streak_count': streakCount,
+      'is_template': isTemplate,
+      'parent_task_id': parentTaskId,
     };
   }
 
@@ -145,6 +197,15 @@ class TaskModel extends Task {
       verifiedAt: task.verifiedAt,
       metadata: task.metadata,
       isArchived: task.isArchived,
+      // Phase 2 properties
+      category: task.category,
+      difficulty: task.difficulty,
+      tags: task.tags,
+      rewards: task.rewards,
+      nextDueDate: task.nextDueDate,
+      streakCount: task.streakCount,
+      isTemplate: task.isTemplate,
+      parentTaskId: task.parentTaskId,
     );
   }
 
@@ -168,6 +229,15 @@ class TaskModel extends Task {
       verifiedAt: verifiedAt,
       metadata: metadata,
       isArchived: isArchived,
+      // Phase 2 properties
+      category: category,
+      difficulty: difficulty,
+      tags: tags,
+      rewards: rewards,
+      nextDueDate: nextDueDate,
+      streakCount: streakCount,
+      isTemplate: isTemplate,
+      parentTaskId: parentTaskId,
     );
   }
 }

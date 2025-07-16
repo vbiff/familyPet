@@ -14,6 +14,10 @@ class CreateTaskParams {
   final String familyId;
   final List<String>? imageUrls;
   final Map<String, dynamic>? metadata;
+  // Phase 2 fields
+  final TaskCategory? category;
+  final TaskDifficulty? difficulty;
+  final List<String>? tags;
 
   const CreateTaskParams({
     required this.title,
@@ -26,6 +30,10 @@ class CreateTaskParams {
     required this.familyId,
     this.imageUrls,
     this.metadata,
+    // Phase 2 fields
+    this.category,
+    this.difficulty,
+    this.tags,
   });
 }
 
@@ -62,6 +70,10 @@ class CreateTask {
       familyId: params.familyId,
       imageUrls: params.imageUrls,
       metadata: params.metadata,
+      // Phase 2 fields
+      category: params.category,
+      difficulty: params.difficulty,
+      tags: params.tags,
     );
   }
 }

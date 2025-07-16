@@ -519,6 +519,9 @@ class TaskCard extends StatelessWidget {
                         ),
                   ),
                 ),
+                // Difficulty indicator
+                _buildDifficultyIcon(context),
+                const SizedBox(width: 8),
                 // Status indicator
                 if (task.isVerifiedByParent)
                   const Icon(
@@ -583,6 +586,42 @@ class TaskCard extends StatelessWidget {
                     : Theme.of(context).colorScheme.outline,
             size: 20,
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDifficultyIcon(BuildContext context) {
+    late Color iconColor;
+    late String tooltip;
+
+    switch (task.difficulty) {
+      case TaskDifficulty.easy:
+        iconColor = Colors.green;
+        tooltip = 'Easy';
+        break;
+      case TaskDifficulty.medium:
+        iconColor = Colors.yellow.shade600;
+        tooltip = 'Medium';
+        break;
+      case TaskDifficulty.hard:
+        iconColor = Colors.red;
+        tooltip = 'Hard';
+        break;
+    }
+
+    return Tooltip(
+      message: tooltip,
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: iconColor.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Icon(
+          Icons.local_fire_department,
+          size: 16,
+          color: iconColor,
         ),
       ),
     );

@@ -102,6 +102,10 @@ class TaskNotifier extends StateNotifier<TaskState> {
     required String familyId,
     List<String>? imageUrls,
     Map<String, dynamic>? metadata,
+    // Phase 2 fields
+    TaskCategory? category,
+    TaskDifficulty? difficulty,
+    List<String>? tags,
   }) async {
     state = state.copyWith(
       isCreating: true,
@@ -119,6 +123,10 @@ class TaskNotifier extends StateNotifier<TaskState> {
       familyId: familyId,
       imageUrls: imageUrls,
       metadata: metadata,
+      // Phase 2 fields
+      category: category,
+      difficulty: difficulty,
+      tags: tags,
     ));
 
     result.fold(

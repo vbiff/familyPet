@@ -55,6 +55,10 @@ class SupabaseTaskRepository implements TaskRepository {
     required String familyId,
     List<String>? imageUrls,
     Map<String, dynamic>? metadata,
+    // Phase 2 fields
+    TaskCategory? category,
+    TaskDifficulty? difficulty,
+    List<String>? tags,
   }) async {
     try {
       final taskId = _uuid.v4();
@@ -74,6 +78,10 @@ class SupabaseTaskRepository implements TaskRepository {
         imageUrls: imageUrls ?? [],
         createdAt: now,
         metadata: metadata,
+        // Phase 2 fields
+        category: category ?? TaskCategory.other,
+        difficulty: difficulty ?? TaskDifficulty.medium,
+        tags: tags ?? [],
       );
 
       final createdTask = await _remoteDataSource.createTask(taskModel);

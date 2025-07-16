@@ -54,19 +54,11 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
       _frequency = task.frequency;
       _assignedTo = task.assignedTo;
 
-      if (task.metadata != null) {
-        _category = TaskCategory.values.firstWhere(
-          (c) => c.name == task.metadata!['category'],
-          orElse: () => TaskCategory.other,
-        );
-        _difficulty = TaskDifficulty.values.firstWhere(
-          (d) => d.name == task.metadata!['difficulty'],
-          orElse: () => TaskDifficulty.medium,
-        );
-        if (task.metadata!['tags'] is List) {
-          _selectedTags.addAll(List<String>.from(task.metadata!['tags']));
-        }
-      }
+      // Load Phase 2 fields directly from Task entity
+      _category = task.category;
+      _difficulty = task.difficulty;
+      _selectedTags.addAll(task.tags);
+
       // Override points with difficulty-based points for consistency
       _pointsController.text = _getPointsForDifficulty(_difficulty).toString();
     } else {
@@ -570,10 +562,12 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
             points: int.tryParse(_pointsController.text) ?? 0,
             dueDate: _dueDate,
             assignedTo: _assignedTo,
+            // Phase 2 fields as proper parameters
+            category: _category,
+            difficulty: _difficulty,
+            tags: _selectedTags,
             metadata: {
-              'category': _category.name,
-              'difficulty': _difficulty.name,
-              'tags': _selectedTags,
+              // Keep any other metadata if needed
             },
           );
           await ref.read(taskNotifierProvider.notifier).updateTask(params);
@@ -587,10 +581,12 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
             dueDate: _dueDate,
             frequency: _frequency,
             familyId: user.familyId!,
+            // Phase 2 fields as proper parameters
+            category: _category,
+            difficulty: _difficulty,
+            tags: _selectedTags,
             metadata: {
-              'category': _category.name,
-              'difficulty': _difficulty.name,
-              'tags': _selectedTags,
+              // Keep any other metadata if needed
             },
           );
         }

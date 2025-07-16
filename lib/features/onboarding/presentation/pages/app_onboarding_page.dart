@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:jhonny/features/auth/presentation/pages/auth_selection_page.dart';
-import 'package:jhonny/shared/widgets/enhanced_button.dart';
 
 class AppOnboardingPage extends ConsumerStatefulWidget {
   const AppOnboardingPage({super.key});

@@ -23,6 +23,10 @@ class UpdateTaskParams {
   final List<String>? imageUrls;
   final Map<String, dynamic>? metadata;
   final bool? isArchived;
+  // Phase 2 fields
+  final TaskCategory? category;
+  final TaskDifficulty? difficulty;
+  final List<String>? tags;
 
   UpdateTaskParams({
     required this.taskId,
@@ -34,6 +38,10 @@ class UpdateTaskParams {
     this.imageUrls,
     this.metadata,
     this.isArchived,
+    // Phase 2 fields
+    this.category,
+    this.difficulty,
+    this.tags,
   });
 
   Map<String, dynamic> toMap() {
@@ -46,6 +54,10 @@ class UpdateTaskParams {
     if (imageUrls != null) map['image_urls'] = imageUrls;
     if (metadata != null) map['metadata'] = metadata;
     if (isArchived != null) map['is_archived'] = isArchived;
+    // Phase 2 fields
+    if (category != null) map['category'] = category!.name;
+    if (difficulty != null) map['difficulty'] = difficulty!.name;
+    if (tags != null) map['tags'] = tags;
     map['updated_at'] = DateTime.now().toIso8601String();
     return map;
   }
