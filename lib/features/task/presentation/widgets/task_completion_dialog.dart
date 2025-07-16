@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jhonny/features/task/domain/entities/task.dart';
 import 'package:jhonny/features/task/presentation/widgets/photo_verification_widget.dart';
 import 'package:jhonny/shared/widgets/enhanced_button.dart';
+import 'package:jhonny/shared/widgets/confetti_animation.dart';
 
 class TaskCompletionDialog extends ConsumerStatefulWidget {
   final Task task;
@@ -166,15 +167,31 @@ class _TaskCompletionDialogState extends ConsumerState<TaskCompletionDialog> {
       await widget.onCompleted(_uploadedImageUrls);
 
       if (mounted) {
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content:
-                Text('✅ Task "${widget.task.title}" completed successfully!'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
-          ),
+        // Show confetti animation first
+        ConfettiOverlay.show(
+          context,
+          duration: const Duration(seconds: 2),
+          onComplete: () {
+            // Show success message after confetti
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                      '🎉 Task "${widget.task.title}" completed! Great job!'),
+                  backgroundColor: Colors.green,
+                  duration: const Duration(seconds: 3),
+                ),
+              );
+            }
+          },
         );
+
+        // Close dialog after a short delay to let confetti show
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            Navigator.of(context).pop();
+          }
+        });
       }
     } catch (e) {
       if (mounted) {

@@ -412,15 +412,11 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
                 child: Row(
                   children: [
                     Icon(
-                      difficulty == TaskDifficulty.easy
-                          ? Icons.emoji_emotions
-                          : difficulty == TaskDifficulty.medium
-                              ? Icons.radio_button_unchecked
-                              : Icons.local_fire_department,
+                      Icons.local_fire_department,
                       color: difficulty == TaskDifficulty.easy
                           ? Colors.green
                           : difficulty == TaskDifficulty.medium
-                              ? Colors.orange
+                              ? Colors.yellow.shade600
                               : Colors.red,
                     ),
                     const SizedBox(width: 8),

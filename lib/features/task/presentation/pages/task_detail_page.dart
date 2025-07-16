@@ -13,6 +13,7 @@ import 'package:jhonny/features/task/domain/usecases/update_task.dart';
 import 'package:jhonny/features/task/presentation/widgets/task_completion_dialog.dart';
 import 'package:jhonny/features/task/presentation/widgets/photo_verification_widget.dart';
 import 'package:jhonny/core/providers/supabase_provider.dart';
+import 'package:jhonny/shared/widgets/confetti_animation.dart';
 
 class TaskDetailPage extends ConsumerWidget {
   final Task task;
@@ -1079,6 +1080,14 @@ class TaskDetailPage extends ConsumerWidget {
                 ),
               );
         }
+
+        // Show confetti when task is completed successfully
+        if (context.mounted) {
+          ConfettiOverlay.show(
+            context,
+            duration: const Duration(seconds: 2),
+          );
+        }
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1138,6 +1147,12 @@ class TaskDetailPage extends ConsumerWidget {
                   status: TaskStatus.completed,
                   verifiedById: verifiedById,
                 );
+
+            // Show confetti when task is verified by parent
+            ConfettiOverlay.show(
+              context,
+              duration: const Duration(seconds: 2),
+            );
           }
 
           _logger.i('Verification request sent');

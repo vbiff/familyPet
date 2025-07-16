@@ -12,6 +12,7 @@ import 'package:jhonny/features/family/presentation/pages/family_setup_page.dart
 import 'package:jhonny/features/task/domain/usecases/update_task.dart';
 import 'package:jhonny/features/task/presentation/widgets/task_completion_dialog.dart';
 import 'package:jhonny/features/task/presentation/widgets/swipe_to_archive_widget.dart';
+import 'package:jhonny/shared/widgets/confetti_animation.dart';
 
 class TaskList extends ConsumerStatefulWidget {
   const TaskList({super.key});
@@ -364,9 +365,17 @@ class _TaskListState extends ConsumerState<TaskList>
                         ),
                       );
                 }
+
+                // Show confetti when task is completed successfully
+                if (context.mounted) {
+                  ConfettiOverlay.show(
+                    context,
+                    duration: const Duration(seconds: 2),
+                  );
+                }
               } catch (e) {
                 // Handle errors gracefully - only show critical errors
-                if (mounted) {
+                if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Failed to complete task: $e'),
