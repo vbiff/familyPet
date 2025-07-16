@@ -1,0 +1,47 @@
+---
+alwaysApply: true
+---
+## Flutter-Specific Rules
+
+### Architecture
+- Use Clean Architecture with layers: Presentation, Domain, Data
+- Implement Repository pattern for data access
+- Use Dependency Injection (get_it, injectable)
+- Separate UI logic from business logic using Riverpod
+
+### Widget Guidelines
+- Keep widgets small and focused
+- Extract reusable widgets into separate files
+- Use const constructors when possible for performance
+- Prefer composition over inheritance
+- Use StatelessWidget when state is not needed
+
+### State Management
+- Choose one state management solution and stick to it
+- Keep state as close to where it's used as possible
+- Avoid global state when local state suffices
+- Use immutable state objects
+- Handle loading, success, and error states explicitly
+
+### Code Structure
+lib/
+├── core/
+│   ├── constants/
+│   ├── errors/
+│   ├── network/
+│   └── utils/
+├── features/
+│   └── feature_name/
+│       ├── data/
+│       ├── domain/
+│       └── presentation/
+└── shared/
+    ├── widgets/
+    └── services/
+### Best Practices
+- Use meaningful widget keys for testing
+- Implement proper null safety
+- Use extension methods for utility functions
+- Follow Flutter naming conventions
+- Optimize for performance (avoid unnecessary rebuilds)
+- Use valueWith instead of opacityWith
