@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jhonny/core/services/qr_code_service.dart';
+import 'package:jhonny/core/services/qr_share_service.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jhonny/features/family/presentation/providers/family_provider.dart';
 import 'package:jhonny/features/family/presentation/providers/family_state.dart';
@@ -16,11 +17,14 @@ class ChildInviteQrPage extends ConsumerStatefulWidget {
 class _ChildInviteQrPageState extends ConsumerState<ChildInviteQrPage> {
   final TextEditingController _childNameController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final GlobalKey _qrKey = GlobalKey();
 
   String? _generatedToken;
   bool _isGenerating = false;
   bool _showAdvancedOptions = false;
-  int _expiryHours = 24;
+  bool _isSharing = false;
+  bool _isSaving = false;
+  int? _expiryHours; // Changed to nullable, null means never expire
 
   @override
   void dispose() {
@@ -73,25 +77,166 @@ class _ChildInviteQrPageState extends ConsumerState<ChildInviteQrPage> {
     }
   }
 
-  void _shareQrCode() {
-    if (_generatedToken == null) return;
+  Future<void> _shareQrCode() async {
+    if (_generatedToken == null) {
+      _showErrorSnackBar('No QR code available to share');
+      return;
+    }
 
-    // TODO: Implement share functionality
-    _showInfoSnackBar('Share functionality coming soon!');
+    final familyState = ref.read(familyNotifierProvider);
+    if (familyState.family == null) {
+      _showErrorSnackBar('Family information not available');
+      return;
+    }
+
+    setState(() {
+      _isSharing = true;
+    });
+
+    try {
+      // Small delay to ensure QR code is fully rendered
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      await QrShareService.shareInvitationWithOptions(
+        context: context,
+        qrKey: _qrKey,
+        familyName: familyState.family!.name,
+        token: _generatedToken!,
+        childDisplayName: _childNameController.text.trim().isNotEmpty
+            ? _childNameController.text.trim()
+            : null,
+      );
+    } catch (e) {
+      _showErrorSnackBar('Failed to share QR code: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSharing = false;
+        });
+      }
+    }
   }
 
-  void _saveQrCode() {
-    if (_generatedToken == null) return;
+  Future<void> _saveQrCode() async {
+    if (_generatedToken == null) {
+      _showErrorSnackBar('No QR code available to save');
+      return;
+    }
 
-    // TODO: Implement save to gallery functionality
-    _showInfoSnackBar('Save functionality coming soon!');
+    final familyState = ref.read(familyNotifierProvider);
+    if (familyState.family == null) {
+      _showErrorSnackBar('Family information not available');
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      // Small delay to ensure QR code is fully rendered
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      final success = await QrShareService.saveQrCodeToGallery(
+        qrKey: _qrKey,
+        familyName: familyState.family!.name,
+        childDisplayName: _childNameController.text.trim().isNotEmpty
+            ? _childNameController.text.trim()
+            : null,
+      );
+
+      if (success) {
+        _showSuccessSnackBar('QR code saved to gallery!');
+      } else {
+        _showErrorSnackBar(
+            'Failed to save QR code. Please check app permissions.');
+      }
+    } catch (e) {
+      _showErrorSnackBar('Failed to save QR code: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
   }
 
   void _generateNewCode() {
     setState(() {
       _generatedToken = null;
     });
-    _generateQrCode();
+    _regenerateQrCode();
+  }
+
+  Future<void> _regenerateQrCode() async {
+    final user = ref.read(currentUserProvider);
+    final familyState = ref.read(familyNotifierProvider);
+
+    if (user == null || familyState.family == null) {
+      _showErrorSnackBar('Unable to generate QR code. Please try again.');
+      return;
+    }
+
+    setState(() {
+      _isGenerating = true;
+    });
+
+    try {
+      final result =
+          await ref.read(authRepositoryProvider).createChildInvitationToken(
+                familyId: familyState.family!.id,
+                childDisplayName: _childNameController.text.trim().isNotEmpty
+                    ? _childNameController.text.trim()
+                    : null,
+                expiresInHours: _expiryHours,
+              );
+
+      result.fold(
+        (failure) {
+          _showErrorSnackBar(failure.message);
+        },
+        (token) {
+          setState(() {
+            _generatedToken = token;
+          });
+          _showSuccessSnackBar('New QR code generated successfully!');
+        },
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGenerating = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _copyInvitationToken() async {
+    if (_generatedToken == null) return;
+
+    await Clipboard.setData(ClipboardData(text: _generatedToken!));
+    _showSuccessSnackBar('Invitation token copied to clipboard!');
+  }
+
+  Future<void> _copyInvitationLink() async {
+    if (_generatedToken == null) return;
+
+    final familyState = ref.read(familyNotifierProvider);
+    if (familyState.family == null) return;
+
+    try {
+      await QrShareService.copyInvitationLink(
+        token: _generatedToken!,
+        familyName: familyState.family!.name,
+        childDisplayName: _childNameController.text.trim().isNotEmpty
+            ? _childNameController.text.trim()
+            : null,
+      );
+      _showSuccessSnackBar('Invitation link copied to clipboard!');
+    } catch (e) {
+      _showErrorSnackBar('Failed to copy link: $e');
+    }
   }
 
   void _showErrorSnackBar(String message) {
@@ -242,8 +387,10 @@ class _ChildInviteQrPageState extends ConsumerState<ChildInviteQrPage> {
           Text(
             'Show this QR code to your child to let them join your family',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.7),
                 ),
             textAlign: TextAlign.center,
           ),
@@ -252,13 +399,16 @@ class _ChildInviteQrPageState extends ConsumerState<ChildInviteQrPage> {
 
           // QR Code
           Center(
-            child: QrCodeService.buildShareableQrCode(
-              token: _generatedToken!,
-              familyName: familyState.family!.name,
-              childDisplayName: _childNameController.text.trim().isNotEmpty
-                  ? _childNameController.text.trim()
-                  : null,
-              size: 280,
+            child: RepaintBoundary(
+              key: _qrKey,
+              child: QrCodeService.buildShareableQrCode(
+                token: _generatedToken!,
+                familyName: familyState.family!.name,
+                childDisplayName: _childNameController.text.trim().isNotEmpty
+                    ? _childNameController.text.trim()
+                    : null,
+                size: 280,
+              ),
             ),
           ),
 
@@ -309,7 +459,10 @@ class _ChildInviteQrPageState extends ConsumerState<ChildInviteQrPage> {
         Text(
           'Generate a QR code to add a child to your family without needing email',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.7),
               ),
           textAlign: TextAlign.center,
         ),
@@ -341,7 +494,7 @@ class _ChildInviteQrPageState extends ConsumerState<ChildInviteQrPage> {
                     color: Theme.of(context)
                         .colorScheme
                         .onPrimaryContainer
-                        .withOpacity(0.7),
+                        .withValues(alpha: 0.7),
                     fontSize: 12,
                   ),
                 ),
@@ -420,7 +573,7 @@ class _ChildInviteQrPageState extends ConsumerState<ChildInviteQrPage> {
             style: Theme.of(context).textTheme.titleSmall,
           ),
           const SizedBox(height: 8),
-          DropdownButtonFormField<int>(
+          DropdownButtonFormField<int?>(
             value: _expiryHours,
             decoration: InputDecoration(
               border: OutlineInputBorder(
@@ -429,6 +582,7 @@ class _ChildInviteQrPageState extends ConsumerState<ChildInviteQrPage> {
               prefixIcon: const Icon(Icons.timer),
             ),
             items: const [
+              DropdownMenuItem(value: null, child: Text('Never expire')),
               DropdownMenuItem(value: 1, child: Text('1 hour')),
               DropdownMenuItem(value: 6, child: Text('6 hours')),
               DropdownMenuItem(value: 12, child: Text('12 hours')),
@@ -437,11 +591,9 @@ class _ChildInviteQrPageState extends ConsumerState<ChildInviteQrPage> {
               DropdownMenuItem(value: 168, child: Text('1 week')),
             ],
             onChanged: (value) {
-              if (value != null) {
-                setState(() {
-                  _expiryHours = value;
-                });
-              }
+              setState(() {
+                _expiryHours = value;
+              });
             },
           ),
         ],
@@ -476,7 +628,7 @@ class _ChildInviteQrPageState extends ConsumerState<ChildInviteQrPage> {
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
         ),
       ),
       child: Column(
@@ -521,27 +673,63 @@ class _ChildInviteQrPageState extends ConsumerState<ChildInviteQrPage> {
   }
 
   Widget _buildExpiryInfo() {
-    final expiryTime = DateTime.now().add(Duration(hours: _expiryHours));
-
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
+        color: _expiryHours == null
+            ? Theme.of(context).colorScheme.primaryContainer
+            : Theme.of(context).colorScheme.secondaryContainer,
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
           Icon(
-            Icons.timer,
-            size: 16,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            _expiryHours == null ? Icons.all_inclusive : Icons.schedule,
+            color: _expiryHours == null
+                ? Theme.of(context).colorScheme.onPrimaryContainer
+                : Theme.of(context).colorScheme.onSecondaryContainer,
+            size: 20,
           ),
-          const SizedBox(width: 8),
-          Text(
-            'Expires ${_formatExpiry(expiryTime)}',
-            style: TextStyle(
-              fontSize: 14,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'QR Code Expiry',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: _expiryHours == null
+                        ? Theme.of(context).colorScheme.onPrimaryContainer
+                        : Theme.of(context).colorScheme.onSecondaryContainer,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _expiryHours == null
+                      ? 'This QR code never expires'
+                      : 'Expires in ${_expiryHours == 1 ? '1 hour' : '$_expiryHours hours'}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: _expiryHours == null
+                        ? Theme.of(context).colorScheme.onPrimaryContainer
+                        : Theme.of(context).colorScheme.onSecondaryContainer,
+                  ),
+                ),
+                if (_expiryHours != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Until ${DateTime.now().add(Duration(hours: _expiryHours!)).toString().split('.')[0]}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSecondaryContainer
+                          .withValues(alpha: 0.7),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
         ],
@@ -552,32 +740,78 @@ class _ChildInviteQrPageState extends ConsumerState<ChildInviteQrPage> {
   Widget _buildActionButtons() {
     return Column(
       children: [
+        // Primary actions row
         Row(
           children: [
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: _shareQrCode,
-                icon: const Icon(Icons.share),
-                label: const Text('Share'),
+                onPressed: _isSharing ? null : _shareQrCode,
+                icon: _isSharing
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.share),
+                label: Text(_isSharing ? 'Sharing...' : 'Share'),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: _saveQrCode,
-                icon: const Icon(Icons.download),
-                label: const Text('Save'),
+                onPressed: _isSaving ? null : _saveQrCode,
+                icon: _isSaving
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.download),
+                label: Text(_isSaving ? 'Saving...' : 'Save'),
               ),
             ),
           ],
         ),
         const SizedBox(height: 12),
+
+        // Copy actions row
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _copyInvitationToken,
+                icon: const Icon(Icons.copy),
+                label: const Text('Copy Token'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _copyInvitationLink,
+                icon: const Icon(Icons.link),
+                label: const Text('Copy Link'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // Generate new code action
         SizedBox(
           width: double.infinity,
           child: FilledButton.icon(
-            onPressed: _generateNewCode,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Generate New Code'),
+            onPressed: _isGenerating ? null : _generateNewCode,
+            icon: _isGenerating
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.refresh),
+            label: Text(_isGenerating ? 'Generating...' : 'Generate New Code'),
             style: FilledButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.secondary,
             ),
@@ -639,18 +873,5 @@ class _ChildInviteQrPageState extends ConsumerState<ChildInviteQrPage> {
         ],
       ),
     );
-  }
-
-  String _formatExpiry(DateTime expiry) {
-    final now = DateTime.now();
-    final difference = expiry.difference(now);
-
-    if (difference.inDays > 0) {
-      return 'in ${difference.inDays} ${difference.inDays == 1 ? 'day' : 'days'}';
-    } else if (difference.inHours > 0) {
-      return 'in ${difference.inHours} ${difference.inHours == 1 ? 'hour' : 'hours'}';
-    } else {
-      return 'in ${difference.inMinutes} ${difference.inMinutes == 1 ? 'minute' : 'minutes'}';
-    }
   }
 }

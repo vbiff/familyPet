@@ -312,7 +312,7 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
             ),
             title: const Text('Due Date'),
             subtitle: Text(
-              '${_dueDate.day}/${_dueDate.month}/${_dueDate.year}${_dueDate.isAtSameMomentAs(DateTime(_dueDate.year, _dueDate.month, _dueDate.day, 23, 59)) ? ' (end of day)' : ''}',
+              '${_dueDate.day}/${_dueDate.month}/${_dueDate.year}',
             ),
             trailing: const Icon(Icons.chevron_right),
             onTap: _selectDueDate,
@@ -472,18 +472,18 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
   }
 
   Future<void> _selectDueDate() async {
-    // Simplified date picker - just pick the date, default time to end of day
+    // Simple date picker - just pick the date, time defaults to end of day
     final date = await showDatePicker(
       context: context,
       initialDate: _dueDate,
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
-      helpText: 'Select due date',
+      helpText: 'When is this due?',
     );
 
     if (date != null && mounted) {
       setState(() {
-        // Set time to 11:59 PM of the selected date for simplicity
+        // Set time to 11:59 PM of the selected date
         _dueDate = DateTime(
           date.year,
           date.month,

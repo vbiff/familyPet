@@ -63,7 +63,7 @@ abstract class AuthRepository {
   Future<Either<Failure, String>> createChildInvitationToken({
     required String familyId,
     String? childDisplayName,
-    int expiresInHours = 24,
+    int? expiresInHours, // Changed to nullable - null means never expire
   });
 
   Future<Either<Failure, TokenValidationResult>> validateChildInvitationToken({

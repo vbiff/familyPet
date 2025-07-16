@@ -5,7 +5,7 @@ class ChildInvitationToken extends Equatable {
   final String familyId;
   final String createdById;
   final String token;
-  final DateTime expiresAt;
+  final DateTime? expiresAt; // Made nullable - null means never expire
   final bool isUsed;
   final String? usedById;
   final DateTime? usedAt;
@@ -18,7 +18,7 @@ class ChildInvitationToken extends Equatable {
     required this.familyId,
     required this.createdById,
     required this.token,
-    required this.expiresAt,
+    this.expiresAt, // Now nullable - null means never expire
     this.isUsed = false,
     this.usedById,
     this.usedAt,
@@ -27,9 +27,10 @@ class ChildInvitationToken extends Equatable {
     required this.createdAt,
   });
 
-  bool get isExpired => DateTime.now().isAfter(expiresAt);
+  bool get isExpired => expiresAt != null && DateTime.now().isAfter(expiresAt!);
   bool get isValid => !isUsed && !isExpired;
-  Duration get timeUntilExpiry => expiresAt.difference(DateTime.now());
+  Duration? get timeUntilExpiry => expiresAt?.difference(DateTime.now());
+  bool get neverExpires => expiresAt == null;
 
   ChildInvitationToken copyWith({
     String? id,

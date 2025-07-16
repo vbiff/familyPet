@@ -90,6 +90,11 @@ class TaskDetailPage extends ConsumerWidget {
           children: [
             _buildTaskHeader(context, currentTask),
             const SizedBox(height: 24),
+            // Add image section if task has images
+            if (currentTask.hasImages) ...[
+              _buildTaskImages(context, currentTask),
+              const SizedBox(height: 24),
+            ],
             _buildTaskInfo(context, ref, currentTask),
             const SizedBox(height: 24),
             _buildTaskSchedule(context, currentTask),
@@ -209,6 +214,187 @@ class TaskDetailPage extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildTaskImages(BuildContext context, Task currentTask) {
+    return Card(
+      elevation: 0,
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Uploaded Images',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 100,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: currentTask.imageUrls.length,
+                itemBuilder: (context, index) {
+                  return Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(7),
+                      child: _buildAuthenticatedImage(
+                        currentTask.imageUrls[index],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAuthenticatedImage(String imageUrl) {
+    return Consumer(
+      builder: (context, ref, child) {
+        return FutureBuilder<String?>(
+          future: _getAuthenticatedImageUrl(imageUrl, ref),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Container(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                child: const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              );
+            }
+
+            if (snapshot.hasError ||
+                !snapshot.hasData ||
+                snapshot.data == null) {
+              debugPrint(
+                  '❌ Failed to get authenticated image URL: ${snapshot.error}');
+              return Container(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.image_not_supported,
+                      size: 24,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Image\nunavailable',
+                      style: Theme.of(context).textTheme.labelSmall,
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return Image.network(
+              snapshot.data!,
+              fit: BoxFit.cover,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Container(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      value: loadingProgress.expectedTotalBytes != null
+                          ? loadingProgress.cumulativeBytesLoaded /
+                              loadingProgress.expectedTotalBytes!
+                          : null,
+                    ),
+                  ),
+                );
+              },
+              errorBuilder: (context, error, stackTrace) {
+                debugPrint('❌ Failed to load authenticated image: $error');
+                return Container(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.image_not_supported,
+                        size: 24,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Image\nerror',
+                        style: Theme.of(context).textTheme.labelSmall,
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<String?> _getAuthenticatedImageUrl(
+      String imageUrl, WidgetRef ref) async {
+    try {
+      final supabase = ref.read(supabaseClientProvider);
+
+      // If the URL is already a complete URL, check if it's from Supabase storage
+      if (imageUrl.startsWith('http')) {
+        final uri = Uri.parse(imageUrl);
+
+        // Check if this is a Supabase storage URL
+        if (uri.path.contains('/storage/v1/object/')) {
+          // Extract the bucket and path from the URL
+          final pathSegments = uri.pathSegments;
+          final storageIndex = pathSegments.indexOf('storage');
+          if (storageIndex >= 0 && pathSegments.length > storageIndex + 4) {
+            final bucket = pathSegments[storageIndex + 4];
+            final filePath = pathSegments.sublist(storageIndex + 5).join('/');
+
+            // Get a signed URL for private task-images bucket
+            if (bucket == 'task-images') {
+              debugPrint(
+                  '🔐 Generating signed URL for private bucket: $bucket/$filePath');
+              return await supabase.storage
+                  .from(bucket)
+                  .createSignedUrl(filePath, 3600); // 1 hour expiry
+            }
+          }
+        }
+
+        // For public URLs or non-Supabase URLs, return as-is
+        return imageUrl;
+      }
+
+      // If it's just a path, assume it's a task image and create signed URL
+      debugPrint('🔐 Creating signed URL for path: $imageUrl');
+      return await supabase.storage
+          .from('task-images')
+          .createSignedUrl(imageUrl, 3600);
+    } catch (e) {
+      _logger.e('Failed to get authenticated image URL: $e');
+      // Return the original URL as fallback
+      return imageUrl;
+    }
   }
 
   Widget _buildTaskInfo(BuildContext context, WidgetRef ref, Task currentTask) {
@@ -1135,108 +1321,5 @@ class TaskDetailPage extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  Widget _buildAuthenticatedImage(String imageUrl) {
-    return Consumer(
-      builder: (context, ref, child) {
-        return FutureBuilder<String?>(
-          future: _getAuthenticatedImageUrl(imageUrl, ref),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Container(
-                color: Theme.of(context).colorScheme.surfaceContainerLow,
-                child: const Center(
-                  child: CircularProgressIndicator(),
-                ),
-              );
-            }
-
-            if (snapshot.hasError ||
-                !snapshot.hasData ||
-                snapshot.data == null) {
-              return Container(
-                color: Theme.of(context).colorScheme.errorContainer,
-                child: Icon(
-                  Icons.error,
-                  color: Theme.of(context).colorScheme.onErrorContainer,
-                ),
-              );
-            }
-
-            return Image.network(
-              snapshot.data!,
-              fit: BoxFit.cover,
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return Container(
-                  color: Theme.of(context).colorScheme.surfaceContainerLow,
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      value: loadingProgress.expectedTotalBytes != null
-                          ? loadingProgress.cumulativeBytesLoaded /
-                              loadingProgress.expectedTotalBytes!
-                          : null,
-                    ),
-                  ),
-                );
-              },
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  color: Theme.of(context).colorScheme.errorContainer,
-                  child: Icon(
-                    Icons.error,
-                    color: Theme.of(context).colorScheme.onErrorContainer,
-                  ),
-                );
-              },
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Future<String?> _getAuthenticatedImageUrl(
-      String imageUrl, WidgetRef ref) async {
-    try {
-      final supabase = ref.read(supabaseClientProvider);
-
-      // If the URL is already a complete URL, check if it's from Supabase storage
-      if (imageUrl.startsWith('http')) {
-        // For Supabase storage URLs, we need to get a signed URL for private buckets
-        final uri = Uri.parse(imageUrl);
-
-        // Check if this is a Supabase storage URL
-        if (uri.path.contains('/storage/v1/object/')) {
-          // Extract the bucket and path from the URL
-          final pathSegments = uri.pathSegments;
-          final storageIndex = pathSegments.indexOf('storage');
-          if (storageIndex >= 0 && pathSegments.length > storageIndex + 4) {
-            final bucket = pathSegments[storageIndex + 4];
-            final filePath = pathSegments.sublist(storageIndex + 5).join('/');
-
-            // Get a signed URL for private task-images bucket
-            if (bucket == 'task-images') {
-              return await supabase.storage
-                  .from(bucket)
-                  .createSignedUrl(filePath, 3600); // 1 hour expiry
-            }
-          }
-        }
-
-        // For public URLs or non-Supabase URLs, return as-is
-        return imageUrl;
-      }
-
-      // If it's just a path, assume it's a task image and create signed URL
-      return await supabase.storage
-          .from('task-images')
-          .createSignedUrl(imageUrl, 3600);
-    } catch (e) {
-      _logger.e('Failed to get authenticated image URL: $e');
-      // Return the original URL as fallback
-      return imageUrl;
-    }
   }
 }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:jhonny/features/auth/domain/entities/user.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jhonny/features/family/presentation/providers/family_provider.dart';
@@ -263,96 +262,11 @@ class _TaskListState extends ConsumerState<TaskList> {
             task: task,
             user: user,
             onTaskTap: onTaskTap,
-            buildQuickActions: _buildQuickActions,
-            getTaskDisplayColor: _getTaskDisplayColor,
-            getTaskDisplayIcon: _getTaskDisplayIcon,
-            getTaskDisplayText: _getTaskDisplayText,
-            getCategoryDisplayName: _getCategoryDisplayName,
-            getDifficultyColor: _getDifficultyColor,
-            getDifficultyDisplayName: _getDifficultyDisplayName,
-            getAssignedUserName: _getAssignedUserName,
-            formatDueDate: formatDueDate,
+            onCompleteTask: _markAsCompleted,
           ),
         );
       },
     );
-  }
-
-  Color getTaskStatusColor(BuildContext context, TaskStatus status) {
-    switch (status) {
-      case TaskStatus.pending:
-        return Theme.of(context).colorScheme.primary;
-      case TaskStatus.inProgress:
-        return Theme.of(context).colorScheme.secondary;
-      case TaskStatus.completed:
-        return Theme.of(context).colorScheme.tertiary;
-      case TaskStatus.expired:
-        return Theme.of(context).colorScheme.error;
-    }
-  }
-
-  IconData getTaskStatusIcon(TaskStatus status) {
-    switch (status) {
-      case TaskStatus.pending:
-        return Icons.schedule;
-      case TaskStatus.inProgress:
-        return Icons.hourglass_empty;
-      case TaskStatus.completed:
-        return Icons.check_circle;
-      case TaskStatus.expired:
-        return Icons.error;
-    }
-  }
-
-  String getTaskStatusText(TaskStatus status) {
-    switch (status) {
-      case TaskStatus.pending:
-        return 'Pending';
-      case TaskStatus.inProgress:
-        return 'In Progress';
-      case TaskStatus.completed:
-        return 'Completed';
-      case TaskStatus.expired:
-        return 'Expired';
-    }
-  }
-
-  // Helper methods that consider verification status
-  Color _getTaskDisplayColor(BuildContext context, Task task) {
-    if (task.status == TaskStatus.completed && task.isVerifiedByParent) {
-      return Colors.green; // Green for verified
-    }
-    return getTaskStatusColor(context, task.status);
-  }
-
-  IconData _getTaskDisplayIcon(Task task) {
-    if (task.status == TaskStatus.completed && task.isVerifiedByParent) {
-      return Icons.verified; // Verified icon
-    }
-    return getTaskStatusIcon(task.status);
-  }
-
-  String _getTaskDisplayText(Task task) {
-    if (task.status == TaskStatus.completed && task.isVerifiedByParent) {
-      return 'Verified';
-    }
-    return getTaskStatusText(task.status);
-  }
-
-  String formatDueDate(DateTime dueDate) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final taskDate = DateTime(dueDate.year, dueDate.month, dueDate.day);
-
-    if (taskDate == today) {
-      return 'Today ${DateFormat('HH:mm').format(dueDate)}';
-    } else if (taskDate == today.add(const Duration(days: 1))) {
-      return 'Tomorrow ${DateFormat('HH:mm').format(dueDate)}';
-    } else if (taskDate.isBefore(today)) {
-      return 'Overdue ${DateFormat('MMM d').format(dueDate)}';
-    } else {
-      return DateFormat('MMM d, HH:mm').format(dueDate);
-    }
   }
 
   String _getAssignedUserName(String assignedUserId) {
@@ -375,88 +289,6 @@ class _TaskListState extends ConsumerState<TaskList> {
 
     // Fallback if user not found
     return 'Unknown User';
-  }
-
-  Widget _buildQuickActions(BuildContext context, Task task) {
-    final currentUser = ref.watch(currentUserProvider);
-    final isUpdating = ref.watch(taskNotifierProvider).isUpdating;
-
-    return Row(
-      children: [
-        if (task.status == TaskStatus.pending) ...[
-          // Mark as Complete button for pending tasks
-          Expanded(
-            child: EnhancedButton.primary(
-              text: 'Complete',
-              leadingIcon: Icons.check,
-              isLoading: isUpdating,
-              backgroundColor: Colors.green,
-              onPressed: isUpdating ? null : () => _markAsCompleted(task),
-            ),
-          ),
-        ] else if (task.needsVerification && currentUser != null) ...[
-          // Only parents can verify tasks
-          if (currentUser.role == UserRole.parent) ...[
-            // Verify button for completed but unverified tasks (parents only)
-            Expanded(
-              flex: 2,
-              child: EnhancedButton.primary(
-                text: 'Verify',
-                leadingIcon: Icons.verified,
-                backgroundColor: Colors.blue,
-                onPressed: isUpdating ? null : () => _verifyTask(task),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: EnhancedButton.outline(
-                text: 'Undo',
-                leadingIcon: Icons.undo,
-                onPressed: isUpdating ? null : () => _markAsPending(task),
-              ),
-            ),
-          ] else ...[
-            // Children see waiting message
-            Expanded(
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                decoration: BoxDecoration(
-                  color: Colors.orange.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border:
-                      Border.all(color: Colors.orange.withValues(alpha: 0.3)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.hourglass_empty,
-                        color: Colors.orange, size: 16),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Waiting for parent verification',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.orange,
-                            fontWeight: FontWeight.w500,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ] else if (task.status == TaskStatus.completed) ...[
-          // Undo button for completed tasks
-          Expanded(
-            child: EnhancedButton.outline(
-              text: 'Mark Pending',
-              leadingIcon: Icons.undo,
-              onPressed: isUpdating ? null : () => _markAsPending(task),
-            ),
-          ),
-        ],
-      ],
-    );
   }
 
   Future<void> _markAsCompleted(Task task) async {
@@ -507,86 +339,6 @@ class _TaskListState extends ConsumerState<TaskList> {
     );
   }
 
-  Future<void> _markAsPending(Task task) async {
-    // Check if widget is still mounted before starting async operation
-    if (!mounted) return;
-
-    try {
-      // If task was completed and had photos, clear them when marking as pending
-      if (task.status == TaskStatus.completed && task.imageUrls.isNotEmpty) {
-        // Update both status and clear photos in one operation
-        await ref.read(taskNotifierProvider.notifier).updateTask(
-              UpdateTaskParams(
-                taskId: task.id,
-                imageUrls: [], // Clear all photos
-              ),
-            );
-      }
-
-      // Update the status to pending and clear verification flags
-      await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
-          taskId: task.id, status: TaskStatus.pending, clearVerification: true);
-
-      // Reload tasks to ensure UI is updated
-      final user = ref.read(currentUserProvider);
-      if (user?.familyId != null) {
-        await ref.read(taskNotifierProvider.notifier).loadTasks(
-              familyId: user!.familyId!,
-            );
-      }
-    } catch (e) {
-      // Handle errors gracefully - only show critical errors
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to update task: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _verifyTask(Task task) async {
-    // Check if widget is still mounted before starting async operation
-    if (!mounted) return;
-
-    final currentUser = ref.read(currentUserProvider);
-    if (currentUser == null) return;
-
-    // Validate user is a parent
-    if (currentUser.role != UserRole.parent) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Only parents can verify tasks'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-      return;
-    }
-
-    try {
-      await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
-            taskId: task.id,
-            status: TaskStatus.completed,
-            verifiedById: currentUser.id,
-          );
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to verify task: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    }
-  }
-
   void onTaskTap(Task task) {
     ref.read(taskNotifierProvider.notifier).selectTask(task);
     Navigator.of(context).push(
@@ -633,276 +385,123 @@ class _TaskListState extends ConsumerState<TaskList> {
       ),
     );
   }
-
-  String _getCategoryDisplayName(String? categoryName) {
-    if (categoryName == null) return '';
-    try {
-      final category =
-          TaskCategory.values.firstWhere((c) => c.name == categoryName);
-      return category.displayName;
-    } catch (e) {
-      return categoryName;
-    }
-  }
-
-  String _getDifficultyDisplayName(String? difficultyName) {
-    if (difficultyName == null) return '';
-    try {
-      final difficulty =
-          TaskDifficulty.values.firstWhere((d) => d.name == difficultyName);
-      return difficulty.displayName;
-    } catch (e) {
-      return difficultyName;
-    }
-  }
-
-  Color _getDifficultyColor(String? difficultyName) {
-    if (difficultyName == null) return Colors.grey;
-    try {
-      final difficulty =
-          TaskDifficulty.values.firstWhere((d) => d.name == difficultyName);
-      switch (difficulty) {
-        case TaskDifficulty.easy:
-          return Colors.green;
-        case TaskDifficulty.medium:
-          return Colors.orange;
-        case TaskDifficulty.hard:
-          return Colors.red;
-      }
-    } catch (e) {
-      return Colors.grey;
-    }
-  }
 }
 
 class TaskCard extends StatelessWidget {
   final Task task;
   final User? user;
   final void Function(Task) onTaskTap;
-  final Widget Function(BuildContext, Task) buildQuickActions;
-  final Color Function(BuildContext, Task) getTaskDisplayColor;
-  final IconData Function(Task) getTaskDisplayIcon;
-  final String Function(Task) getTaskDisplayText;
-  final String Function(String?) getCategoryDisplayName;
-  final Color Function(String?) getDifficultyColor;
-  final String Function(String?) getDifficultyDisplayName;
-  final String Function(String) getAssignedUserName;
-  final String Function(DateTime) formatDueDate;
+  final void Function(Task) onCompleteTask;
 
   const TaskCard({
     super.key,
     required this.task,
     required this.user,
     required this.onTaskTap,
-    required this.buildQuickActions,
-    required this.getTaskDisplayColor,
-    required this.getTaskDisplayIcon,
-    required this.getTaskDisplayText,
-    required this.getCategoryDisplayName,
-    required this.getDifficultyColor,
-    required this.getDifficultyDisplayName,
-    required this.getAssignedUserName,
-    required this.formatDueDate,
+    required this.onCompleteTask,
   });
 
   @override
   Widget build(BuildContext context) {
-    return EnhancedCard.outlined(
-      backgroundColor: task.assignedTo == user?.id
-          ? Colors.transparent
-          : const Color.fromARGB(26, 60, 60, 60),
-      onTap: () => onTaskTap(task),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header with status and points
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color:
-                      getTaskDisplayColor(context, task).withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  getTaskDisplayIcon(task),
-                  color: getTaskDisplayColor(context, task),
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      task.title,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            decoration: task.status.isCompleted
-                                ? TextDecoration.lineThrough
-                                : null,
-                          ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      task.description,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color:
-                      getTaskDisplayColor(context, task).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  getTaskDisplayText(task),
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: getTaskDisplayColor(context, task),
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 12),
-
-          // Task details
-          Row(
-            children: [
-              Icon(
-                Icons.schedule,
-                size: 16,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                formatDueDate(task.dueDate),
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: task.isOverdue
-                          ? Theme.of(context).colorScheme.error
-                          : Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-              ),
-              const Spacer(),
-              const Icon(
-                Icons.stars,
-                size: 16,
-                color: Colors.amber,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '${task.points} pts',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.amber[700],
-                    ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 8),
-
-          // Category and Difficulty indicators
-          if (task.metadata != null &&
-              (task.metadata!['category'] != null ||
-                  task.metadata!['difficulty'] != null))
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: [
-                  if (task.metadata!['category'] != null) ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        getCategoryDisplayName(task.metadata!['category']),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onPrimaryContainer,
-                            ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                  if (task.metadata!['difficulty'] != null) ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: getDifficultyColor(task.metadata!['difficulty'])
-                            .withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color:
-                              getDifficultyColor(task.metadata!['difficulty']),
-                          width: 1,
-                        ),
-                      ),
-                      child: Text(
-                        getDifficultyDisplayName(task.metadata!['difficulty']),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: getDifficultyColor(
-                                  task.metadata!['difficulty']),
-                            ),
-                      ),
-                    ),
-                  ],
-                ],
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => onTaskTap(task),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Theme.of(context)
+                    .colorScheme
+                    .outline
+                    .withValues(alpha: 0.2),
               ),
             ),
-
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 12,
-                backgroundColor: Theme.of(context)
-                    .colorScheme
-                    .primary
-                    .withValues(alpha: 0.15),
-                child: Icon(
-                  Icons.person_outline,
-                  size: 12,
-                  color: Theme.of(context).colorScheme.primary,
+            child: Row(
+              children: [
+                // Round complete button on the left
+                _buildCompleteButton(context),
+                const SizedBox(width: 16),
+                // Task title
+                Expanded(
+                  child: Text(
+                    task.title,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
+                          decoration: task.status.isCompleted
+                              ? TextDecoration.lineThrough
+                              : null,
+                          color: task.status.isCompleted
+                              ? Theme.of(context).colorScheme.onSurfaceVariant
+                              : Theme.of(context).colorScheme.onSurface,
+                        ),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                'Assigned to: ${getAssignedUserName(task.assignedTo)}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-              ),
-            ],
+                // Status indicator
+                if (task.isVerifiedByParent)
+                  const Icon(
+                    Icons.verified,
+                    color: Colors.green,
+                    size: 20,
+                  )
+                else if (task.needsVerification)
+                  const Icon(
+                    Icons.hourglass_empty,
+                    color: Colors.orange,
+                    size: 20,
+                  ),
+              ],
+            ),
           ),
+        ),
+      ),
+    );
+  }
 
-          // Quick Action Buttons
-          if (!task.isVerifiedByParent) ...[
-            const SizedBox(height: 16),
-            buildQuickActions(context, task),
-          ],
-        ],
+  Widget _buildCompleteButton(BuildContext context) {
+    final bool isCompleted = task.status.isCompleted;
+    final bool canComplete =
+        task.status == TaskStatus.pending && (user?.id == task.assignedTo);
+
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: isCompleted
+            ? Colors.green.withValues(alpha: 0.1)
+            : canComplete
+                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
+                : Theme.of(context).colorScheme.surfaceContainerHighest,
+        border: Border.all(
+          color: isCompleted
+              ? Colors.green
+              : canComplete
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.outline,
+          width: 2,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: canComplete ? () => onCompleteTask(task) : null,
+          borderRadius: BorderRadius.circular(20),
+          child: Icon(
+            isCompleted ? Icons.check : Icons.circle_outlined,
+            color: isCompleted
+                ? Colors.green
+                : canComplete
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.outline,
+            size: 20,
+          ),
+        ),
       ),
     );
   }

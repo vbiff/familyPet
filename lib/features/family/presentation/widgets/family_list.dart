@@ -6,6 +6,7 @@ import 'package:jhonny/features/family/presentation/providers/family_provider.da
 import 'package:jhonny/features/family/presentation/providers/family_state.dart';
 import 'package:jhonny/features/family/presentation/pages/family_setup_page.dart';
 import 'package:jhonny/features/family/presentation/pages/family_settings_page.dart';
+import 'package:jhonny/features/family/presentation/pages/child_invite_qr_page.dart';
 
 class FamilyList extends ConsumerStatefulWidget {
   const FamilyList({super.key});
@@ -210,21 +211,39 @@ class _FamilyListState extends ConsumerState<FamilyList> {
                             ],
                           ),
                         ),
-                        IconButton(
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const FamilySettingsPage(),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const ChildInviteQrPage(),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.person_add),
+                              tooltip: 'Invite Child',
+                            ),
+                            IconButton(
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const FamilySettingsPage(),
+                                  ),
+                                );
+                              },
+                              icon: Icon(
+                                Icons.settings,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onPrimaryContainer,
                               ),
-                            );
-                          },
-                          icon: Icon(
-                            Icons.settings,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onPrimaryContainer,
-                          ),
+                              tooltip: 'Family Settings',
+                            ),
+                          ],
                         ),
                       ],
                     ),

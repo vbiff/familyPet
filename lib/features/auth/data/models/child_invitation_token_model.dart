@@ -10,7 +10,7 @@ class ChildInvitationTokenModel extends ChildInvitationToken {
   @override
   final String token;
   @override
-  final DateTime expiresAt;
+  final DateTime? expiresAt; // Made nullable
   @override
   final bool isUsed;
   @override
@@ -29,7 +29,7 @@ class ChildInvitationTokenModel extends ChildInvitationToken {
     required this.familyId,
     required this.createdById,
     required this.token,
-    required this.expiresAt,
+    this.expiresAt, // Now nullable
     this.isUsed = false,
     this.usedById,
     this.usedAt,
@@ -56,7 +56,9 @@ class ChildInvitationTokenModel extends ChildInvitationToken {
       familyId: json['family_id'] as String,
       createdById: json['created_by_id'] as String,
       token: json['token'] as String,
-      expiresAt: DateTime.parse(json['expires_at'] as String),
+      expiresAt: json['expires_at'] != null
+          ? DateTime.parse(json['expires_at'] as String)
+          : null, // Handle null expires_at
       isUsed: json['is_used'] as bool? ?? false,
       usedById: json['used_by_id'] as String?,
       usedAt: json['used_at'] != null
@@ -74,7 +76,7 @@ class ChildInvitationTokenModel extends ChildInvitationToken {
       'family_id': familyId,
       'created_by_id': createdById,
       'token': token,
-      'expires_at': expiresAt.toIso8601String(),
+      'expires_at': expiresAt?.toIso8601String(), // Handle null expires_at
       'is_used': isUsed,
       'used_by_id': usedById,
       'used_at': usedAt?.toIso8601String(),

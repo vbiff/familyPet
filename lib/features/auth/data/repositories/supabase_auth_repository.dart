@@ -606,7 +606,7 @@ class SupabaseAuthRepository implements AuthRepository {
   Future<Either<Failure, String>> createChildInvitationToken({
     required String familyId,
     String? childDisplayName,
-    int expiresInHours = 24,
+    int? expiresInHours, // Changed to nullable - null means never expire
   }) async {
     try {
       final currentUser = _client.auth.currentUser;
@@ -620,7 +620,7 @@ class SupabaseAuthRepository implements AuthRepository {
         'family_id_param': familyId,
         'created_by_id_param': currentUser.id,
         'child_display_name_param': childDisplayName,
-        'expires_in_hours': expiresInHours,
+        'expires_in_hours': expiresInHours, // Pass null if never expire
       });
 
       return right(token as String);

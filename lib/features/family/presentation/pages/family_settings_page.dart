@@ -9,6 +9,7 @@ import 'package:jhonny/features/family/domain/entities/family.dart'
 import 'package:jhonny/features/family/presentation/providers/family_provider.dart';
 import 'package:jhonny/features/family/presentation/providers/family_state.dart'
     as family_state;
+import 'package:jhonny/features/family/presentation/pages/child_invite_qr_page.dart';
 import 'package:jhonny/shared/widgets/enhanced_card.dart';
 import 'package:jhonny/shared/widgets/enhanced_button.dart';
 
@@ -249,6 +250,28 @@ class _FamilySettingsPageState extends ConsumerState<FamilySettingsPage> {
       title: 'Family Actions',
       child: Column(
         children: [
+          // Add Invite Child option for parents
+          if (currentUser?.role == UserRole.parent) ...[
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(
+                Icons.qr_code,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              title: const Text('Invite Child'),
+              subtitle:
+                  const Text('Generate QR code to add a child to your family'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const ChildInviteQrPage(),
+                  ),
+                );
+              },
+            ),
+            if (!isCreator) const Divider(),
+          ],
           if (!isCreator) ...[
             ListTile(
               contentPadding: EdgeInsets.zero,
@@ -263,6 +286,7 @@ class _FamilySettingsPageState extends ConsumerState<FamilySettingsPage> {
             ),
           ],
           if (isCreator) ...[
+            if (currentUser?.role == UserRole.parent) const Divider(),
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: Icon(
