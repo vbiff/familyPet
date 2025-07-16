@@ -4,7 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:jhonny/features/auth/presentation/pages/signup_page.dart';
+import 'package:jhonny/features/auth/presentation/pages/auth_selection_page.dart';
 import 'package:jhonny/shared/widgets/enhanced_button.dart';
 
 class AppOnboardingPage extends ConsumerStatefulWidget {
@@ -393,7 +393,7 @@ class _AppOnboardingPageState extends ConsumerState<AppOnboardingPage>
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) =>
-              const SignupPage(),
+              const AuthSelectionPage(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return FadeTransition(
               opacity: animation,

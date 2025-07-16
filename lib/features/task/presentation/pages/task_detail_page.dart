@@ -1200,6 +1200,8 @@ class TaskDetailPage extends ConsumerWidget {
   Future<String?> _getAuthenticatedImageUrl(
       String imageUrl, WidgetRef ref) async {
     try {
+      final supabase = ref.read(supabaseClientProvider);
+
       // If the URL is already a complete URL, check if it's from Supabase storage
       if (imageUrl.startsWith('http')) {
         // For Supabase storage URLs, we need to get a signed URL for private buckets
@@ -1214,10 +1216,9 @@ class TaskDetailPage extends ConsumerWidget {
             final bucket = pathSegments[storageIndex + 4];
             final filePath = pathSegments.sublist(storageIndex + 5).join('/');
 
-            // Get a signed URL for private buckets
+            // Get a signed URL for private task-images bucket
             if (bucket == 'task-images') {
-              final supabase = ref.read(supabaseClientProvider);
-              return supabase.storage
+              return await supabase.storage
                   .from(bucket)
                   .createSignedUrl(filePath, 3600); // 1 hour expiry
             }
@@ -1229,13 +1230,13 @@ class TaskDetailPage extends ConsumerWidget {
       }
 
       // If it's just a path, assume it's a task image and create signed URL
-      final supabase = ref.read(supabaseClientProvider);
-      return supabase.storage
+      return await supabase.storage
           .from('task-images')
           .createSignedUrl(imageUrl, 3600);
     } catch (e) {
       _logger.e('Failed to get authenticated image URL: $e');
-      return null;
+      // Return the original URL as fallback
+      return imageUrl;
     }
   }
 }

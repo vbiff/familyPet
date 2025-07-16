@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final selectedTabProvider = StateProvider<int>((ref) => 0);
+final selectedTabProvider =
+    StateProvider<int>((ref) => 1); // Default to Pet tab (index 1)
 
 enum HomeTab {
   tasks,

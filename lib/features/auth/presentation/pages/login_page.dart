@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:jhonny/features/auth/presentation/pages/signup_page.dart';
+import 'package:jhonny/features/auth/presentation/pages/auth_selection_page.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_state.dart';
 import 'package:jhonny/features/auth/presentation/widgets/auth_button.dart';
@@ -66,7 +66,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   void _navigateToSignup() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => const SignupPage(),
+        builder: (context) => const AuthSelectionPage(),
       ),
     );
   }

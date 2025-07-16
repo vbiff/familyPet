@@ -147,13 +147,14 @@ class HomePage extends ConsumerWidget {
                 ),
               ),
             ),
-          // Quick stats section
-          const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(16, 8, 16, 24),
-              child: QuickStatsSection(),
+          // Quick stats section - only show on Pet and Family tabs, not on Tasks tab
+          if (selectedTab != 0) // Hide on Tasks tab (index 0)
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(16, 8, 16, 24),
+                child: QuickStatsSection(),
+              ),
             ),
-          ),
 
           // Main content
           SliverFillRemaining(

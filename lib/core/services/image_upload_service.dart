@@ -148,7 +148,7 @@ class ImageUploadService {
           .from('task-images')
           .uploadBinary(path, fileBytes);
 
-      // Get public URL
+      // Get public URL (for private bucket, this returns the storage URL which can be used with signed URLs)
       final publicUrl =
           _supabaseClient.storage.from('task-images').getPublicUrl(path);
 

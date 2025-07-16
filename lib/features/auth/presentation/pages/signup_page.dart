@@ -21,7 +21,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
   final _passwordController = TextEditingController();
   final _displayNameController = TextEditingController();
   bool _obscurePassword = true;
-  UserRole _selectedRole = UserRole.parent;
+  // This page is now parent-only - children use ChildSignupPage
 
   @override
   void dispose() {
@@ -70,7 +70,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
             email: _emailController.text.trim(),
             password: _passwordController.text,
             displayName: _displayNameController.text.trim(),
-            role: _selectedRole,
+            role: UserRole.parent, // Always parent for this page
           );
     }
   }
@@ -147,26 +147,8 @@ class _SignupPageState extends ConsumerState<SignupPage> {
               ),
             ),
             const SizedBox(height: 24),
-            SegmentedButton<UserRole>(
-              segments: const [
-                ButtonSegment<UserRole>(
-                  value: UserRole.parent,
-                  label: Text('Parent'),
-                  icon: Icon(Icons.person),
-                ),
-                ButtonSegment<UserRole>(
-                  value: UserRole.child,
-                  label: Text('Child'),
-                  icon: Icon(Icons.child_care),
-                ),
-              ],
-              selected: {_selectedRole},
-              onSelectionChanged: (Set<UserRole> newSelection) {
-                setState(() {
-                  _selectedRole = newSelection.first;
-                });
-              },
-            ),
+            // Removed the role selector - this page is now parent-only
+            // Children should use ChildSignupPage with PIN authentication
             const SizedBox(height: 24),
             if (authState.status == AuthStatus.error &&
                 authState.failure != null)
