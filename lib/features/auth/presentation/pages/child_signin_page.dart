@@ -77,8 +77,6 @@ class _ChildSigninPageState extends ConsumerState<ChildSigninPage> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authNotifierProvider);
-
     // Listen for successful authentication
     ref.listen(authNotifierProvider, (previous, next) {
       if (next.status == AuthStatus.authenticated) {
@@ -211,7 +209,10 @@ class _ChildSigninPageState extends ConsumerState<ChildSigninPage> {
         Text(
           'Sign in with your name and PIN',
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.7),
               ),
           textAlign: TextAlign.center,
         ),
@@ -226,7 +227,7 @@ class _ChildSigninPageState extends ConsumerState<ChildSigninPage> {
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
         ),
       ),
       child: Column(
@@ -296,7 +297,7 @@ class _ChildSigninPageState extends ConsumerState<ChildSigninPage> {
     return Column(
       children: [
         Divider(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
         ),
         const SizedBox(height: 16),
         TextButton.icon(
@@ -366,15 +367,6 @@ class _PinInputWidgetState extends State<PinInputWidget> {
 
     if (_getCurrentPin().length == widget.length) {
       widget.onCompleted(_getCurrentPin());
-    }
-  }
-
-  void _onKeyEvent(KeyEvent event, int index) {
-    if (event is KeyDownEvent &&
-        event.logicalKey == LogicalKeyboardKey.backspace) {
-      if (_controllers[index].text.isEmpty && index > 0) {
-        _focusNodes[index - 1].requestFocus();
-      }
     }
   }
 

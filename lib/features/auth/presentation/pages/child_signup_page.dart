@@ -119,20 +119,8 @@ class _ChildSignupPageState extends ConsumerState<ChildSignupPage> {
     );
   }
 
-  void _showSuccessSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authNotifierProvider);
-
     // Listen for auth state changes
     ref.listen(authNotifierProvider, (previous, next) {
       if (next.status == AuthStatus.authenticated) {

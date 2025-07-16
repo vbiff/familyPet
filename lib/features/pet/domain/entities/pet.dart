@@ -137,12 +137,15 @@ class Pet extends Equatable {
 
     // Calculate happiness decay: 20% for every 30% hunger lost
     var happinessDecay = 0;
-    if (hunger >= 70 && newHunger < 70)
+    if (hunger >= 70 && newHunger < 70) {
       happinessDecay += 20; // First 30% hunger lost
-    if (hunger >= 40 && newHunger < 40)
+    }
+    if (hunger >= 40 && newHunger < 40) {
       happinessDecay += 20; // Second 30% hunger lost
-    if (hunger >= 10 && newHunger < 10)
+    }
+    if (hunger >= 10 && newHunger < 10) {
       happinessDecay += 20; // Third 30% hunger lost
+    }
 
     final newHappiness = (happiness - happinessDecay).clamp(0, 100);
 

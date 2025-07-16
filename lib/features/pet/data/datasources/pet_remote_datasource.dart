@@ -240,7 +240,6 @@ class SupabasePetRemoteDataSource implements PetRemoteDataSource {
       final petWithDecay = currentPet.toEntity().applyTimeDecay();
 
       // Medical care always restores health to 100%, does not affect happiness
-      final currentHealth = petWithDecay.stats['health'] ?? 100;
       final currentHappiness =
           petWithDecay.stats['happiness'] ?? 100; // Keep unchanged
       final currentHunger =

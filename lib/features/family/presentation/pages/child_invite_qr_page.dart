@@ -5,7 +5,6 @@ import 'package:jhonny/core/services/qr_code_service.dart';
 import 'package:jhonny/core/services/qr_share_service.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jhonny/features/family/presentation/providers/family_provider.dart';
-import 'package:jhonny/features/family/presentation/providers/family_state.dart';
 
 class ChildInviteQrPage extends ConsumerStatefulWidget {
   const ChildInviteQrPage({super.key});
@@ -254,16 +253,6 @@ class _ChildInviteQrPageState extends ConsumerState<ChildInviteQrPage> {
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  void _showInfoSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.blue,
         behavior: SnackBarBehavior.floating,
       ),
     );
