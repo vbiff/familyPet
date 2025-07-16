@@ -519,6 +519,7 @@ class TaskCard extends StatelessWidget {
                         ),
                   ),
                 ),
+                const SizedBox(width: 12),
                 // Difficulty indicator
                 _buildDifficultyIcon(context),
                 const SizedBox(width: 8),
