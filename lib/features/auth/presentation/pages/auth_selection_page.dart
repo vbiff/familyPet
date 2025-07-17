@@ -189,19 +189,6 @@ class AuthSelectionPage extends ConsumerWidget {
 
               const SizedBox(height: 24),
 
-              // Sign Up
-              EnhancedButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => const SignupPage()),
-                  );
-                },
-                child: const Text('Create Account'),
-              ),
-
-              const SizedBox(height: 16),
-
               // Sign In
               EnhancedButton(
                 onPressed: () {
@@ -210,8 +197,21 @@ class AuthSelectionPage extends ConsumerWidget {
                     MaterialPageRoute(builder: (context) => const LoginPage()),
                   );
                 },
-                type: EnhancedButtonType.outline,
                 child: const Text('Sign In'),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Sign Up
+              EnhancedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const SignupPage()),
+                  );
+                },
+                type: EnhancedButtonType.outline,
+                child: const Text('Create Account'),
               ),
             ],
           ),

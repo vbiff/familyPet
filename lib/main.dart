@@ -9,7 +9,7 @@ import 'package:jhonny/core/services/pet_mood_service.dart';
 import 'package:jhonny/core/services/theme_service.dart' as theme_service;
 import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jhonny/features/home/presentation/pages/home_page.dart';
-import 'package:jhonny/features/auth/presentation/pages/login_page.dart';
+import 'package:jhonny/features/auth/presentation/pages/auth_selection_page.dart';
 import 'package:jhonny/features/onboarding/presentation/pages/app_onboarding_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -225,7 +225,7 @@ class AppWrapper extends ConsumerWidget {
             if (authState.user != null) {
               return const HomePage();
             } else {
-              return const LoginPage();
+              return const AuthSelectionPage();
             }
           },
         );
