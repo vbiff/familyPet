@@ -38,10 +38,11 @@ class HomePage extends ConsumerWidget {
     // Load family data when user is authenticated and available
     ref.listen(authNotifierProvider, (previous, next) {
       if (next.status == AuthStatus.unauthenticated) {
-        Navigator.of(context).pushReplacement(
+        Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
             builder: (context) => const LoginPage(),
           ),
+          (route) => false,
         );
       } else if (next.status == AuthStatus.authenticated &&
           previous?.user?.id != next.user?.id) {

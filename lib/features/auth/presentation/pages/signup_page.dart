@@ -83,10 +83,11 @@ class _SignupPageState extends ConsumerState<SignupPage> {
     // Listen for auth state changes and navigate to home when authenticated
     ref.listen(authNotifierProvider, (previous, next) {
       if (next.status == AuthStatus.authenticated) {
-        Navigator.of(context).pushReplacement(
+        Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
             builder: (context) => const HomePage(),
           ),
+          (route) => false,
         );
       }
     });

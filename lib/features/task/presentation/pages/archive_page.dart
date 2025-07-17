@@ -567,26 +567,30 @@ class _ArchivePageState extends ConsumerState<ArchivePage>
 
     if (confirmed == true) {
       try {
-        // Use Future.microtask to ensure this happens outside the current build cycle
-        await Future.microtask(() async {
-          if (!context.mounted) return;
+        // Check if context is mounted before proceeding
+        if (!context.mounted) return;
 
-          await ref.read(taskNotifierProvider.notifier).deleteTask(task.id);
+        // Store notifier reference before async operations
+        final taskNotifier = ref.read(taskNotifierProvider.notifier);
 
-          // Refresh main task list
-          if (context.mounted) {
-            await _refreshMainTaskList();
+        // Check mounted again right before async operation
+        if (!context.mounted) return;
 
-            // Force provider invalidation to ensure UI refresh
-            ref.invalidate(taskNotifierProvider);
+        await taskNotifier.deleteTask(task.id);
 
-            // Reload archived tasks to update this page
-            await _loadArchivedTasks();
-          }
+        // Refresh main task list
+        if (context.mounted) {
+          await _refreshMainTaskList();
 
-          // Call callback if provided
-          widget.onTasksChanged?.call();
-        });
+          // Force provider invalidation to ensure UI refresh
+          ref.invalidate(taskNotifierProvider);
+
+          // Reload archived tasks to update this page
+          await _loadArchivedTasks();
+        }
+
+        // Call callback if provided
+        widget.onTasksChanged?.call();
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -667,22 +671,26 @@ class _ArchivePageState extends ConsumerState<ArchivePage>
             .where((task) => task.isArchived)
             .toList();
 
-        // Use Future.microtask to ensure this happens outside the current build cycle
-        await Future.microtask(() async {
-          if (!context.mounted) return;
+        // Check if context is mounted before proceeding
+        if (!context.mounted) return;
 
-          for (final task in archivedTasks) {
-            await ref.read(taskNotifierProvider.notifier).deleteTask(task.id);
-          }
+        // Store notifier reference before async operations
+        final taskNotifier = ref.read(taskNotifierProvider.notifier);
 
-          // Refresh main task list
-          if (context.mounted) {
-            await _refreshMainTaskList();
-          }
+        // Check mounted again right before async operations
+        if (!context.mounted) return;
 
-          // Call callback if provided
-          widget.onTasksChanged?.call();
-        });
+        for (final task in archivedTasks) {
+          await taskNotifier.deleteTask(task.id);
+        }
+
+        // Refresh main task list
+        if (context.mounted) {
+          await _refreshMainTaskList();
+        }
+
+        // Call callback if provided
+        widget.onTasksChanged?.call();
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

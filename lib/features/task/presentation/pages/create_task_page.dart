@@ -857,61 +857,65 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
       return;
     }
 
-    // Use Future.microtask to ensure this happens outside the current build cycle
-    await Future.microtask(() async {
+    // Check if context is mounted before proceeding
+    if (!context.mounted) return;
+
+    try {
+      // Store notifier reference before async operations
+      final taskNotifier = ref.read(taskNotifierProvider.notifier);
+
+      // Check mounted again right before async operations
       if (!context.mounted) return;
 
-      try {
-        if (_isEditMode) {
-          final params = UpdateTaskParams(
-            taskId: widget.task!.id,
-            title: _titleController.text.trim(),
-            description: _descriptionController.text.trim(),
-            points: int.tryParse(_pointsController.text) ?? 0,
-            dueDate: _dueDate,
-            assignedTo: _assignedTo,
-            // Phase 2 fields as proper parameters
-            category: _category,
-            difficulty: _difficulty,
-            tags: _selectedTags,
-            metadata: {
-              // Keep any other metadata if needed
-            },
-          );
-          await ref.read(taskNotifierProvider.notifier).updateTask(params);
-        } else {
-          await ref.read(taskNotifierProvider.notifier).createNewTask(
-            title: _titleController.text.trim(),
-            description: _descriptionController.text.trim(),
-            points: int.tryParse(_pointsController.text) ?? 10,
-            assignedTo: _assignedTo!,
-            createdBy: user.id,
-            dueDate: _dueDate,
-            frequency: _frequency,
-            familyId: user.familyId!,
-            // Phase 2 fields as proper parameters
-            category: _category,
-            difficulty: _difficulty,
-            tags: _selectedTags,
-            metadata: {
-              // Keep any other metadata if needed
-            },
-          );
-        }
-
-        if (mounted) {
-          Navigator.of(context).pop();
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to save task: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
+      if (_isEditMode) {
+        final params = UpdateTaskParams(
+          taskId: widget.task!.id,
+          title: _titleController.text.trim(),
+          description: _descriptionController.text.trim(),
+          points: int.tryParse(_pointsController.text) ?? 0,
+          dueDate: _dueDate,
+          assignedTo: _assignedTo,
+          // Phase 2 fields as proper parameters
+          category: _category,
+          difficulty: _difficulty,
+          tags: _selectedTags,
+          metadata: {
+            // Keep any other metadata if needed
+          },
+        );
+        await taskNotifier.updateTask(params);
+      } else {
+        await taskNotifier.createNewTask(
+          title: _titleController.text.trim(),
+          description: _descriptionController.text.trim(),
+          points: int.tryParse(_pointsController.text) ?? 10,
+          assignedTo: _assignedTo!,
+          createdBy: user.id,
+          dueDate: _dueDate,
+          frequency: _frequency,
+          familyId: user.familyId!,
+          // Phase 2 fields as proper parameters
+          category: _category,
+          difficulty: _difficulty,
+          tags: _selectedTags,
+          metadata: {
+            // Keep any other metadata if needed
+          },
+        );
       }
-    });
+
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save task: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }

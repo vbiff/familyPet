@@ -66,7 +66,7 @@ class _SplashPageState extends ConsumerState<SplashPage>
   Widget build(BuildContext context) {
     ref.listen(authNotifierProvider, (previous, next) {
       if (next.status == AuthStatus.authenticated) {
-        Navigator.of(context).pushReplacement(
+        Navigator.of(context).pushAndRemoveUntil(
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
                 const HomePage(),
@@ -88,9 +88,10 @@ class _SplashPageState extends ConsumerState<SplashPage>
             },
             transitionDuration: AppTheme.slowAnimation,
           ),
+          (route) => false,
         );
       } else if (next.status == AuthStatus.unauthenticated) {
-        Navigator.of(context).pushReplacement(
+        Navigator.of(context).pushAndRemoveUntil(
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
                 const LoginPage(),
@@ -112,6 +113,7 @@ class _SplashPageState extends ConsumerState<SplashPage>
             },
             transitionDuration: AppTheme.slowAnimation,
           ),
+          (route) => false,
         );
       }
     });

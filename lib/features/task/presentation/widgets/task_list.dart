@@ -353,45 +353,48 @@ class _TaskListState extends ConsumerState<TaskList>
         return TaskCompletionDialog(
           task: task,
           onCompleted: (List<String> imageUrls) async {
-            // Use Future.microtask to ensure this happens outside the current build cycle
-            await Future.microtask(() async {
-              // Check if widget is still mounted before using ref
+            // Check if widget is still mounted before using ref
+            if (!mounted) return;
+
+            try {
+              // Store the notifier reference before async operations
+              final taskNotifier = ref.read(taskNotifierProvider.notifier);
+
+              // Check mounted status again right before async operations
               if (!mounted) return;
 
-              try {
-                await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
-                    taskId: task.id, status: TaskStatus.completed);
+              await taskNotifier.updateTaskStatus(
+                  taskId: task.id, status: TaskStatus.completed);
 
-                // If there are new images, update the task with them
-                if (imageUrls.isNotEmpty && mounted) {
-                  await ref.read(taskNotifierProvider.notifier).updateTask(
-                        UpdateTaskParams(
-                          taskId: task.id,
-                          imageUrls: [...task.imageUrls, ...imageUrls],
-                        ),
-                      );
-                }
-
-                // Show confetti when task is completed successfully
-                if (context.mounted) {
-                  ConfettiOverlay.show(
-                    context,
-                    duration: const Duration(seconds: 2),
-                  );
-                }
-              } catch (e) {
-                // Handle errors gracefully - only show critical errors
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Failed to complete task: $e'),
-                      backgroundColor: Colors.red,
-                      duration: const Duration(seconds: 2),
-                    ),
-                  );
-                }
+              // If there are new images, update the task with them
+              if (imageUrls.isNotEmpty && mounted) {
+                await taskNotifier.updateTask(
+                  UpdateTaskParams(
+                    taskId: task.id,
+                    imageUrls: [...task.imageUrls, ...imageUrls],
+                  ),
+                );
               }
-            });
+
+              // Show confetti when task is completed successfully
+              if (context.mounted) {
+                ConfettiOverlay.show(
+                  context,
+                  duration: const Duration(seconds: 2),
+                );
+              }
+            } catch (e) {
+              // Handle errors gracefully - only show critical errors
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Failed to complete task: $e'),
+                    backgroundColor: Colors.red,
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              }
+            }
           },
         );
       },
@@ -403,9 +406,14 @@ class _TaskListState extends ConsumerState<TaskList>
     if (!mounted) return;
 
     try {
-      await ref
-          .read(taskNotifierProvider.notifier)
-          .updateTaskStatus(taskId: task.id, status: TaskStatus.pending);
+      // Store the notifier reference before async operation
+      final taskNotifier = ref.read(taskNotifierProvider.notifier);
+
+      // Check mounted status again right before async operation
+      if (!mounted) return;
+
+      await taskNotifier.updateTaskStatus(
+          taskId: task.id, status: TaskStatus.pending);
       // No need to update imageUrls here as uncompleting doesn't add new images
     } catch (e) {
       if (mounted) {

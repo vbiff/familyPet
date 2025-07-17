@@ -1097,22 +1097,28 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
       // Update task with completion status and any uploaded images
       final updatedImageUrls = [...currentTask.imageUrls, ...imageUrls];
 
-      await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
-            taskId: currentTask.id,
-            status: TaskStatus.completed,
-          );
+      // Store the notifier reference before async operations
+      final taskNotifier = ref.read(taskNotifierProvider.notifier);
+
+      // Check context again right before first async operation
+      if (!context.mounted) return;
+
+      await taskNotifier.updateTaskStatus(
+        taskId: currentTask.id,
+        status: TaskStatus.completed,
+      );
 
       // If there are new images, update the task with them
       if (imageUrls.isNotEmpty) {
         // Check context before second async operation
         if (!context.mounted) return;
 
-        await ref.read(taskNotifierProvider.notifier).updateTask(
-              UpdateTaskParams(
-                taskId: currentTask.id,
-                imageUrls: updatedImageUrls,
-              ),
-            );
+        await taskNotifier.updateTask(
+          UpdateTaskParams(
+            taskId: currentTask.id,
+            imageUrls: updatedImageUrls,
+          ),
+        );
       }
 
       // Show confetti when task is completed successfully
@@ -1174,14 +1180,17 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
         final verifiedById = currentUser!.id;
         TaskDetailPage._logger.d('Current user ID: $verifiedById');
 
+        // Store the notifier reference before async operation
+        final taskNotifier = ref.read(taskNotifierProvider.notifier);
+
         // Check context is mounted before async operation
         if (!context.mounted) return;
 
-        await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
-              taskId: currentTask.id,
-              status: TaskStatus.completed,
-              verifiedById: verifiedById,
-            );
+        await taskNotifier.updateTaskStatus(
+          taskId: currentTask.id,
+          status: TaskStatus.completed,
+          verifiedById: verifiedById,
+        );
 
         // Show confetti when task is verified by parent
         if (context.mounted) {
@@ -1240,14 +1249,17 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
 
       // Only unverify if task is currently verified
       if (currentTask.isVerifiedByParent) {
+        // Store the notifier reference before async operation
+        final taskNotifier = ref.read(taskNotifierProvider.notifier);
+
         // Check context again before async operation
         if (!context.mounted) return;
 
-        await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
-              taskId: currentTask.id,
-              status: TaskStatus.completed,
-              clearVerification: true, // Clear verification
-            );
+        await taskNotifier.updateTaskStatus(
+          taskId: currentTask.id,
+          status: TaskStatus.completed,
+          clearVerification: true, // Clear verification
+        );
       }
     } catch (e) {
       TaskDetailPage._logger.e('Unverify task error: $e');
@@ -1269,10 +1281,16 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
       // Check context before any operations
       if (!context.mounted) return;
 
-      await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
-            taskId: currentTask.id,
-            status: TaskStatus.pending,
-          );
+      // Store the notifier reference before the async operation
+      final taskNotifier = ref.read(taskNotifierProvider.notifier);
+
+      // Check context again right before async operation
+      if (!context.mounted) return;
+
+      await taskNotifier.updateTaskStatus(
+        taskId: currentTask.id,
+        status: TaskStatus.pending,
+      );
     } catch (e) {
       TaskDetailPage._logger.e('Reject task error: $e');
       // Show error feedback only if context is still mounted

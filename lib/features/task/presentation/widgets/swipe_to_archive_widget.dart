@@ -90,15 +90,21 @@ class SwipeToArchiveWidget extends ConsumerWidget {
 
   Future<void> _archiveTask(WidgetRef ref, BuildContext context) async {
     try {
-      // Use Future.microtask to ensure this happens outside the current build cycle
-      await Future.microtask(() async {
-        await ref.read(taskNotifierProvider.notifier).updateTask(
-              UpdateTaskParams(
-                taskId: task.id,
-                isArchived: true,
-              ),
-            );
-      });
+      // Check if context is mounted before proceeding
+      if (!context.mounted) return;
+
+      // Store notifier reference before async operation
+      final taskNotifier = ref.read(taskNotifierProvider.notifier);
+
+      // Check mounted again right before async operation
+      if (!context.mounted) return;
+
+      await taskNotifier.updateTask(
+        UpdateTaskParams(
+          taskId: task.id,
+          isArchived: true,
+        ),
+      );
 
       onArchived?.call();
     } catch (e) {
