@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 import 'package:jhonny/features/analytics/presentation/pages/family_dashboard_page.dart';
-import 'package:jhonny/features/auth/presentation/pages/login_page.dart';
+import 'package:jhonny/features/auth/presentation/pages/auth_selection_page.dart';
 import 'package:jhonny/features/auth/presentation/pages/profile_settings_page.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_state.dart';
@@ -39,7 +39,7 @@ class HomePage extends ConsumerWidget {
       if (next.status == AuthStatus.unauthenticated) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
-            builder: (context) => const LoginPage(),
+            builder: (context) => const AuthSelectionPage(),
           ),
           (route) => false,
         );
