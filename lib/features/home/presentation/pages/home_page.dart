@@ -17,7 +17,6 @@ import 'package:jhonny/features/task/presentation/widgets/task_list.dart';
 import 'package:jhonny/features/task/presentation/providers/task_provider.dart';
 import 'package:jhonny/features/task/presentation/providers/task_state.dart';
 import 'package:jhonny/shared/widgets/widgets.dart';
-import 'package:jhonny/shared/widgets/theme_toggle.dart';
 import 'package:jhonny/shared/widgets/animated_bottom_nav.dart';
 import 'package:jhonny/core/theme/app_theme.dart';
 import 'package:jhonny/main.dart'; // To access themeService
@@ -117,10 +116,6 @@ class HomePage extends ConsumerWidget {
         scrolledUnderElevation: 0,
         foregroundColor: AppTheme.textPrimary,
         actions: [
-          CompactThemeToggle(
-            themeService: themeService,
-          ),
-          const SizedBox(width: 8),
           IconButton(
             icon: const Icon(Icons.account_circle_outlined),
             onPressed: () => _showProfileMenu(context, ref),

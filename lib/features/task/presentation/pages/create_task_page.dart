@@ -121,39 +121,40 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
                 child: CustomScrollView(
                   slivers: [
                     SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(20, 28, 20, 32),
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
                       sliver: SliverList(
                         delegate: SliverChildListDelegate([
                           _buildCategorySection()
                               .animate()
                               .fadeIn(delay: 100.ms)
                               .slideY(begin: 0.2),
-                          const SizedBox(height: 28),
+                          const SizedBox(height: 20),
                           _buildTaskInfoSection()
                               .animate()
                               .fadeIn(delay: 200.ms)
                               .slideY(begin: 0.2),
-                          const SizedBox(height: 28),
+                          const SizedBox(height: 20),
                           _buildAssignmentSection()
                               .animate()
                               .fadeIn(delay: 300.ms)
                               .slideY(begin: 0.2),
-                          const SizedBox(height: 28),
+                          const SizedBox(height: 20),
                           _buildSchedulingSection()
                               .animate()
                               .fadeIn(delay: 400.ms)
                               .slideY(begin: 0.2),
-                          const SizedBox(height: 28),
+                          const SizedBox(height: 20),
                           _buildDifficultySection()
                               .animate()
                               .fadeIn(delay: 500.ms)
                               .slideY(begin: 0.2),
-                          const SizedBox(height: 40),
+                          const SizedBox(height: 32),
                           _buildActionButtons(isProcessing)
                               .animate()
                               .fadeIn(delay: 600.ms)
                               .slideY(begin: 0.3),
-                          const SizedBox(height: 24), // Extra bottom padding
+                          const SizedBox(
+                              height: 20), // Bottom padding for safe area
                         ]),
                       ),
                     ),

@@ -275,21 +275,4 @@ class AppTheme {
       dividerColor: textSecondary.withOpacity(0.1),
     );
   }
-
-  static ThemeData get darkTheme {
-    return lightTheme.copyWith(
-      colorScheme: ColorScheme.dark(
-        primary: primary,
-        onPrimary: textLight,
-        primaryContainer: primary.withOpacity(0.2),
-        onPrimaryContainer: primary,
-        secondary: secondary,
-        onSecondary: textLight,
-        tertiary: accent,
-        surface: const Color(0xFF1E1E1E),
-        onSurface: Colors.white,
-      ),
-      scaffoldBackgroundColor: const Color(0xFF121212),
-    );
-  }
 }
