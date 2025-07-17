@@ -487,6 +487,13 @@ class _OptimizedTaskListState extends ConsumerState<OptimizedTaskList>
                 );
               }
             } catch (e) {
+              // Check for disposed ref errors specifically
+              if (e.toString().contains('disposed') ||
+                  e.toString().contains('Bad state')) {
+                debugPrint('Widget or ref was disposed during task complete');
+                return; // Silently return for disposed ref errors
+              }
+
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -513,7 +520,14 @@ class _OptimizedTaskListState extends ConsumerState<OptimizedTaskList>
       await taskNotifier.updateTaskStatus(
           taskId: task.id, status: TaskStatus.pending);
     } catch (e) {
-      if (mounted) {
+      // Check for disposed ref errors specifically
+      if (e.toString().contains('disposed') ||
+          e.toString().contains('Bad state')) {
+        debugPrint('Widget or ref was disposed during task uncomplete');
+        return; // Silently return for disposed ref errors
+      }
+
+      if (mounted && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to uncomplete task: $e'),

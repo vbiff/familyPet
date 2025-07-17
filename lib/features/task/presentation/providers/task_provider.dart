@@ -80,10 +80,15 @@ final taskNotifierProvider =
               taskTitle: taskTitle,
             );
       } catch (e) {
-        // Silently handle disposed ref errors
-        if (!e.toString().contains('disposed')) {
-          debugPrint('Error awarding pet experience: $e');
+        // Check for disposed ref errors specifically and handle silently
+        if (e.toString().contains('disposed') ||
+            e.toString().contains('Bad state')) {
+          debugPrint('Provider was disposed during pet experience award');
+          return; // Silently return for disposed ref errors
         }
+
+        // Only log other types of errors
+        debugPrint('Error awarding pet experience: $e');
       }
     },
   );

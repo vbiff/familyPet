@@ -417,6 +417,13 @@ class _TaskListState extends ConsumerState<TaskList>
                 );
               }
             } catch (e) {
+              // Check for disposed ref errors specifically
+              if (e.toString().contains('disposed') ||
+                  e.toString().contains('Bad state')) {
+                debugPrint('Widget or ref was disposed during task complete');
+                return; // Silently return for disposed ref errors
+              }
+
               // Handle errors gracefully - only show critical errors
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -449,7 +456,14 @@ class _TaskListState extends ConsumerState<TaskList>
           taskId: task.id, status: TaskStatus.pending);
       // No need to update imageUrls here as uncompleting doesn't add new images
     } catch (e) {
-      if (mounted) {
+      // Check for disposed ref errors specifically
+      if (e.toString().contains('disposed') ||
+          e.toString().contains('Bad state')) {
+        debugPrint('Widget or ref was disposed during task uncomplete');
+        return; // Silently return for disposed ref errors
+      }
+
+      if (mounted && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to uncomplete task: $e'),
