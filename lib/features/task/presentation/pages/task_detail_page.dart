@@ -16,7 +16,6 @@ import 'package:jhonny/features/task/presentation/widgets/photo_verification_wid
 import 'package:jhonny/core/providers/supabase_provider.dart';
 import 'package:jhonny/shared/widgets/confetti_animation.dart';
 import 'package:jhonny/shared/widgets/delightful_button.dart';
-import 'package:jhonny/shared/widgets/animated_interactions.dart';
 import 'package:jhonny/shared/widgets/enhanced_card.dart';
 import 'package:jhonny/core/theme/app_theme.dart';
 
@@ -478,8 +477,8 @@ class TaskDetailPage extends ConsumerWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  AppTheme.accent.withOpacity(0.2),
-                  AppTheme.blue.withOpacity(0.1)
+                  AppTheme.accent.withValues(alpha: 0.2),
+                  AppTheme.blue.withValues(alpha: 0.1)
                 ],
               ),
               borderRadius: BorderRadius.circular(8),
@@ -534,8 +533,8 @@ class TaskDetailPage extends ConsumerWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  AppTheme.green.withOpacity(0.2),
-                  AppTheme.blue.withOpacity(0.1)
+                  AppTheme.green.withValues(alpha: 0.2),
+                  AppTheme.blue.withValues(alpha: 0.1)
                 ],
               ),
               borderRadius: BorderRadius.circular(8),
@@ -702,14 +701,19 @@ class TaskDetailPage extends ConsumerWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.verified, color: Colors.green),
+          const Icon(Icons.verified, color: Colors.green, size: 20),
           const SizedBox(width: 12),
-          Text(
-            'Task Completed and Verified!',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.green,
-                  fontWeight: FontWeight.bold,
-                ),
+          Expanded(
+            child: Text(
+              'Task Completed and Verified!',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
+                  ),
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
+            ),
           ),
         ],
       ),
@@ -755,120 +759,55 @@ class TaskDetailPage extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Status info
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          margin: const EdgeInsets.only(bottom: 12),
-          decoration: BoxDecoration(
-            color: Colors.orange.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.hourglass_empty, color: Colors.orange),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Task completed by child - awaiting parent verification',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.orange.shade700,
-                        fontWeight: FontWeight.w500,
-                      ),
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // Show existing verification photos if any
-        if (currentTask.hasImages) ...[
-          Card(
-            elevation: 0,
-            color: Theme.of(context).colorScheme.surfaceContainerLow,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Completion Photos:',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    height: 100,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: currentTask.imageUrls.length,
-                      itemBuilder: (context, index) {
-                        return Container(
-                          margin: const EdgeInsets.only(right: 8),
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Theme.of(context).colorScheme.outline,
-                            ),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(7),
-                            child: _buildAuthenticatedImage(
-                              currentTask.imageUrls[index],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-        ],
-
         // Add verification photos button for parents
         OutlinedButton.icon(
           onPressed: isUpdating
               ? null
               : () => _showParentVerificationDialog(context, ref, currentTask),
-          icon: const Icon(Icons.add_a_photo),
-          label: const Text('Add Additional Photos'),
-          style: OutlinedButton.styleFrom(
-            minimumSize: const Size.fromHeight(48),
+          icon: const Icon(Icons.add_a_photo, size: 18),
+          label: const Text(
+            'Add Additional Photos',
+            style: TextStyle(fontSize: 13),
           ),
-        ),
-
-        const SizedBox(height: 16),
-
-        // Primary action - Verify
-        FilledButton.icon(
-          onPressed:
-              isUpdating ? null : () => _verifyTask(context, ref, currentTask),
-          icon: const Icon(Icons.verified),
-          label: const Text('Verify & Award Points'),
-          style: FilledButton.styleFrom(
-            minimumSize: const Size.fromHeight(52),
-            backgroundColor: Colors.green,
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(44),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           ),
         ),
 
         const SizedBox(height: 12),
 
+        // Primary action - Verify
+        FilledButton.icon(
+          onPressed:
+              isUpdating ? null : () => _verifyTask(context, ref, currentTask),
+          icon: const Icon(Icons.verified, size: 18),
+          label: const Text(
+            'Verify & Award Points',
+            style: TextStyle(fontSize: 13),
+          ),
+          style: FilledButton.styleFrom(
+            minimumSize: const Size.fromHeight(48),
+            backgroundColor: Colors.green,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          ),
+        ),
+
+        const SizedBox(height: 10),
+
         // Secondary action - Reject
         OutlinedButton.icon(
           onPressed:
               isUpdating ? null : () => _rejectTask(context, ref, currentTask),
-          icon: const Icon(Icons.close),
-          label: const Text('Reject - Mark as Pending'),
+          icon: const Icon(Icons.close, size: 18),
+          label: const Text(
+            'Reject - Mark as Pending',
+            style: TextStyle(fontSize: 13),
+          ),
           style: OutlinedButton.styleFrom(
-            minimumSize: const Size.fromHeight(52),
+            minimumSize: const Size.fromHeight(48),
             foregroundColor: Colors.red,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           ),
         ),
       ],
@@ -891,8 +830,9 @@ class TaskDetailPage extends ConsumerWidget {
             border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
           ),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.verified, color: Colors.green),
+              const Icon(Icons.verified, color: Colors.green, size: 20),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -901,6 +841,8 @@ class TaskDetailPage extends ConsumerWidget {
                         color: Colors.green.shade700,
                         fontWeight: FontWeight.w500,
                       ),
+                  overflow: TextOverflow.visible,
+                  softWrap: true,
                 ),
               ),
             ],
@@ -912,24 +854,33 @@ class TaskDetailPage extends ConsumerWidget {
           onPressed: isUpdating
               ? null
               : () => _unverifyTask(context, ref, currentTask),
-          icon: const Icon(Icons.cancel),
-          label: const Text('Remove Verification'),
+          icon: const Icon(Icons.cancel, size: 18),
+          label: const Text(
+            'Remove Verification',
+            style: TextStyle(fontSize: 13),
+          ),
           style: OutlinedButton.styleFrom(
-            minimumSize: const Size.fromHeight(52),
+            minimumSize: const Size.fromHeight(48),
             foregroundColor: Colors.orange,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           ),
         ),
 
         const SizedBox(height: 8),
 
         // Help text
-        Text(
-          'To mark this task as pending again, you must first remove the verification.',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontStyle: FontStyle.italic,
-              ),
-          textAlign: TextAlign.center,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Text(
+            'To mark this task as pending again, you must first remove the verification.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontStyle: FontStyle.italic,
+                ),
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.visible,
+            softWrap: true,
+          ),
         ),
       ],
     );
@@ -943,6 +894,7 @@ class TaskDetailPage extends ConsumerWidget {
     Color? textColor,
   }) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(
           icon,
@@ -964,6 +916,8 @@ class TaskDetailPage extends ConsumerWidget {
                   color: textColor,
                 ),
             textAlign: TextAlign.end,
+            overflow: TextOverflow.visible,
+            softWrap: true,
           ),
         ),
       ],
@@ -1409,14 +1363,19 @@ class TaskDetailPage extends ConsumerWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.hourglass_empty, color: Colors.orange),
+          const Icon(Icons.hourglass_empty, color: Colors.orange, size: 20),
           const SizedBox(width: 12),
-          Text(
-            'Waiting for Parent Verification',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.orange,
-                  fontWeight: FontWeight.bold,
-                ),
+          Expanded(
+            child: Text(
+              'Waiting for Parent Verification',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.orange,
+                    fontWeight: FontWeight.bold,
+                  ),
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
+            ),
           ),
         ],
       ),
@@ -1435,14 +1394,20 @@ class TaskDetailPage extends ConsumerWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error, color: Theme.of(context).colorScheme.error),
+          Icon(Icons.error,
+              color: Theme.of(context).colorScheme.error, size: 20),
           const SizedBox(width: 12),
-          Text(
-            'Task Expired',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onErrorContainer,
-                  fontWeight: FontWeight.bold,
-                ),
+          Expanded(
+            child: Text(
+              'Task Expired',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onErrorContainer,
+                    fontWeight: FontWeight.bold,
+                  ),
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
+            ),
           ),
         ],
       ),

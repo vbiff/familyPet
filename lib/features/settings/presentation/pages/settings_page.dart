@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:jhonny/features/settings/presentation/widgets/language_selector.dart';
 import 'package:jhonny/features/task/presentation/pages/archive_page.dart';
-import 'package:jhonny/features/task/presentation/providers/task_provider.dart';
-import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jhonny/shared/widgets/delightful_button.dart';
 import 'package:jhonny/core/theme/app_theme.dart';
 

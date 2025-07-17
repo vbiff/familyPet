@@ -179,8 +179,8 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  AppTheme.accent.withOpacity(0.2),
-                  AppTheme.blue.withOpacity(0.1)
+                  AppTheme.accent.withValues(alpha: 0.2),
+                  AppTheme.blue.withValues(alpha: 0.1)
                 ],
               ),
               borderRadius: BorderRadius.circular(8),
@@ -295,8 +295,8 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  AppTheme.secondary.withOpacity(0.2),
-                  AppTheme.lavender.withOpacity(0.1)
+                  AppTheme.secondary.withValues(alpha: 0.2),
+                  AppTheme.lavender.withValues(alpha: 0.1)
                 ],
               ),
               borderRadius: BorderRadius.circular(8),
@@ -322,12 +322,13 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    AppTheme.error.withOpacity(0.1),
-                    AppTheme.error.withOpacity(0.05)
+                    AppTheme.error.withValues(alpha: 0.1),
+                    AppTheme.error.withValues(alpha: 0.05)
                   ],
                 ),
                 borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-                border: Border.all(color: AppTheme.error.withOpacity(0.3)),
+                border:
+                    Border.all(color: AppTheme.error.withValues(alpha: 0.3)),
               ),
               child: const Row(
                 children: [
@@ -368,13 +369,13 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
                 labelStyle: const TextStyle(color: AppTheme.textSecondary),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-                  borderSide:
-                      BorderSide(color: AppTheme.primary.withOpacity(0.3)),
+                  borderSide: BorderSide(
+                      color: AppTheme.primary.withValues(alpha: 0.3)),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-                  borderSide:
-                      BorderSide(color: AppTheme.secondary.withOpacity(0.3)),
+                  borderSide: BorderSide(
+                      color: AppTheme.secondary.withValues(alpha: 0.3)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
@@ -397,8 +398,8 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
                           color: isCurrentUser
-                              ? AppTheme.primary.withOpacity(0.1)
-                              : AppTheme.accent.withOpacity(0.1),
+                              ? AppTheme.primary.withValues(alpha: 0.1)
+                              : AppTheme.accent.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Icon(
@@ -460,8 +461,8 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  AppTheme.green.withOpacity(0.2),
-                  AppTheme.blue.withOpacity(0.1)
+                  AppTheme.green.withValues(alpha: 0.2),
+                  AppTheme.blue.withValues(alpha: 0.1)
                 ],
               ),
               borderRadius: BorderRadius.circular(8),
@@ -487,19 +488,20 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    AppTheme.primary.withOpacity(0.05),
-                    AppTheme.accent.withOpacity(0.02)
+                    AppTheme.primary.withValues(alpha: 0.05),
+                    AppTheme.accent.withValues(alpha: 0.02)
                   ],
                 ),
                 borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-                border: Border.all(color: AppTheme.primary.withOpacity(0.2)),
+                border:
+                    Border.all(color: AppTheme.primary.withValues(alpha: 0.2)),
               ),
               child: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppTheme.primary.withOpacity(0.1),
+                      color: AppTheme.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(Icons.calendar_today,
@@ -553,8 +555,8 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  AppTheme.primary.withOpacity(0.2),
-                  AppTheme.secondary.withOpacity(0.1)
+                  AppTheme.primary.withValues(alpha: 0.2),
+                  AppTheme.secondary.withValues(alpha: 0.1)
                 ],
               ),
               borderRadius: BorderRadius.circular(8),
@@ -582,11 +584,12 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
                 borderSide:
-                    BorderSide(color: AppTheme.primary.withOpacity(0.3)),
+                    BorderSide(color: AppTheme.primary.withValues(alpha: 0.3)),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-                borderSide: BorderSide(color: AppTheme.accent.withOpacity(0.3)),
+                borderSide:
+                    BorderSide(color: AppTheme.accent.withValues(alpha: 0.3)),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
@@ -643,8 +646,8 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  AppTheme.orange.withOpacity(0.2),
-                  AppTheme.yellow.withOpacity(0.1)
+                  AppTheme.orange.withValues(alpha: 0.2),
+                  AppTheme.yellow.withValues(alpha: 0.1)
                 ],
               ),
               borderRadius: BorderRadius.circular(8),
@@ -672,11 +675,12 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
                 borderSide:
-                    BorderSide(color: AppTheme.primary.withOpacity(0.3)),
+                    BorderSide(color: AppTheme.primary.withValues(alpha: 0.3)),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-                borderSide: BorderSide(color: AppTheme.orange.withOpacity(0.3)),
+                borderSide:
+                    BorderSide(color: AppTheme.orange.withValues(alpha: 0.3)),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
@@ -686,7 +690,6 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
             isExpanded: true,
             items: TaskDifficulty.values
                 .map<DropdownMenuItem<TaskDifficulty>>((difficulty) {
-              final points = _getPointsForDifficulty(difficulty);
               final difficultyColor = difficulty == TaskDifficulty.easy
                   ? AppTheme.green
                   : difficulty == TaskDifficulty.medium
@@ -751,12 +754,13 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  AppTheme.lavender.withOpacity(0.1),
-                  AppTheme.primary.withOpacity(0.05)
+                  AppTheme.lavender.withValues(alpha: 0.1),
+                  AppTheme.primary.withValues(alpha: 0.05)
                 ],
               ),
               borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-              border: Border.all(color: AppTheme.lavender.withOpacity(0.3)),
+              border:
+                  Border.all(color: AppTheme.lavender.withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [

@@ -8,7 +8,6 @@ import 'package:jhonny/features/auth/domain/entities/user.dart';
 import 'package:jhonny/shared/widgets/enhanced_card.dart';
 import 'package:jhonny/shared/widgets/loading_indicators.dart';
 import 'package:jhonny/shared/widgets/delightful_button.dart';
-import 'package:jhonny/shared/widgets/animated_interactions.dart';
 import 'package:jhonny/core/theme/app_theme.dart';
 import 'package:jhonny/features/task/domain/usecases/update_task.dart';
 
@@ -242,7 +241,7 @@ class _ArchivePageState extends ConsumerState<ArchivePage>
                 ),
               ).animate().scale(delay: 100.ms).shimmer(
                     duration: 2.seconds,
-                    color: Colors.white.withOpacity(0.3),
+                    color: Colors.white.withValues(alpha: 0.3),
                   ),
               const SizedBox(height: 24),
               Text(
@@ -300,8 +299,8 @@ class _ArchivePageState extends ConsumerState<ArchivePage>
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        AppTheme.accent.withOpacity(0.15),
-                        AppTheme.accent.withOpacity(0.08),
+                        AppTheme.accent.withValues(alpha: 0.15),
+                        AppTheme.accent.withValues(alpha: 0.08),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(12),
@@ -319,13 +318,16 @@ class _ArchivePageState extends ConsumerState<ArchivePage>
                     children: [
                       Text(
                         task.title,
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  decoration: TextDecoration.lineThrough,
-                                  color: AppTheme.textPrimary.withOpacity(0.6),
-                                  height: 1.2,
-                                ),
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              decoration: TextDecoration.lineThrough,
+                              color:
+                                  AppTheme.textPrimary.withValues(alpha: 0.6),
+                              height: 1.2,
+                            ),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -345,8 +347,8 @@ class _ArchivePageState extends ConsumerState<ArchivePage>
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        AppTheme.lavender.withOpacity(0.2),
-                        AppTheme.lavender.withOpacity(0.1),
+                        AppTheme.lavender.withValues(alpha: 0.2),
+                        AppTheme.lavender.withValues(alpha: 0.1),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(16),

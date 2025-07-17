@@ -446,167 +446,216 @@ class VirtualPet extends ConsumerWidget {
                 child: CircularProgressIndicator(),
               ),
             ] else ...[
-              _buildActionButton(
-                context,
-                icon: Icons.restaurant,
-                label: petState.pet?.stats['hunger'] != null
-                    ? 'Feed (${petState.pet!.stats['hunger']!}% full)'
-                    : 'Feed Pet',
-                color: getFeedButtonColor(petState.pet?.stats['hunger']),
-                enabled: !petState.isUpdating,
-                onTap: () {
-                  ref.read(petNotifierProvider.notifier).feedPet();
-                },
-              ),
-
-              const SizedBox(height: 12),
-
-              SpringButton(
-                onPressed: !petState.isUpdating
-                    ? () {
-                        ref.read(petNotifierProvider.notifier).playWithPet();
-                      }
-                    : null,
-                child: Container(
-                  width: double.infinity,
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.secondary,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .secondary
-                            .withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      PulsingIndicator(
-                        child: Icon(
-                          Icons.sports_esports,
-                          color: Colors.white,
-                          size: 20,
+              // Three action buttons in a row
+              Row(
+                children: [
+                  // Feed button
+                  Expanded(
+                    child: SpringButton(
+                      onPressed: !petState.isUpdating
+                          ? () {
+                              ref.read(petNotifierProvider.notifier).feedPet();
+                            }
+                          : null,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 16, horizontal: 8),
+                        decoration: BoxDecoration(
+                          color:
+                              getFeedButtonColor(petState.pet?.stats['hunger']),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: getFeedButtonColor(
+                                      petState.pet?.stats['hunger'])
+                                  .withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.restaurant,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            SizedBox(height: 6),
+                            Text(
+                              'Feed',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
                         ),
                       ),
-                      SizedBox(width: 8),
-                      Text(
-                        'Play with Pet',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                    ),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  // Play button
+                  Expanded(
+                    child: SpringButton(
+                      onPressed: !petState.isUpdating
+                          ? () {
+                              ref
+                                  .read(petNotifierProvider.notifier)
+                                  .playWithPet();
+                            }
+                          : null,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 16, horizontal: 8),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.secondary,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .secondary
+                                  .withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            PulsingIndicator(
+                              child: Icon(
+                                Icons.sports_esports,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                            SizedBox(height: 6),
+                            Text(
+                              'Play',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
 
-              const SizedBox(height: 12),
+                  const SizedBox(width: 12),
 
-              SpringButton(
-                onPressed: !petState.isUpdating
-                    ? () {
-                        ref
-                            .read(petNotifierProvider.notifier)
-                            .giveMedicalCare();
-                      }
-                    : null,
-                child: Container(
-                  width: double.infinity,
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.tertiary,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .tertiary
-                            .withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.health_and_safety,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        'Medical Care',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                  // Medical care button
+                  Expanded(
+                    child: SpringButton(
+                      onPressed: !petState.isUpdating
+                          ? () {
+                              ref
+                                  .read(petNotifierProvider.notifier)
+                                  .giveMedicalCare();
+                            }
+                          : null,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 16, horizontal: 8),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.tertiary,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .tertiary
+                                  .withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.health_and_safety,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            SizedBox(height: 6),
+                            Text(
+                              'Care',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
 
               // Temporary reset button to fix happiness - only for parents
-              if (currentUser?.role == UserRole.parent) ...[
-                const SizedBox(height: 12),
-                SpringButton(
-                  onPressed: !petState.isUpdating
-                      ? () {
-                          ref
-                              .read(petNotifierProvider.notifier)
-                              .resetPetStats();
-                        }
-                      : null,
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 16, horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.orange,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.orange.withValues(alpha: 0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.refresh,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          'Reset Stats (Fix Happiness)',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+              // if (currentUser?.role == UserRole.parent) ...[
+              //   const SizedBox(height: 12),
+              //   SpringButton(
+              //     onPressed: !petState.isUpdating
+              //         ? () {
+              //             ref
+              //                 .read(petNotifierProvider.notifier)
+              //                 .resetPetStats();
+              //           }
+              //         : null,
+              //     child: Container(
+              //       width: double.infinity,
+              //       padding: const EdgeInsets.symmetric(
+              //           vertical: 16, horizontal: 12),
+              //       decoration: BoxDecoration(
+              //         color: Colors.orange,
+              //         borderRadius: BorderRadius.circular(12),
+              //         boxShadow: [
+              //           BoxShadow(
+              //             color: Colors.orange.withValues(alpha: 0.3),
+              //             blurRadius: 8,
+              //             offset: const Offset(0, 2),
+              //           ),
+              //         ],
+              //       ),
+              //       child: const Row(
+              //         mainAxisAlignment: MainAxisAlignment.center,
+              //         children: [
+              //           Icon(
+              //             Icons.refresh,
+              //             color: Colors.white,
+              //             size: 20,
+              //           ),
+              //           SizedBox(width: 8),
+              //           Text(
+              //             'Reset Stats (Fix Happiness)',
+              //             style: TextStyle(
+              //               color: Colors.white,
+              //               fontSize: 14,
+              //               fontWeight: FontWeight.w600,
+              //             ),
+              //           ),
+              //         ],
+              //       ),
+              //     ),
+              //   ),
+              // ],
             ],
 
             const SizedBox(height: 24),
