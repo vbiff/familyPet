@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
+import 'package:jhonny/core/services/cache_service.dart';
 import 'package:jhonny/features/analytics/presentation/pages/family_dashboard_page.dart';
 import 'package:jhonny/features/auth/presentation/pages/auth_selection_page.dart';
 import 'package:jhonny/features/auth/presentation/pages/profile_settings_page.dart';
@@ -38,15 +39,28 @@ class HomePage extends ConsumerWidget {
     ref.listen(authNotifierProvider, (previous, next) {
       if (next.status == AuthStatus.unauthenticated) {
         // Clean up all providers when user logs out to prevent disposed ref issues
-        try {
-          ref.invalidate(taskNotifierProvider);
-          ref.invalidate(familyNotifierProvider);
-          ref.invalidate(petNotifierProvider);
-          ref.invalidate(selectedTabProvider);
-          print('🧹 Cleaned up all providers after logout');
-        } catch (e) {
-          print('⚠️ Error during provider cleanup: $e');
-        }
+        Future.microtask(() {
+          try {
+            // Clear cache first to prevent stale data
+            cacheService.removePattern('family_');
+            cacheService.removePattern('user_');
+            cacheService.removePattern('task_');
+            cacheService.removePattern('pet_');
+
+            // Invalidate providers in a safe order
+            ref.invalidate(selectedTabProvider);
+            ref.invalidate(petNotifierProvider);
+            ref.invalidate(taskNotifierProvider);
+            ref.invalidate(familyNotifierProvider);
+
+            print('🧹 Cleaned up all providers after logout');
+          } catch (e) {
+            // Silently handle disposal errors during cleanup
+            if (!e.toString().contains('disposed')) {
+              print('⚠️ Error during provider cleanup: $e');
+            }
+          }
+        });
 
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
@@ -57,9 +71,16 @@ class HomePage extends ConsumerWidget {
       } else if (next.status == AuthStatus.authenticated &&
           previous?.user?.id != next.user?.id) {
         // User changed - reset family provider and refresh user data
-        ref.read(familyNotifierProvider.notifier).reset();
-        // Refresh user data to ensure it's up-to-date
-        ref.read(authNotifierProvider.notifier).refreshUser();
+        try {
+          ref.read(familyNotifierProvider.notifier).reset();
+          // Refresh user data to ensure it's up-to-date
+          ref.read(authNotifierProvider.notifier).refreshUser();
+        } catch (e) {
+          // Handle potential disposed provider during user change
+          if (!e.toString().contains('disposed')) {
+            print('⚠️ Error during user change cleanup: $e');
+          }
+        }
       }
     });
 

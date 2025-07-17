@@ -166,40 +166,59 @@ class PetStats {
 
 /// Optimized family members provider
 final familyMembersOptimizedProvider = Provider((ref) {
-  final familyId = ref.watch(familyIdProvider);
+  try {
+    final familyId = ref.watch(familyIdProvider);
 
-  if (familyId == null) return [];
+    if (familyId == null) return [];
 
-  final familyMembersAsync = ref.watch(familyMembersProvider);
-  return familyMembersAsync;
+    final familyMembersAsync = ref.watch(familyMembersProvider);
+    return familyMembersAsync;
+  } catch (e) {
+    // Handle disposed provider errors during sign out
+    if (e.toString().contains('disposed') ||
+        e.toString().contains('Bad state')) {
+      return [];
+    }
+    rethrow;
+  }
 });
 
 /// Family stats provider with caching
 final familyStatsProvider = Provider<FamilyStats?>((ref) {
-  final familyId = ref.watch(familyIdProvider);
+  try {
+    final familyId = ref.watch(familyIdProvider);
 
-  if (familyId == null) return null;
+    if (familyId == null) return null;
 
-  final members = ref.watch(familyMembersOptimizedProvider);
-  final tasks = ref.watch(tasksProvider);
+    final members = ref.watch(familyMembersOptimizedProvider);
+    final tasks = ref.watch(tasksProvider);
 
-  final cacheKey = 'family_stats_${familyId}_${members.length}_${tasks.length}';
-  final cached = cacheService.get<FamilyStats>(cacheKey);
-  if (cached != null) return cached;
+    final cacheKey =
+        'family_stats_${familyId}_${members.length}_${tasks.length}';
+    final cached = cacheService.get<FamilyStats>(cacheKey);
+    if (cached != null) return cached;
 
-  final stats = FamilyStats(
-    memberCount: members.length,
-    totalTasks: tasks.length,
-    completedTasks: tasks.where((t) => t.status.isCompleted).length,
-    pendingTasks: tasks.where((t) => t.status.isPending).length,
-    totalPoints: tasks
-        .where((t) => t.status.isCompleted)
-        .fold(0, (sum, task) => sum + task.points),
-  );
+    final stats = FamilyStats(
+      memberCount: members.length,
+      totalTasks: tasks.length,
+      completedTasks: tasks.where((t) => t.status.isCompleted).length,
+      pendingTasks: tasks.where((t) => t.status.isPending).length,
+      totalPoints: tasks
+          .where((t) => t.status.isCompleted)
+          .fold(0, (sum, task) => sum + task.points),
+    );
 
-  // Cache for 5 minutes
-  cacheService.set(cacheKey, stats, ttl: const Duration(minutes: 5));
-  return stats;
+    // Cache for 5 minutes
+    cacheService.set(cacheKey, stats, ttl: const Duration(minutes: 5));
+    return stats;
+  } catch (e) {
+    // Handle disposed provider errors during sign out
+    if (e.toString().contains('disposed') ||
+        e.toString().contains('Bad state')) {
+      return null;
+    }
+    rethrow;
+  }
 });
 
 /// Family stats data class
@@ -221,17 +240,38 @@ class FamilyStats {
 
 /// Optimized app state provider that only rebuilds when necessary
 final appStateProvider = Provider<AppState>((ref) {
-  final isLoading = ref.watch(taskLoadingStateProvider);
-  final userRole = ref.watch(userRoleProvider);
-  final familyId = ref.watch(familyIdProvider);
-  final taskCounts = ref.watch(taskCountProvider);
+  try {
+    final isLoading = ref.watch(taskLoadingStateProvider);
+    final userRole = ref.watch(userRoleProvider);
+    final familyId = ref.watch(familyIdProvider);
+    final taskCounts = ref.watch(taskCountProvider);
 
-  return AppState(
-    isLoading: isLoading,
-    userRole: userRole,
-    hasFamilyAccess: familyId != null,
-    taskCounts: taskCounts,
-  );
+    return AppState(
+      isLoading: isLoading,
+      userRole: userRole,
+      hasFamilyAccess: familyId != null,
+      taskCounts: taskCounts,
+    );
+  } catch (e) {
+    // Handle disposed provider errors during sign out
+    if (e.toString().contains('disposed') ||
+        e.toString().contains('Bad state')) {
+      return const AppState(
+        isLoading: false,
+        userRole: null,
+        hasFamilyAccess: false,
+        taskCounts: TaskCounts(
+          total: 0,
+          pending: 0,
+          inProgress: 0,
+          completed: 0,
+          overdue: 0,
+          needingVerification: 0,
+        ),
+      );
+    }
+    rethrow;
+  }
 });
 
 /// App state data class

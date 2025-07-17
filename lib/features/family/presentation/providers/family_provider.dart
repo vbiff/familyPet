@@ -81,10 +81,28 @@ final currentFamilyProvider = Provider((ref) {
 
 // Family members provider (convenience provider)
 final familyMembersProvider = Provider((ref) {
-  return ref.watch(familyNotifierProvider).members;
+  try {
+    return ref.watch(familyNotifierProvider).members;
+  } catch (e) {
+    // Handle disposed provider errors during sign out
+    if (e.toString().contains('disposed') ||
+        e.toString().contains('Bad state')) {
+      return <dynamic>[]; // Return empty list as safe default
+    }
+    rethrow;
+  }
 });
 
 // Has family provider (convenience provider)
 final hasFamilyProvider = Provider<bool>((ref) {
-  return ref.watch(familyNotifierProvider).hasFamily;
+  try {
+    return ref.watch(familyNotifierProvider).hasFamily;
+  } catch (e) {
+    // Handle disposed provider errors during sign out
+    if (e.toString().contains('disposed') ||
+        e.toString().contains('Bad state')) {
+      return false; // Return false as safe default
+    }
+    rethrow;
+  }
 });
