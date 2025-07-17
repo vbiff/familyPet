@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:jhonny/features/task/domain/entities/task.dart';
 import 'package:jhonny/features/task/presentation/providers/task_provider.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jhonny/features/auth/domain/entities/user.dart';
 import 'package:jhonny/shared/widgets/enhanced_card.dart';
 import 'package:jhonny/shared/widgets/loading_indicators.dart';
+import 'package:jhonny/shared/widgets/delightful_button.dart';
+import 'package:jhonny/shared/widgets/animated_interactions.dart';
+import 'package:jhonny/core/theme/app_theme.dart';
 import 'package:jhonny/features/task/domain/usecases/update_task.dart';
 
 class ArchivePage extends ConsumerStatefulWidget {
@@ -132,12 +136,19 @@ class _ArchivePageState extends ConsumerState<ArchivePage>
         }
       },
       child: Scaffold(
+        extendBodyBehindAppBar: true,
         appBar: AppBar(
-          title: const Text('Archived Tasks'),
-          backgroundColor: Theme.of(context).colorScheme.surface,
+          title: Text(
+            'Archived Tasks',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                ),
+          ),
+          backgroundColor: Colors.transparent,
           elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
+          leading: AnimatedIconButton(
+            icon: Icons.arrow_back,
             onPressed: () async {
               debugPrint(
                   '🔄 Archive: Custom back button pressed - refreshing before pop');
@@ -153,6 +164,7 @@ class _ArchivePageState extends ConsumerState<ArchivePage>
                 Navigator.of(context).pop();
               }
             },
+            color: AppTheme.textPrimary,
           ),
           actions: [
             if (archivedTasks.isNotEmpty && isParent)
@@ -162,14 +174,24 @@ class _ArchivePageState extends ConsumerState<ArchivePage>
                     _showClearAllDialog();
                   }
                 },
+                icon: const Icon(
+                  Icons.more_vert,
+                  color: AppTheme.textPrimary,
+                ).animate().scale(delay: 200.ms).shake(),
                 itemBuilder: (context) => [
                   const PopupMenuItem(
                     value: 'clear_all',
                     child: Row(
                       children: [
-                        Icon(Icons.delete_forever, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text('Clear All', style: TextStyle(color: Colors.red)),
+                        Icon(Icons.delete_forever, color: AppTheme.error),
+                        SizedBox(width: 12),
+                        Text(
+                          'Clear All',
+                          style: TextStyle(
+                            color: AppTheme.error,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -177,11 +199,20 @@ class _ArchivePageState extends ConsumerState<ArchivePage>
               ),
           ],
         ),
-        body: RefreshIndicator(
-          onRefresh: _loadArchivedTasks,
-          child: _isLoading
-              ? const Center(child: PulsingLoadingIndicator())
-              : _buildContent(archivedTasks, isParent),
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: AppTheme.backgroundGradient,
+          ),
+          child: SafeArea(
+            child: RefreshIndicator(
+              onRefresh: _loadArchivedTasks,
+              color: AppTheme.primary,
+              backgroundColor: AppTheme.surface,
+              child: _isLoading
+                  ? const Center(child: PulsingLoadingIndicator())
+                  : _buildContent(archivedTasks, isParent),
+            ),
+          ),
         ),
       ),
     );
@@ -189,44 +220,61 @@ class _ArchivePageState extends ConsumerState<ArchivePage>
 
   Widget _buildContent(List<Task> archivedTasks, bool isParent) {
     if (archivedTasks.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.archive_outlined,
-              size: 64,
-              color: Colors.grey,
-            ),
-            SizedBox(height: 16),
-            Text(
-              'No Archived Tasks',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Tasks you archive will appear here',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
-            ),
-          ],
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 120,
+                height: 120,
+                decoration: const BoxDecoration(
+                  gradient: AppTheme.primaryGradient,
+                  shape: BoxShape.circle,
+                  boxShadow: AppTheme.softShadow,
+                ),
+                child: const Icon(
+                  Icons.archive_outlined,
+                  size: 48,
+                  color: Colors.white,
+                ),
+              ).animate().scale(delay: 100.ms).shimmer(
+                    duration: 2.seconds,
+                    color: Colors.white.withOpacity(0.3),
+                  ),
+              const SizedBox(height: 24),
+              Text(
+                'No Archived Tasks',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimary,
+                    ),
+                textAlign: TextAlign.center,
+              ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2),
+              const SizedBox(height: 12),
+              Text(
+                'Tasks you archive will appear here',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppTheme.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                textAlign: TextAlign.center,
+              ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2),
+            ],
+          ),
         ),
       );
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(20, 28, 20, 32),
       itemCount: archivedTasks.length,
       itemBuilder: (context, index) {
         final task = archivedTasks[index];
         return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.only(bottom: 16),
           child: _buildArchivedTaskCard(task, isParent),
         );
       },
@@ -236,28 +284,35 @@ class _ArchivePageState extends ConsumerState<ArchivePage>
   Widget _buildArchivedTaskCard(Task task, bool isParent) {
     return EnhancedCard(
       type: EnhancedCardType.outline,
-      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
+      backgroundColor: AppTheme.surface,
+      showShimmer: true,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header with title and status
             Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.grey.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
+                    gradient: LinearGradient(
+                      colors: [
+                        AppTheme.accent.withOpacity(0.15),
+                        AppTheme.accent.withOpacity(0.08),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(
                     Icons.archive,
-                    color: Colors.grey,
-                    size: 20,
+                    color: AppTheme.accent,
+                    size: 22,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -268,79 +323,120 @@ class _ArchivePageState extends ConsumerState<ArchivePage>
                             Theme.of(context).textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   decoration: TextDecoration.lineThrough,
-                                  color: Colors.grey,
+                                  color: AppTheme.textPrimary.withOpacity(0.6),
+                                  height: 1.2,
                                 ),
                       ),
+                      const SizedBox(height: 4),
                       Text(
                         'Archived • ${_formatDate(task.updatedAt ?? task.createdAt)}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey,
+                              color: AppTheme.textSecondary,
+                              fontWeight: FontWeight.w500,
                             ),
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(width: 16),
                 Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.grey.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
+                    gradient: LinearGradient(
+                      colors: [
+                        AppTheme.lavender.withOpacity(0.2),
+                        AppTheme.lavender.withOpacity(0.1),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
                     '${task.points} pts',
                     style: const TextStyle(
-                      fontSize: 12,
+                      fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Colors.grey,
+                      color: AppTheme.lavender,
                     ),
                   ),
                 ),
               ],
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
 
             // Description
-            if (task.description.isNotEmpty)
+            if (task.description.isNotEmpty) ...[
               Text(
                 task.description,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey,
+                      color: AppTheme.textSecondary,
+                      height: 1.4,
                     ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-
-            const SizedBox(height: 16),
+              const SizedBox(height: 20),
+            ] else
+              const SizedBox(height: 4),
 
             // Action buttons (only for parents)
             if (isParent)
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _restoreTask(task),
-                      icon: const Icon(Icons.restore, size: 16),
-                      label: const Text('Restore'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Theme.of(context).colorScheme.primary,
+                    child: SizedBox(
+                      height: 36,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _restoreTask(task),
+                        icon: const Icon(Icons.restore, size: 14),
+                        label: const Text('Restore'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppTheme.accent,
+                          side: const BorderSide(
+                              color: AppTheme.accent, width: 1.5),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppTheme.radiusMedium),
+                          ),
+                          textStyle: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
-                    ),
+                    ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.2),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
                   Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _deleteTaskPermanently(task),
-                      icon: const Icon(Icons.delete_forever, size: 16),
-                      label: const Text('Delete'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red,
+                    child: SizedBox(
+                      height: 36,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _deleteTaskPermanently(task),
+                        icon: const Icon(Icons.delete_forever, size: 14),
+                        label: const Text('Delete'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppTheme.error,
+                          side: const BorderSide(
+                              color: AppTheme.error, width: 1.5),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppTheme.radiusMedium),
+                          ),
+                          textStyle: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
-                    ),
+                    ).animate().fadeIn(delay: 400.ms).slideX(begin: 0.2),
                   ),
                 ],
-              ),
+              ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.3),
           ],
         ),
       ),
@@ -421,18 +517,46 @@ class _ArchivePageState extends ConsumerState<ArchivePage>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Permanently'),
+        backgroundColor: AppTheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        ),
+        title: Text(
+          'Delete Permanently',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+              ),
+        ),
         content: Text(
           'Are you sure you want to permanently delete "${task.title}"? This action cannot be undone.',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppTheme.textSecondary,
+                height: 1.4,
+              ),
         ),
         actions: [
-          TextButton(
+          OutlinedButton(
             onPressed: () => Navigator.of(context).pop(false),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppTheme.accent,
+              side: const BorderSide(color: AppTheme.accent, width: 1.5),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+              ),
+            ),
             child: const Text('Cancel'),
           ),
-          FilledButton(
+          const SizedBox(width: 12),
+          OutlinedButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppTheme.error,
+              side: const BorderSide(color: AppTheme.error, width: 1.5),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+              ),
+            ),
             child: const Text('Delete'),
           ),
         ],
@@ -487,18 +611,46 @@ class _ArchivePageState extends ConsumerState<ArchivePage>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Clear All Archived Tasks'),
-        content: const Text(
+        backgroundColor: AppTheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        ),
+        title: Text(
+          'Clear All Archived Tasks',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+              ),
+        ),
+        content: Text(
           'Are you sure you want to permanently delete ALL archived tasks? This action cannot be undone.',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppTheme.textSecondary,
+                height: 1.4,
+              ),
         ),
         actions: [
-          TextButton(
+          OutlinedButton(
             onPressed: () => Navigator.of(context).pop(false),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppTheme.accent,
+              side: const BorderSide(color: AppTheme.accent, width: 1.5),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+              ),
+            ),
             child: const Text('Cancel'),
           ),
-          FilledButton(
+          const SizedBox(width: 12),
+          OutlinedButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppTheme.error,
+              side: const BorderSide(color: AppTheme.error, width: 1.5),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+              ),
+            ),
             child: const Text('Clear All'),
           ),
         ],
