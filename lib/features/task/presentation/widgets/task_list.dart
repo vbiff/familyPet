@@ -13,6 +13,8 @@ import 'package:jhonny/features/task/domain/usecases/update_task.dart';
 import 'package:jhonny/features/task/presentation/widgets/task_completion_dialog.dart';
 import 'package:jhonny/features/task/presentation/widgets/swipe_to_archive_widget.dart';
 import 'package:jhonny/shared/widgets/confetti_animation.dart';
+import 'package:jhonny/shared/widgets/animated_task_card.dart';
+import 'package:jhonny/core/theme/app_theme.dart';
 
 class TaskList extends ConsumerStatefulWidget {
   const TaskList({super.key});
@@ -94,47 +96,50 @@ class _TaskListState extends ConsumerState<TaskList>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Tasks',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
+        Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Tasks',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              Row(
+                children: [
+                  // Filter button for toggling my tasks
+                  IconButton(
+                    icon: Icon(_isMyTasks ? Icons.person : Icons.group),
+                    tooltip: _isMyTasks ? 'Show all tasks' : 'Show my tasks',
+                    onPressed: () {
+                      setState(() {
+                        _isMyTasks = !_isMyTasks;
+                      });
+                    },
                   ),
-            ),
-            Row(
-              children: [
-                // Filter button for toggling my tasks
-                IconButton(
-                  icon: Icon(_isMyTasks ? Icons.person : Icons.group),
-                  tooltip: _isMyTasks ? 'Show all tasks' : 'Show my tasks',
-                  onPressed: () {
-                    setState(() {
-                      _isMyTasks = !_isMyTasks;
-                    });
-                  },
-                ),
-                EnhancedButton.ghost(
-                  leadingIcon: Icons.add,
-                  text: 'Create',
-                  size: EnhancedButtonSize.small,
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const CreateTaskPage(),
+                  EnhancedButton.ghost(
+                    leadingIcon: Icons.add,
+                    text: 'Create',
+                    size: EnhancedButtonSize.small,
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const CreateTaskPage(),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                EnhancedButton.ghost(
-                  leadingIcon: Icons.refresh,
-                  size: EnhancedButtonSize.small,
-                  onPressed: _loadTasks,
-                  child: const Text('Refresh'),
-                ),
-              ],
-            ),
-          ],
+                  const SizedBox(width: 8),
+                  EnhancedButton.ghost(
+                    leadingIcon: Icons.refresh,
+                    size: EnhancedButtonSize.small,
+                    onPressed: _loadTasks,
+                    child: const Text('Refresh'),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 16),
         Expanded(
@@ -331,8 +336,9 @@ class _TaskListState extends ConsumerState<TaskList>
 
     return ListView.separated(
       itemCount: listItems.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 0),
+      separatorBuilder: (context, index) => const SizedBox(height: 8),
       itemBuilder: (context, index) => listItems[index],
+      padding: const EdgeInsets.only(bottom: 16),
     );
   }
 
@@ -480,114 +486,124 @@ class TaskCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => onTaskTap(task),
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Theme.of(context)
-                    .colorScheme
-                    .outline
-                    .withValues(alpha: 0.2),
+    return AnimatedTaskCard(
+      onTap: () => onTaskTap(task),
+      isCompleted: task.status.isCompleted,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Round complete button on the left
+          BouncyInteraction(
+            onTap: _getCompleteAction(),
+            child: _buildCompleteButton(context),
+          ),
+          const SizedBox(width: 16),
+          // Task title
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                task.title,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                      height: 1.2, // Better line height for alignment
+                      decoration: task.status.isCompleted
+                          ? TextDecoration.lineThrough
+                          : null,
+                      color: task.status.isCompleted
+                          ? Theme.of(context).colorScheme.onSurfaceVariant
+                          : Theme.of(context).colorScheme.onSurface,
+                    ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
             ),
-            child: Row(
-              children: [
-                // Round complete button on the left
-                _buildCompleteButton(context),
-                const SizedBox(width: 16),
-                // Task title
-                Expanded(
-                  child: Text(
-                    task.title,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
-                          decoration: task.status.isCompleted
-                              ? TextDecoration.lineThrough
-                              : null,
-                          color: task.status.isCompleted
-                              ? Theme.of(context).colorScheme.onSurfaceVariant
-                              : Theme.of(context).colorScheme.onSurface,
-                        ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // Difficulty indicator
-                _buildDifficultyIcon(context),
-                const SizedBox(width: 8),
-                // Status indicator
-                if (task.isVerifiedByParent)
-                  const Icon(
-                    Icons.verified,
-                    color: Colors.green,
-                    size: 20,
-                  )
-                else if (task.needsVerification)
-                  const Icon(
-                    Icons.hourglass_empty,
-                    color: Colors.orange,
-                    size: 20,
-                  ),
-              ],
-            ),
           ),
-        ),
+          const SizedBox(width: 16),
+          // Difficulty indicator
+          _buildDifficultyIcon(context),
+          // Status indicator
+          if (task.isVerifiedByParent) ...[
+            const SizedBox(width: 8),
+            const Icon(
+              Icons.verified,
+              color: Colors.green,
+              size: 20,
+            ),
+          ] else if (task.needsVerification) ...[
+            const SizedBox(width: 8),
+            const Icon(
+              Icons.hourglass_empty,
+              color: Colors.orange,
+              size: 20,
+            ),
+          ],
+        ],
       ),
     );
+  }
+
+  VoidCallback? _getCompleteAction() {
+    final bool isCompleted = task.status.isCompleted;
+    final bool canComplete =
+        task.status == TaskStatus.pending && (user?.id == task.assignedTo);
+    final bool canUncomplete = isCompleted && (user?.id == task.assignedTo);
+
+    if (canComplete) {
+      return () => onCompleteTask(task);
+    } else if (canUncomplete) {
+      return () => onUncompleteTask(task);
+    }
+    return null;
   }
 
   Widget _buildCompleteButton(BuildContext context) {
     final bool isCompleted = task.status.isCompleted;
     final bool canComplete =
         task.status == TaskStatus.pending && (user?.id == task.assignedTo);
-    final bool canUncomplete = isCompleted && (user?.id == task.assignedTo);
 
     return Container(
       width: 40,
       height: 40,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: isCompleted
-            ? Colors.green.withValues(alpha: 0.1)
+        gradient: isCompleted
+            ? LinearGradient(
+                colors: [AppTheme.success, AppTheme.success.withOpacity(0.8)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
             : canComplete
-                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
-                : Theme.of(context).colorScheme.surfaceContainerHighest,
+                ? LinearGradient(
+                    colors: [
+                      AppTheme.primary,
+                      AppTheme.primary.withOpacity(0.8)
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : null,
+        color: !isCompleted && !canComplete
+            ? Theme.of(context).colorScheme.surfaceContainerHighest
+            : null,
         border: Border.all(
           color: isCompleted
-              ? Colors.green
+              ? AppTheme.success
               : canComplete
-                  ? Theme.of(context).colorScheme.primary
+                  ? AppTheme.primary
                   : Theme.of(context).colorScheme.outline,
           width: 2,
         ),
+        boxShadow: (isCompleted || canComplete) ? AppTheme.softShadow : null,
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: canComplete
-              ? () => onCompleteTask(task)
-              : canUncomplete
-                  ? () => onUncompleteTask(task)
-                  : null,
-          borderRadius: BorderRadius.circular(20),
-          child: Icon(
-            isCompleted ? Icons.check : Icons.circle_outlined,
-            color: isCompleted
-                ? Colors.green
-                : canComplete
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.outline,
-            size: 20,
-          ),
-        ),
+      child: Icon(
+        isCompleted ? Icons.check : Icons.circle_outlined,
+        color: isCompleted
+            ? Colors.white
+            : canComplete
+                ? Colors.white
+                : Theme.of(context).colorScheme.outline,
+        size: 20,
       ),
     );
   }
@@ -598,15 +614,15 @@ class TaskCard extends StatelessWidget {
 
     switch (task.difficulty) {
       case TaskDifficulty.easy:
-        iconColor = Colors.green;
+        iconColor = AppTheme.success;
         tooltip = 'Easy';
         break;
       case TaskDifficulty.medium:
-        iconColor = Colors.yellow.shade600;
+        iconColor = AppTheme.warning;
         tooltip = 'Medium';
         break;
       case TaskDifficulty.hard:
-        iconColor = Colors.red;
+        iconColor = AppTheme.error;
         tooltip = 'Hard';
         break;
     }
@@ -616,13 +632,27 @@ class TaskCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
-          color: iconColor.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(6),
+          gradient: LinearGradient(
+            colors: [
+              iconColor,
+              iconColor.withOpacity(0.8),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: iconColor.withOpacity(0.3),
+              offset: const Offset(0, 2),
+              blurRadius: 4,
+            ),
+          ],
         ),
-        child: Icon(
+        child: const Icon(
           Icons.local_fire_department,
           size: 16,
-          color: iconColor,
+          color: Colors.white,
         ),
       ),
     );

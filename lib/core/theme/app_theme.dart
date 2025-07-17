@@ -2,242 +2,294 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // Colors
-  static const Color primary = Color(0xFF6B4EFF);
-  static const Color secondary = Color(0xFFFF8A65);
-  static const Color accent = Color(0xFF00BFA5);
+  // Kid-friendly color palette - vibrant but not overwhelming
+  static const Color primary = Color(0xFF8B5FBF); // Magical purple
+  static const Color secondary = Color(0xFFFF6B9D); // Cheerful pink
+  static const Color accent = Color(0xFF4ECDC4); // Playful teal
+  static const Color orange = Color(0xFFFF8A65); // Sunset orange
+  static const Color yellow = Color(0xFFFFD54F); // Sunny yellow
+  static const Color green = Color(0xFF81C784); // Fresh green
+  static const Color blue = Color(0xFF64B5F6); // Sky blue
+  static const Color lavender = Color(0xFFB39DDB); // Soft lavender
 
-  static const Color background = Color(0xFFF8F9FE);
+  // Background and surfaces
+  static const Color background = Color(0xFFFCFCFF);
   static const Color surface = Colors.white;
-  static const Color error = Color(0xFFFF5252);
-  static const Color success = Color(0xFF4CAF50);
-  static const Color warning = Color(0xFFFFC107);
+  static const Color surfaceVariant = Color(0xFFF8F9FE);
+
+  // Status colors
+  static const Color success = Color(0xFF81C784);
+  static const Color warning = Color(0xFFFFB74D);
+  static const Color error = Color(0xFFE57373);
 
   // Text colors
-  static const Color textPrimary = Color(0xFF2C3E50);
-  static const Color textSecondary = Color(0xFF95A5A6);
+  static const Color textPrimary = Color(0xFF2D3142);
+  static const Color textSecondary = Color(0xFF6B7280);
   static const Color textLight = Colors.white;
 
-  // Pet colors
-  static const Color petHappy = Color(0xFF4CAF50);
-  static const Color petNeutral = Color(0xFFFFC107);
-  static const Color petSad = Color(0xFFFF5252);
+  // Pet mood colors
+  static const Color petHappy = Color(0xFF81C784);
+  static const Color petNeutral = Color(0xFFFFD54F);
+  static const Color petSad = Color(0xFFE57373);
 
-  // Theme data
+  // Gradients
+  static const LinearGradient primaryGradient = LinearGradient(
+    colors: [primary, secondary],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient accentGradient = LinearGradient(
+    colors: [accent, blue],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient backgroundGradient = LinearGradient(
+    colors: [
+      Color(0xFFFCFCFF),
+      Color(0xFFF8F9FE),
+      Color(0xFFF3F4FF),
+    ],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
+
+  // Shadows
+  static const List<BoxShadow> softShadow = [
+    BoxShadow(
+      color: Color(0x0F000000),
+      offset: Offset(0, 4),
+      blurRadius: 12,
+      spreadRadius: 0,
+    ),
+  ];
+
+  static const List<BoxShadow> mediumShadow = [
+    BoxShadow(
+      color: Color(0x1A000000),
+      offset: Offset(0, 8),
+      blurRadius: 24,
+      spreadRadius: 0,
+    ),
+  ];
+
+  // Animation curves and durations
+  static const Curve bounceIn = Curves.elasticOut;
+  static const Curve smoothCurve = Curves.easeInOutCubic;
+  static const Duration fastAnimation = Duration(milliseconds: 200);
+  static const Duration normalAnimation = Duration(milliseconds: 300);
+  static const Duration slowAnimation = Duration(milliseconds: 500);
+
+  // Border radius
+  static const double radiusSmall = 12.0;
+  static const double radiusMedium = 16.0;
+  static const double radiusLarge = 20.0;
+  static const double radiusXLarge = 25.0;
+
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
-      colorScheme: const ColorScheme(
-        brightness: Brightness.light,
-        primary: Color(0xFF4CAF50), // Friendly green
-        onPrimary: Colors.white,
-        secondary: Color(0xFFFFB74D), // Warm orange
-        onSecondary: Colors.black,
-        error: Color(0xFFE57373), // Soft red
-        onError: Colors.white,
-        surface: Colors.white,
-        onSurface: Colors.black,
+      colorScheme: ColorScheme.light(
+        primary: primary,
+        onPrimary: textLight,
+        primaryContainer: primary.withOpacity(0.1),
+        onPrimaryContainer: primary,
+        secondary: secondary,
+        onSecondary: textLight,
+        secondaryContainer: secondary.withOpacity(0.1),
+        onSecondaryContainer: secondary,
+        tertiary: accent,
+        onTertiary: textLight,
+        tertiaryContainer: accent.withOpacity(0.1),
+        onTertiaryContainer: accent,
+        error: error,
+        onError: textLight,
+        errorContainer: error.withOpacity(0.1),
+        onErrorContainer: error,
+        surface: surface,
+        onSurface: textPrimary,
+        surfaceContainerHighest: surfaceVariant,
+        onSurfaceVariant: textSecondary,
+        outline: textSecondary.withOpacity(0.3),
+        outlineVariant: textSecondary.withOpacity(0.1),
       ),
       textTheme: GoogleFonts.nunitoTextTheme().copyWith(
-        displayLarge: const TextStyle(
-          fontSize: 32,
-          fontWeight: FontWeight.bold,
-          color: Colors.black87,
+        displayLarge: GoogleFonts.nunito(
+          fontSize: 36,
+          fontWeight: FontWeight.w800,
+          color: textPrimary,
+          height: 1.2,
         ),
-        bodyLarge: const TextStyle(
+        displayMedium: GoogleFonts.nunito(
+          fontSize: 28,
+          fontWeight: FontWeight.w700,
+          color: textPrimary,
+          height: 1.3,
+        ),
+        headlineLarge: GoogleFonts.nunito(
+          fontSize: 24,
+          fontWeight: FontWeight.w700,
+          color: textPrimary,
+          height: 1.3,
+        ),
+        headlineMedium: GoogleFonts.nunito(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: textPrimary,
+          height: 1.4,
+        ),
+        titleLarge: GoogleFonts.nunito(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: textPrimary,
+          height: 1.4,
+        ),
+        titleMedium: GoogleFonts.nunito(
           fontSize: 16,
-          color: Colors.black87,
-        ),
-        labelLarge: const TextStyle(
-          fontSize: 14,
           fontWeight: FontWeight.w500,
-          letterSpacing: 1.25,
+          color: textPrimary,
+          height: 1.5,
+        ),
+        bodyLarge: GoogleFonts.nunito(
+          fontSize: 16,
+          fontWeight: FontWeight.w400,
+          color: textPrimary,
+          height: 1.5,
+        ),
+        bodyMedium: GoogleFonts.nunito(
+          fontSize: 14,
+          fontWeight: FontWeight.w400,
+          color: textPrimary,
+          height: 1.5,
+        ),
+        labelLarge: GoogleFonts.nunito(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: textPrimary,
+          letterSpacing: 0.5,
+        ),
+        labelMedium: GoogleFonts.nunito(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: textSecondary,
+          letterSpacing: 0.5,
         ),
       ),
       cardTheme: CardTheme(
         elevation: 2,
+        shadowColor: Colors.black.withOpacity(0.1),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(radiusLarge),
         ),
+        color: surface,
       ),
-      buttonTheme: ButtonThemeData(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 8,
-        ),
-      ),
-      appBarTheme: const AppBarTheme(
-        elevation: 0,
-        centerTitle: true,
-      ),
-      scaffoldBackgroundColor: background,
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: primary,
           foregroundColor: textLight,
+          elevation: 4,
+          shadowColor: primary.withOpacity(0.3),
           padding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 12,
+            horizontal: 32,
+            vertical: 16,
           ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(radiusXLarge),
+          ),
+          textStyle: GoogleFonts.nunito(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: primary,
-          side: const BorderSide(color: primary),
+          side: const BorderSide(color: primary, width: 2),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 32,
+            vertical: 16,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(radiusXLarge),
+          ),
+          textStyle: GoogleFonts.nunito(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: primary,
           padding: const EdgeInsets.symmetric(
             horizontal: 24,
             vertical: 12,
           ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(radiusMedium),
+          ),
+          textStyle: GoogleFonts.nunito(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: surface,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: primary),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: error),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
+      appBarTheme: AppBarTheme(
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        backgroundColor: Colors.transparent,
+        foregroundColor: textPrimary,
+        titleTextStyle: GoogleFonts.nunito(
+          fontSize: 24,
+          fontWeight: FontWeight.w700,
+          color: textPrimary,
         ),
       ),
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: surface,
         selectedItemColor: primary,
         unselectedItemColor: textSecondary,
-        type: BottomNavigationBarType.fixed,
         elevation: 8,
+        type: BottomNavigationBarType.fixed,
+        selectedLabelStyle: GoogleFonts.nunito(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelStyle: GoogleFonts.nunito(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
       ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: secondary,
+        foregroundColor: textLight,
+        elevation: 6,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radiusMedium),
+        ),
+      ),
+      scaffoldBackgroundColor: background,
+      dividerColor: textSecondary.withOpacity(0.1),
     );
   }
 
   static ThemeData get darkTheme {
-    return ThemeData(
-      useMaterial3: true,
-      colorScheme: const ColorScheme(
-        brightness: Brightness.dark,
-        primary: Color(0xFF81C784), // Light green
-        onPrimary: Colors.black,
-        secondary: Color(0xFFFFCC80), // Light orange
-        onSecondary: Colors.black,
-        error: Color(0xFFEF9A9A), // Light red
-        onError: Colors.black,
-        surface: Color(0xFF1E1E1E), // Slightly lighter dark
+    return lightTheme.copyWith(
+      colorScheme: ColorScheme.dark(
+        primary: primary,
+        onPrimary: textLight,
+        primaryContainer: primary.withOpacity(0.2),
+        onPrimaryContainer: primary,
+        secondary: secondary,
+        onSecondary: textLight,
+        tertiary: accent,
+        surface: const Color(0xFF1E1E1E),
         onSurface: Colors.white,
       ),
-      textTheme: GoogleFonts.nunitoTextTheme(
-        ThemeData.dark().textTheme,
-      ).copyWith(
-        displayLarge: const TextStyle(
-          fontSize: 32,
-          fontWeight: FontWeight.bold,
-          color: Colors.white70,
-        ),
-        bodyLarge: const TextStyle(
-          fontSize: 16,
-          color: Colors.white70,
-        ),
-        labelLarge: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-          letterSpacing: 1.25,
-        ),
-      ),
-      cardTheme: CardTheme(
-        elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-      ),
-      buttonTheme: ButtonThemeData(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 8,
-        ),
-      ),
-      appBarTheme: const AppBarTheme(
-        elevation: 0,
-        centerTitle: true,
-      ),
+      scaffoldBackgroundColor: const Color(0xFF121212),
     );
   }
-
-  // Text styles
-  static TextStyle get headingLarge => GoogleFonts.nunito(
-        fontSize: 32,
-        fontWeight: FontWeight.bold,
-        color: textPrimary,
-      );
-
-  static TextStyle get headingMedium => GoogleFonts.nunito(
-        fontSize: 24,
-        fontWeight: FontWeight.bold,
-        color: textPrimary,
-      );
-
-  static TextStyle get headingSmall => GoogleFonts.nunito(
-        fontSize: 20,
-        fontWeight: FontWeight.bold,
-        color: textPrimary,
-      );
-
-  static TextStyle get bodyLarge => GoogleFonts.nunito(
-        fontSize: 16,
-        color: textPrimary,
-      );
-
-  static TextStyle get bodyMedium => GoogleFonts.nunito(
-        fontSize: 14,
-        color: textPrimary,
-      );
-
-  static TextStyle get bodySmall => GoogleFonts.nunito(
-        fontSize: 12,
-        color: textSecondary,
-      );
-
-  // Spacing
-  static const double spacingXS = 4;
-  static const double spacingS = 8;
-  static const double spacingM = 16;
-  static const double spacingL = 24;
-  static const double spacingXL = 32;
-  static const double spacingXXL = 48;
-
-  // Radius
-  static const double radiusS = 8;
-  static const double radiusM = 12;
-  static const double radiusL = 16;
-  static const double radiusXL = 24;
-
-  // Animation durations
-  static const Duration animationFast = Duration(milliseconds: 200);
-  static const Duration animationNormal = Duration(milliseconds: 300);
-  static const Duration animationSlow = Duration(milliseconds: 500);
 }

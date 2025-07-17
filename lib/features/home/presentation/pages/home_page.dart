@@ -18,6 +18,8 @@ import 'package:jhonny/features/task/presentation/providers/task_provider.dart';
 import 'package:jhonny/features/task/presentation/providers/task_state.dart';
 import 'package:jhonny/shared/widgets/widgets.dart';
 import 'package:jhonny/shared/widgets/theme_toggle.dart';
+import 'package:jhonny/shared/widgets/animated_bottom_nav.dart';
+import 'package:jhonny/core/theme/app_theme.dart';
 import 'package:jhonny/main.dart'; // To access themeService
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
@@ -97,11 +99,22 @@ class HomePage extends ConsumerWidget {
     });
 
     return Scaffold(
+      extendBody: true,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title:
-            FittedBox(child: Text(_getGreeting(user?.displayName ?? 'User'))),
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-        foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+        title: FittedBox(
+          child: Text(
+            _getGreeting(user?.displayName ?? 'User'),
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 20,
+            ),
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        foregroundColor: AppTheme.textPrimary,
         actions: [
           CompactThemeToggle(
             themeService: themeService,
@@ -111,63 +124,89 @@ class HomePage extends ConsumerWidget {
             icon: const Icon(Icons.account_circle_outlined),
             onPressed: () => _showProfileMenu(context, ref),
             tooltip: 'Profile',
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.white.withOpacity(0.9),
+              foregroundColor: AppTheme.primary,
+            ),
           ),
+          const SizedBox(width: 16),
         ],
       ),
-      body: Column(
-        children: [
-          // Error banner if needed
-          if (authState.status == AuthStatus.error && authState.failure != null)
-            Container(
-              margin: const EdgeInsets.all(16),
-              child: EnhancedCard.elevated(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        color: Theme.of(context).colorScheme.onErrorContainer,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          authState.failure!.message,
-                          style: TextStyle(
-                            color:
-                                Theme.of(context).colorScheme.onErrorContainer,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppTheme.background,
+              AppTheme.primary.withOpacity(0.05),
+              AppTheme.secondary.withOpacity(0.03),
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            stops: const [0.0, 0.7, 1.0],
+          ),
+        ),
+        child: Column(
+          children: [
+            // Top padding for app bar
+            const SizedBox(height: 100),
+
+            // Error banner if needed
+            if (authState.status == AuthStatus.error &&
+                authState.failure != null)
+              Container(
+                margin: const EdgeInsets.all(16),
+                child: EnhancedCard(
+                  type: EnhancedCardType.elevated,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          color: Theme.of(context).colorScheme.onErrorContainer,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            authState.failure!.message,
+                            style: TextStyle(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onErrorContainer,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
 
-          // Main content
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: TabContentSwitcher(
-                selectedTab: selectedTab,
-                getTabWidget: _getTabWidget,
+            // Main content
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    16, 0, 16, 100), // Add bottom padding for nav
+                child: TabContentSwitcher(
+                  selectedTab: selectedTab,
+                  getTabWidget: _getTabWidget,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: selectedTab,
-        onDestinationSelected: (index) {
+      bottomNavigationBar: AnimatedBottomNav(
+        currentIndex: selectedTab,
+        onTap: (index) {
           ref.read(selectedTabProvider.notifier).state = index;
         },
-        elevation: 8,
-        destinations: HomeTab.values.map((tab) {
-          return NavigationDestination(
-            icon: Icon(_getTabIcon(tab)),
-            selectedIcon: Icon(_getTabIcon(tab), fill: 1),
+        items: HomeTab.values.map((tab) {
+          return BottomNavItem(
+            icon: _getTabIcon(tab),
+            activeIcon: _getActiveTabIcon(tab),
             label: tab.label,
+            color: _getTabColor(tab),
           );
         }).toList(),
       ),
@@ -201,6 +240,28 @@ class HomePage extends ConsumerWidget {
         return Icons.pets_outlined;
       case HomeTab.family:
         return Icons.family_restroom_outlined;
+    }
+  }
+
+  IconData _getActiveTabIcon(HomeTab tab) {
+    switch (tab) {
+      case HomeTab.tasks:
+        return Icons.assignment;
+      case HomeTab.pet:
+        return Icons.pets;
+      case HomeTab.family:
+        return Icons.family_restroom;
+    }
+  }
+
+  Color _getTabColor(HomeTab tab) {
+    switch (tab) {
+      case HomeTab.tasks:
+        return AppTheme.primary;
+      case HomeTab.pet:
+        return AppTheme.orange;
+      case HomeTab.family:
+        return AppTheme.accent;
     }
   }
 

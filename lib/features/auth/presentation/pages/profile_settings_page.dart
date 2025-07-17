@@ -9,6 +9,9 @@ import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jhonny/features/auth/domain/entities/user.dart';
 import 'package:jhonny/core/providers/image_service_provider.dart';
 import 'package:jhonny/shared/widgets/widgets.dart';
+import 'package:jhonny/shared/widgets/delightful_button.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:jhonny/core/theme/app_theme.dart';
 
 class ProfileSettingsPage extends ConsumerStatefulWidget {
   const ProfileSettingsPage({super.key});
@@ -57,11 +60,14 @@ class _ProfileSettingsPageState extends ConsumerState<ProfileSettingsPage> {
     }
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text('Profile Settings'),
-        elevation: 0,
         backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        foregroundColor: Colors.white,
         actions: [
           if (_isLoading)
             const Padding(
@@ -69,41 +75,76 @@ class _ProfileSettingsPageState extends ConsumerState<ProfileSettingsPage> {
               child: SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
               ),
             ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Avatar Section
-              _buildAvatarSection(context, user),
-
-              const SizedBox(height: 40),
-
-              // Profile Information Section
-              _buildProfileInfoSection(context, user),
-
-              const SizedBox(height: 32),
-
-              // Account Settings Section
-              _buildAccountSettingsSection(context, user),
-
-              const SizedBox(height: 40),
-
-              // Save Button
-              _buildSaveButton(context),
-
-              const SizedBox(height: 20),
-
-              // Sign Out Button
-              _buildSignOutButton(context),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppTheme.primary,
+              AppTheme.secondary,
+              AppTheme.accent,
             ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            stops: [0.0, 0.5, 1.0],
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Avatar Section
+                  _buildAvatarSection(context, user)
+                      .animate()
+                      .scale(delay: const Duration(milliseconds: 200))
+                      .then()
+                      .shimmer(duration: const Duration(seconds: 2)),
+
+                  const SizedBox(height: 40),
+
+                  // Profile Information Section
+                  _buildProfileInfoSection(context, user)
+                      .animate()
+                      .fadeIn(delay: const Duration(milliseconds: 400))
+                      .slideY(begin: 0.3, duration: AppTheme.normalAnimation),
+
+                  const SizedBox(height: 32),
+
+                  // Account Settings Section
+                  _buildAccountSettingsSection(context, user)
+                      .animate()
+                      .fadeIn(delay: const Duration(milliseconds: 600))
+                      .slideY(begin: 0.3, duration: AppTheme.normalAnimation),
+
+                  const SizedBox(height: 40),
+
+                  // Save Button
+                  _buildSaveButton(context)
+                      .animate()
+                      .fadeIn(delay: const Duration(milliseconds: 800))
+                      .scale(delay: const Duration(milliseconds: 800)),
+
+                  const SizedBox(height: 20),
+
+                  // Sign Out Button
+                  _buildSignOutButton(context)
+                      .animate()
+                      .fadeIn(delay: const Duration(milliseconds: 1000))
+                      .scale(delay: const Duration(milliseconds: 1000)),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -286,45 +327,80 @@ class _ProfileSettingsPageState extends ConsumerState<ProfileSettingsPage> {
   }
 
   Widget _buildProfileInfoSection(BuildContext context, User user) {
-    return EnhancedCard(
-      title: 'Profile Information',
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.95),
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        boxShadow: AppTheme.softShadow,
+      ),
+      padding: const EdgeInsets.all(24),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Display Name Field
-          EnhancedInput(
-            controller: _displayNameController,
-            label: 'Display Name',
-            hint: 'Enter your display name',
-            leading: const Icon(Icons.person_outline),
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Display name is required';
-              }
-              if (value.trim().length < 2) {
-                return 'Display name must be at least 2 characters';
-              }
-              return null;
-            },
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  gradient: AppTheme.primaryGradient,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                ),
+                child: const Icon(
+                  Icons.person_outline,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Profile Information',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textPrimary,
+                    ),
+              ),
+            ],
           ),
+          const SizedBox(height: 20),
+          Column(
+            children: [
+              // Display Name Field
+              EnhancedInput(
+                controller: _displayNameController,
+                label: 'Display Name',
+                hint: 'Enter your display name',
+                leading: const Icon(Icons.person_outline),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Display name is required';
+                  }
+                  if (value.trim().length < 2) {
+                    return 'Display name must be at least 2 characters';
+                  }
+                  return null;
+                },
+              ),
 
-          const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-          // Member Since
-          _buildInfoRow(
-            context,
-            'Member Since',
-            _formatDate(user.createdAt),
-            Icons.calendar_today_outlined,
-          ),
+              // Member Since
+              _buildInfoRow(
+                context,
+                'Member Since',
+                _formatDate(user.createdAt),
+                Icons.calendar_today_outlined,
+              ),
 
-          const SizedBox(height: 12),
+              const SizedBox(height: 12),
 
-          // Last Login
-          _buildInfoRow(
-            context,
-            'Last Login',
-            _formatDate(user.lastLoginAt),
-            Icons.login_outlined,
+              // Last Login
+              _buildInfoRow(
+                context,
+                'Last Login',
+                _formatDate(user.lastLoginAt),
+                Icons.login_outlined,
+              ),
+            ],
           ),
         ],
       ),
@@ -332,51 +408,86 @@ class _ProfileSettingsPageState extends ConsumerState<ProfileSettingsPage> {
   }
 
   Widget _buildAccountSettingsSection(BuildContext context, User user) {
-    return EnhancedCard(
-      title: 'Account Settings',
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.95),
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        boxShadow: AppTheme.softShadow,
+      ),
+      padding: const EdgeInsets.all(24),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Language Setting
-          _buildSettingsTile(
-            context,
-            'Language',
-            'Choose your preferred language',
-            Icons.language,
-            onTap: () => _showLanguageDialog(context),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  gradient: AppTheme.accentGradient,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                ),
+                child: const Icon(
+                  Icons.settings_outlined,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Account Settings',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textPrimary,
+                    ),
+              ),
+            ],
           ),
+          const SizedBox(height: 20),
+          Column(
+            children: [
+              // Language Setting
+              _buildSettingsTile(
+                context,
+                'Language',
+                'Choose your preferred language',
+                Icons.language,
+                onTap: () => _showLanguageDialog(context),
+              ),
 
-          const Divider(height: 1),
+              const Divider(height: 1),
 
-          // Change Password
-          _buildSettingsTile(
-            context,
-            'Change Password',
-            'Update your account password',
-            Icons.lock_outline,
-            onTap: _showChangePasswordDialog,
-          ),
+              // Change Password
+              _buildSettingsTile(
+                context,
+                'Change Password',
+                'Update your account password',
+                Icons.lock_outline,
+                onTap: _showChangePasswordDialog,
+              ),
 
-          const Divider(height: 1),
+              const Divider(height: 1),
 
-          // Reset Password
-          _buildSettingsTile(
-            context,
-            'Reset Password',
-            'Send password reset email',
-            Icons.email_outlined,
-            onTap: _showResetPasswordDialog,
-          ),
+              // Reset Password
+              _buildSettingsTile(
+                context,
+                'Reset Password',
+                'Send password reset email',
+                Icons.email_outlined,
+                onTap: _showResetPasswordDialog,
+              ),
 
-          const Divider(height: 1),
+              const Divider(height: 1),
 
-          // Delete Account
-          _buildSettingsTile(
-            context,
-            'Delete Account',
-            'Permanently delete your account',
-            Icons.delete_outline,
-            onTap: _showDeleteAccountDialog,
-            isDestructive: true,
+              // Delete Account
+              _buildSettingsTile(
+                context,
+                'Delete Account',
+                'Permanently delete your account',
+                Icons.delete_outline,
+                onTap: _showDeleteAccountDialog,
+                isDestructive: true,
+              ),
+            ],
           ),
         ],
       ),
@@ -454,26 +565,23 @@ class _ProfileSettingsPageState extends ConsumerState<ProfileSettingsPage> {
   }
 
   Widget _buildSaveButton(BuildContext context) {
-    return SizedBox(
+    return DelightfulButton(
+      text: 'Save Changes',
+      icon: Icons.save,
+      style: DelightfulButtonStyle.primary,
+      isLoading: _isLoading,
       width: double.infinity,
-      child: EnhancedButton.primary(
-        text: 'Save Changes',
-        leadingIcon: Icons.save,
-        isLoading: _isLoading,
-        onPressed: _isLoading ? null : _saveProfile,
-      ),
+      onPressed: _isLoading ? null : _saveProfile,
     );
   }
 
   Widget _buildSignOutButton(BuildContext context) {
-    return SizedBox(
+    return DelightfulButton(
+      text: 'Sign Out',
+      icon: Icons.logout,
+      style: DelightfulButtonStyle.warning,
       width: double.infinity,
-      child: EnhancedButton.outline(
-        text: 'Sign Out',
-        leadingIcon: Icons.logout,
-        foregroundColor: Theme.of(context).colorScheme.error,
-        onPressed: _signOut,
-      ),
+      onPressed: _signOut,
     );
   }
 

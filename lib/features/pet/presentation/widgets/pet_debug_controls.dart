@@ -4,7 +4,7 @@ import 'package:jhonny/core/config/app_config.dart';
 import 'package:jhonny/core/services/pet_mood_service.dart';
 import 'package:jhonny/features/pet/domain/entities/pet.dart';
 import 'package:jhonny/features/pet/presentation/providers/pet_provider.dart';
-import 'package:jhonny/shared/widgets/enhanced_button.dart';
+import 'package:jhonny/shared/widgets/delightful_button.dart';
 
 /// Debug controls for testing the enhanced pet mood system
 ///
@@ -105,95 +105,104 @@ class PetDebugControls extends ConsumerWidget {
             const SizedBox(height: 8),
 
             // Force Happiness Decay
-            EnhancedButton.outline(
+            DelightfulButton(
               text: 'Force Happiness Decay',
-              leadingIcon: Icons.trending_down,
+              icon: Icons.trending_down,
+              style: DelightfulButtonStyle.warning,
               onPressed: () => _forceHappinessDecay(ref),
             ),
             const SizedBox(height: 8),
 
             // Force Health Decay
-            EnhancedButton.outline(
+            DelightfulButton(
               text: 'Force Health Decay (30-50%)',
-              leadingIcon: Icons.health_and_safety,
+              icon: Icons.health_and_safety,
+              style: DelightfulButtonStyle.warning,
               onPressed: () => _forceHealthDecay(ref),
             ),
             const SizedBox(height: 8),
 
             // Test Play Interaction
-            EnhancedButton.primary(
+            DelightfulButton(
               text: canPlay
                   ? 'Test Play (5% happiness)'
                   : 'Play Blocked (1h limit)',
-              leadingIcon: Icons.sports_esports,
-              backgroundColor: canPlay ? Colors.green : Colors.grey,
+              icon: Icons.sports_esports,
+              style: canPlay
+                  ? DelightfulButtonStyle.success
+                  : DelightfulButtonStyle.secondary,
               onPressed: canPlay ? () => _testPlayInteraction(ref) : null,
             ),
             const SizedBox(height: 8),
 
             // Restore Happiness to 100%
-            EnhancedButton.primary(
+            DelightfulButton(
               text: 'Restore Happiness (100%)',
-              leadingIcon: Icons.favorite,
-              backgroundColor: Colors.pink,
+              icon: Icons.favorite,
+              style: DelightfulButtonStyle.primary,
               onPressed: () => _restoreHappiness(ref),
             ),
             const SizedBox(height: 8),
 
             // Restore Health to 100%
-            EnhancedButton.primary(
+            DelightfulButton(
               text: 'Restore Health (100%)',
-              leadingIcon: Icons.medical_services,
-              backgroundColor: Colors.red,
+              icon: Icons.medical_services,
+              style: DelightfulButtonStyle.warning,
               onPressed: () => _restoreHealth(ref),
             ),
             const SizedBox(height: 8),
 
             // Reset Play Timer (for testing)
-            EnhancedButton.outline(
+            DelightfulButton(
               text: 'Reset Play Timer (Debug)',
-              leadingIcon: Icons.refresh,
+              icon: Icons.refresh,
+              style: DelightfulButtonStyle.secondary,
               onPressed: () => _resetPlayTimer(petId, context),
             ),
             const SizedBox(height: 8),
 
             // View Analytics
-            EnhancedButton.outline(
+            DelightfulButton(
               text: 'Show Analytics',
-              leadingIcon: Icons.analytics,
+              icon: Icons.analytics,
+              style: DelightfulButtonStyle.secondary,
               onPressed: () => _showAnalytics(context, analytics),
             ),
             const SizedBox(height: 8),
 
             // Change Mood (Debug)
-            EnhancedButton.primary(
+            DelightfulButton(
               text: 'Change Mood',
-              leadingIcon: Icons.mood,
-              backgroundColor: Colors.purple,
+              icon: Icons.mood,
+              style: DelightfulButtonStyle.primary,
               onPressed: () => _showMoodDialog(context, ref),
             ),
             const SizedBox(height: 8),
 
             // Test Stage Evolution
-            EnhancedButton.outline(
+            DelightfulButton(
               text: 'Test Stage Evolution',
-              leadingIcon: Icons.arrow_upward,
+              icon: Icons.arrow_upward,
+              style: DelightfulButtonStyle.secondary,
               onPressed: () => _showStageDialog(context, ref),
             ),
             const SizedBox(height: 8),
 
             // Test Image URL
-            EnhancedButton.outline(
+            DelightfulButton(
               text: 'Test Very Happy Image URL',
-              leadingIcon: Icons.image,
+              icon: Icons.image,
+              style: DelightfulButtonStyle.secondary,
               onPressed: () => _testImageUrl(context, ref),
             ),
             const SizedBox(height: 8),
 
             // Show Config URL
-            EnhancedButton.outline(
+            DelightfulButton(
               text: 'Show Supabase Config',
-              leadingIcon: Icons.settings,
+              icon: Icons.settings,
+              style: DelightfulButtonStyle.secondary,
               onPressed: () => _showSupabaseConfig(context),
             ),
             const SizedBox(height: 8),

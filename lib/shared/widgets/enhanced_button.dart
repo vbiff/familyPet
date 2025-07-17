@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:jhonny/core/theme/app_theme.dart';
 
 enum EnhancedButtonType {
   primary,
@@ -15,7 +17,7 @@ enum EnhancedButtonSize {
   large,
 }
 
-class EnhancedButton extends StatelessWidget {
+class EnhancedButton extends StatefulWidget {
   final String? text;
   final Widget? child;
   final VoidCallback? onPressed;
@@ -146,124 +148,230 @@ class EnhancedButton extends StatelessWidget {
         assert(text != null || child != null,
             'Either text or child must be provided');
 
+  const EnhancedButton.link({
+    super.key,
+    this.text,
+    this.child,
+    required this.onPressed,
+    this.size = EnhancedButtonSize.medium,
+    this.leadingIcon,
+    this.trailingIcon,
+    this.isLoading = false,
+    this.isExpanded = false,
+    this.backgroundColor,
+    this.foregroundColor,
+    this.borderRadius,
+    this.shadows,
+    this.gradient,
+  })  : type = EnhancedButtonType.link,
+        assert(text != null || child != null,
+            'Either text or child must be provided');
+
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+  State<EnhancedButton> createState() => _EnhancedButtonState();
+}
 
-    // Get size-specific properties
-    final sizeProps = _getSizeProperties();
+class _EnhancedButtonState extends State<EnhancedButton>
+    with TickerProviderStateMixin {
+  late AnimationController _pressController;
+  late AnimationController _shimmerController;
+  late Animation<double> _scaleAnimation;
 
-    // Get type-specific styling
-    final typeStyle = _getTypeStyle(colorScheme);
+  @override
+  void initState() {
+    super.initState();
 
-    // Build the content
-    Widget content = _buildContent(context);
-
-    // Apply loading state
-    if (isLoading) {
-      content = Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: sizeProps.iconSize,
-            height: sizeProps.iconSize,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: typeStyle.foregroundColor,
-            ),
-          ),
-          if (text != null || child != null) ...[
-            SizedBox(width: sizeProps.spacing),
-            if (text != null)
-              Text('Loading...',
-                  style: TextStyle(color: typeStyle.foregroundColor))
-            else if (child != null)
-              child!,
-          ],
-        ],
-      );
-    }
-
-    // Create the button
-    Widget button = Container(
-      decoration: BoxDecoration(
-        color: gradient == null
-            ? (backgroundColor ?? typeStyle.backgroundColor)
-            : null,
-        gradient: gradient,
-        borderRadius:
-            borderRadius ?? BorderRadius.circular(sizeProps.borderRadius),
-        border: typeStyle.border,
-        boxShadow: shadows,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: isLoading ? null : onPressed,
-          borderRadius:
-              borderRadius ?? BorderRadius.circular(sizeProps.borderRadius),
-          child: Container(
-            padding: sizeProps.padding,
-            constraints: BoxConstraints(minHeight: sizeProps.minHeight),
-            child: content,
-          ),
-        ),
-      ),
+    _pressController = AnimationController(
+      duration: AppTheme.fastAnimation,
+      vsync: this,
     );
 
-    if (isExpanded) {
+    _shimmerController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    );
+
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.95,
+    ).animate(CurvedAnimation(
+      parent: _pressController,
+      curve: AppTheme.smoothCurve,
+    ));
+
+    // Start shimmer for primary and secondary buttons
+    if (widget.type == EnhancedButtonType.primary ||
+        widget.type == EnhancedButtonType.secondary) {
+      _shimmerController.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _pressController.dispose();
+    _shimmerController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sizeProps = _getSizeProperties();
+    final typeStyle = _getTypeStyle();
+
+    Widget button = AnimatedBuilder(
+      animation: _scaleAnimation,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _scaleAnimation.value,
+          child: GestureDetector(
+            onTapDown: widget.onPressed != null
+                ? (_) => _pressController.forward()
+                : null,
+            onTapUp: widget.onPressed != null
+                ? (_) {
+                    _pressController.reverse();
+                    Future.delayed(const Duration(milliseconds: 100), () {
+                      widget.onPressed?.call();
+                    });
+                  }
+                : null,
+            onTapCancel: () => _pressController.reverse(),
+            child: Container(
+              constraints: BoxConstraints(minHeight: sizeProps.minHeight),
+              decoration: BoxDecoration(
+                gradient: widget.gradient ?? typeStyle.gradient,
+                color: widget.gradient == null && typeStyle.gradient == null
+                    ? (widget.backgroundColor ?? typeStyle.backgroundColor)
+                    : null,
+                borderRadius: widget.borderRadius ??
+                    BorderRadius.circular(sizeProps.borderRadius),
+                border: typeStyle.border,
+                boxShadow: widget.shadows ?? typeStyle.boxShadow,
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: widget.isLoading ? null : widget.onPressed,
+                  borderRadius: widget.borderRadius ??
+                      BorderRadius.circular(sizeProps.borderRadius),
+                  splashColor:
+                      (widget.foregroundColor ?? typeStyle.foregroundColor)
+                          .withOpacity(0.1),
+                  highlightColor:
+                      (widget.foregroundColor ?? typeStyle.foregroundColor)
+                          .withOpacity(0.05),
+                  child: Container(
+                    padding: sizeProps.padding,
+                    child: _buildContent(),
+                  ),
+                ),
+              ),
+            ).animate(
+              effects: (widget.type == EnhancedButtonType.primary ||
+                      widget.type == EnhancedButtonType.secondary)
+                  ? [
+                      ShimmerEffect(
+                        duration: const Duration(seconds: 3),
+                        color: Colors.white.withOpacity(0.2),
+                      ),
+                    ]
+                  : [],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (widget.isExpanded) {
       button = SizedBox(width: double.infinity, child: button);
     }
 
     return button;
   }
 
-  Widget _buildContent(BuildContext context) {
+  Widget _buildContent() {
     final sizeProps = _getSizeProperties();
-    final typeStyle = _getTypeStyle(Theme.of(context).colorScheme);
+    final typeStyle = _getTypeStyle();
+
+    if (widget.isLoading) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            height: sizeProps.iconSize,
+            width: sizeProps.iconSize,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                widget.foregroundColor ?? typeStyle.foregroundColor,
+              ),
+            ),
+          ),
+          if (widget.text != null || widget.child != null) ...[
+            SizedBox(width: sizeProps.spacing),
+            Text(
+              'Loading...',
+              style: TextStyle(
+                fontSize: sizeProps.fontSize,
+                fontWeight: sizeProps.fontWeight,
+                color: widget.foregroundColor ?? typeStyle.foregroundColor,
+              ),
+            ),
+          ],
+        ],
+      );
+    }
 
     final children = <Widget>[];
 
-    if (leadingIcon != null) {
+    if (widget.leadingIcon != null) {
       children.add(Icon(
-        leadingIcon,
+        widget.leadingIcon,
         size: sizeProps.iconSize,
-        color: foregroundColor ?? typeStyle.foregroundColor,
-      ));
-      if (text != null || child != null) {
+        color: widget.foregroundColor ?? typeStyle.foregroundColor,
+      )
+          .animate()
+          .scale(delay: const Duration(milliseconds: 100))
+          .then()
+          .shake(duration: const Duration(milliseconds: 200)));
+
+      if (widget.text != null || widget.child != null) {
         children.add(SizedBox(width: sizeProps.spacing));
       }
     }
 
-    if (text != null) {
+    if (widget.text != null) {
       children.add(Text(
-        text!,
+        widget.text!,
         style: TextStyle(
           fontSize: sizeProps.fontSize,
           fontWeight: sizeProps.fontWeight,
-          color: foregroundColor ?? typeStyle.foregroundColor,
+          color: widget.foregroundColor ?? typeStyle.foregroundColor,
         ),
-      ));
-    } else if (child != null) {
+      )
+          .animate()
+          .fadeIn(duration: AppTheme.normalAnimation)
+          .slideX(begin: 0.2, duration: AppTheme.normalAnimation));
+    } else if (widget.child != null) {
       children.add(DefaultTextStyle(
         style: TextStyle(
           fontSize: sizeProps.fontSize,
           fontWeight: sizeProps.fontWeight,
-          color: foregroundColor ?? typeStyle.foregroundColor,
+          color: widget.foregroundColor ?? typeStyle.foregroundColor,
         ),
-        child: child!,
+        child: widget.child!,
       ));
     }
 
-    if (trailingIcon != null) {
-      if (text != null || child != null) {
+    if (widget.trailingIcon != null) {
+      if (widget.text != null || widget.child != null) {
         children.add(SizedBox(width: sizeProps.spacing));
       }
       children.add(Icon(
-        trailingIcon,
+        widget.trailingIcon,
         size: sizeProps.iconSize,
-        color: foregroundColor ?? typeStyle.foregroundColor,
+        color: widget.foregroundColor ?? typeStyle.foregroundColor,
       ));
     }
 
@@ -275,77 +383,93 @@ class EnhancedButton extends StatelessWidget {
   }
 
   _SizeProperties _getSizeProperties() {
-    switch (size) {
+    switch (widget.size) {
       case EnhancedButtonSize.small:
-        return const _SizeProperties(
-          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        return _SizeProperties(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           fontSize: 12,
-          iconSize: 14,
-          minHeight: 32,
-          borderRadius: 6,
+          iconSize: 16,
+          minHeight: 36,
           spacing: 6,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w600,
+          borderRadius: AppTheme.radiusMedium,
         );
       case EnhancedButtonSize.medium:
-        return const _SizeProperties(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        return _SizeProperties(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           fontSize: 14,
-          iconSize: 16,
-          minHeight: 40,
-          borderRadius: 8,
+          iconSize: 18,
+          minHeight: 44,
           spacing: 8,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w600,
+          borderRadius: AppTheme.radiusLarge,
         );
       case EnhancedButtonSize.large:
-        return const _SizeProperties(
-          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        return _SizeProperties(
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
           fontSize: 16,
-          iconSize: 18,
-          minHeight: 48,
-          borderRadius: 10,
+          iconSize: 20,
+          minHeight: 52,
           spacing: 10,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
+          borderRadius: AppTheme.radiusXLarge,
         );
     }
   }
 
-  _TypeStyle _getTypeStyle(ColorScheme colorScheme) {
-    switch (type) {
+  _TypeStyle _getTypeStyle() {
+    switch (widget.type) {
       case EnhancedButtonType.primary:
         return _TypeStyle(
-          backgroundColor: colorScheme.primary,
-          foregroundColor: colorScheme.onPrimary,
-          border: null,
+          gradient: const LinearGradient(
+            colors: [AppTheme.primary, AppTheme.secondary],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          foregroundColor: Colors.white,
+          boxShadow: AppTheme.softShadow,
         );
       case EnhancedButtonType.secondary:
         return _TypeStyle(
-          backgroundColor: colorScheme.secondary,
-          foregroundColor: colorScheme.onSecondary,
-          border: null,
+          gradient: const LinearGradient(
+            colors: [AppTheme.accent, AppTheme.blue],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          foregroundColor: Colors.white,
+          boxShadow: AppTheme.softShadow,
         );
       case EnhancedButtonType.outline:
         return _TypeStyle(
           backgroundColor: Colors.transparent,
-          foregroundColor: colorScheme.primary,
-          border: Border.all(color: colorScheme.outline),
+          foregroundColor: AppTheme.primary,
+          border: Border.all(color: AppTheme.primary, width: 2),
         );
       case EnhancedButtonType.ghost:
         return _TypeStyle(
-          backgroundColor: Colors.transparent,
-          foregroundColor: colorScheme.onSurface,
-          border: null,
+          backgroundColor: AppTheme.primary.withOpacity(0.1),
+          foregroundColor: AppTheme.primary,
         );
       case EnhancedButtonType.destructive:
         return _TypeStyle(
-          backgroundColor: colorScheme.error,
-          foregroundColor: colorScheme.onError,
-          border: null,
+          gradient: LinearGradient(
+            colors: [AppTheme.error, AppTheme.error.withOpacity(0.8)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          foregroundColor: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.error.withOpacity(0.3),
+              offset: const Offset(0, 4),
+              blurRadius: 12,
+            ),
+          ],
         );
       case EnhancedButtonType.link:
         return _TypeStyle(
           backgroundColor: Colors.transparent,
-          foregroundColor: colorScheme.primary,
-          border: null,
+          foregroundColor: AppTheme.primary,
         );
     }
   }
@@ -356,29 +480,33 @@ class _SizeProperties {
   final double fontSize;
   final double iconSize;
   final double minHeight;
-  final double borderRadius;
   final double spacing;
   final FontWeight fontWeight;
+  final double borderRadius;
 
-  const _SizeProperties({
+  _SizeProperties({
     required this.padding,
     required this.fontSize,
     required this.iconSize,
     required this.minHeight,
-    required this.borderRadius,
     required this.spacing,
     required this.fontWeight,
+    required this.borderRadius,
   });
 }
 
 class _TypeStyle {
-  final Color backgroundColor;
+  final Color? backgroundColor;
   final Color foregroundColor;
   final Border? border;
+  final List<BoxShadow>? boxShadow;
+  final Gradient? gradient;
 
-  const _TypeStyle({
-    required this.backgroundColor,
+  _TypeStyle({
+    this.backgroundColor,
     required this.foregroundColor,
     this.border,
+    this.boxShadow,
+    this.gradient,
   });
 }

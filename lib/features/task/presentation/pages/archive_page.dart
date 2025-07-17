@@ -234,7 +234,8 @@ class _ArchivePageState extends ConsumerState<ArchivePage>
   }
 
   Widget _buildArchivedTaskCard(Task task, bool isParent) {
-    return EnhancedCard.outlined(
+    return EnhancedCard(
+      type: EnhancedCardType.outline,
       backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
       child: Padding(
         padding: const EdgeInsets.all(16),

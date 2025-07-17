@@ -6,6 +6,9 @@ import 'package:jhonny/features/task/domain/usecases/update_task.dart';
 import 'package:jhonny/features/task/presentation/providers/task_provider.dart';
 import 'package:jhonny/features/family/presentation/providers/family_provider.dart';
 import 'package:jhonny/shared/widgets/widgets.dart';
+import 'package:jhonny/shared/widgets/delightful_button.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:jhonny/core/theme/app_theme.dart';
 
 class CreateTaskPage extends ConsumerStatefulWidget {
   final Task? task;
@@ -89,46 +92,60 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditMode ? 'Edit Task' : 'Create New Task'),
-        backgroundColor: Theme.of(context).colorScheme.surface,
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        centerTitle: true,
       ),
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return Form(
-              key: _formKey,
-              child: CustomScrollView(
-                slivers: [
-                  SliverPadding(
-                    padding: const EdgeInsets.all(16),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                        _buildCategorySection(),
-                        const SizedBox(height: 24),
-                        _buildTaskInfoSection(),
-                        const SizedBox(height: 24),
-                        _buildAssignmentSection(),
-                        const SizedBox(height: 24),
-                        _buildSchedulingSection(),
-                        const SizedBox(height: 24),
-                        _buildDifficultySection(),
-                        const SizedBox(height: 32),
-                        _buildActionButtons(isProcessing),
-                        const SizedBox(height: 16), // Extra bottom padding
-                      ]),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppTheme.background,
+              AppTheme.accent.withOpacity(0.05),
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return Form(
+                key: _formKey,
+                child: CustomScrollView(
+                  slivers: [
+                    SliverPadding(
+                      padding: const EdgeInsets.all(16),
+                      sliver: SliverList(
+                        delegate: SliverChildListDelegate([
+                          _buildCategorySection(),
+                          const SizedBox(height: 24),
+                          _buildTaskInfoSection(),
+                          const SizedBox(height: 24),
+                          _buildAssignmentSection(),
+                          const SizedBox(height: 24),
+                          _buildSchedulingSection(),
+                          const SizedBox(height: 24),
+                          _buildDifficultySection(),
+                          const SizedBox(height: 32),
+                          _buildActionButtons(isProcessing),
+                          const SizedBox(height: 16), // Extra bottom padding
+                        ]),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            );
-          },
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
   }
 
   Widget _buildTaskInfoSection() {
-    return EnhancedCard.elevated(
+    return EnhancedCard(
+      type: EnhancedCardType.elevated,
       title: 'Task Information',
       child: Column(
         children: [
@@ -216,7 +233,8 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
       assignmentOptions = [];
     }
 
-    return EnhancedCard.elevated(
+    return EnhancedCard(
+      type: EnhancedCardType.elevated,
       title: 'Assignment',
       child: Column(
         children: [
@@ -304,7 +322,8 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
   }
 
   Widget _buildSchedulingSection() {
-    return EnhancedCard.elevated(
+    return EnhancedCard(
+      type: EnhancedCardType.elevated,
       title: 'Scheduling',
       child: Column(
         children: [
@@ -339,7 +358,8 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
   }
 
   Widget _buildCategorySection() {
-    return EnhancedCard.elevated(
+    return EnhancedCard(
+      type: EnhancedCardType.elevated,
       title: 'Category',
       child: Column(
         children: [
@@ -385,7 +405,8 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
   }
 
   Widget _buildDifficultySection() {
-    return EnhancedCard.elevated(
+    return EnhancedCard(
+      type: EnhancedCardType.elevated,
       title: 'Difficulty & Points',
       child: Column(
         children: [
@@ -466,8 +487,11 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
   }
 
   Widget _buildActionButtons(bool isProcessing) {
-    return EnhancedButton.primary(
+    return DelightfulButton(
       text: _isEditMode ? 'Save Changes' : 'Create Task',
+      icon: _isEditMode ? Icons.save : Icons.add,
+      style: DelightfulButtonStyle.primary,
+      width: double.infinity,
       onPressed: isProcessing ? null : _submitForm,
       isLoading: isProcessing,
     );

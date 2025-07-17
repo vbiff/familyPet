@@ -75,7 +75,8 @@ class _FamilySettingsPageState extends ConsumerState<FamilySettingsPage> {
   }
 
   Widget _buildFamilyInfoCard(family_entity.Family family) {
-    return EnhancedCard.elevated(
+    return EnhancedCard(
+      type: EnhancedCardType.elevated,
       title: 'Family Information',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -111,7 +112,8 @@ class _FamilySettingsPageState extends ConsumerState<FamilySettingsPage> {
       family_state.FamilyState familyState, bool isCreator) {
     final members = familyState.members;
 
-    return EnhancedCard.elevated(
+    return EnhancedCard(
+      type: EnhancedCardType.elevated,
       title: 'Family Members',
       child: Column(
         children: [
@@ -182,7 +184,8 @@ class _FamilySettingsPageState extends ConsumerState<FamilySettingsPage> {
   }
 
   Widget _buildInviteCodeCard(family_entity.Family family) {
-    return EnhancedCard.elevated(
+    return EnhancedCard(
+      type: EnhancedCardType.elevated,
       title: 'Invite Code',
       child: Column(
         children: [
@@ -246,7 +249,8 @@ class _FamilySettingsPageState extends ConsumerState<FamilySettingsPage> {
   Widget _buildFamilyActionsCard(family_entity.Family family, bool isCreator) {
     final currentUser = ref.read(currentUserProvider);
 
-    return EnhancedCard.elevated(
+    return EnhancedCard(
+      type: EnhancedCardType.elevated,
       title: 'Family Actions',
       child: Column(
         children: [

@@ -1,290 +1,275 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:jhonny/core/theme/app_theme.dart';
 
 enum EnhancedCardType {
+  primary,
+  secondary,
+  outline,
   elevated,
-  outlined,
   filled,
-  gradient,
 }
 
-class EnhancedCard extends StatelessWidget {
-  final Widget? child;
+class EnhancedCard extends StatefulWidget {
+  final Widget child;
   final String? title;
-  final String? description;
-  final Widget? header;
-  final Widget? footer;
-  final EdgeInsets? padding;
+  final Widget? titleWidget;
   final EnhancedCardType type;
+  final VoidCallback? onTap;
+  final EdgeInsets? padding;
+  final EdgeInsets? margin;
   final Color? backgroundColor;
-  final Color? borderColor;
-  final double? elevation;
   final BorderRadius? borderRadius;
   final List<BoxShadow>? shadows;
+  final Border? border;
   final Gradient? gradient;
-  final VoidCallback? onTap;
-  final double? width;
-  final double? height;
+  final double? elevation;
+  final bool showShimmer;
 
   const EnhancedCard({
     super.key,
-    this.child,
+    required this.child,
     this.title,
-    this.description,
-    this.header,
-    this.footer,
+    this.titleWidget,
+    this.type = EnhancedCardType.primary,
+    this.onTap,
     this.padding,
-    this.type = EnhancedCardType.elevated,
+    this.margin,
     this.backgroundColor,
-    this.borderColor,
-    this.elevation,
     this.borderRadius,
     this.shadows,
+    this.border,
     this.gradient,
-    this.onTap,
-    this.width,
-    this.height,
+    this.elevation,
+    this.showShimmer = true,
   });
 
-  // Named constructors for different types
-  const EnhancedCard.elevated({
-    super.key,
-    this.child,
-    this.title,
-    this.description,
-    this.header,
-    this.footer,
-    this.padding,
-    this.backgroundColor,
-    this.borderColor,
-    this.elevation,
-    this.borderRadius,
-    this.shadows,
-    this.gradient,
-    this.onTap,
-    this.width,
-    this.height,
-  }) : type = EnhancedCardType.elevated;
+  @override
+  State<EnhancedCard> createState() => _EnhancedCardState();
+}
 
-  const EnhancedCard.outlined({
-    super.key,
-    this.child,
-    this.title,
-    this.description,
-    this.header,
-    this.footer,
-    this.padding,
-    this.backgroundColor,
-    this.borderColor,
-    this.elevation,
-    this.borderRadius,
-    this.shadows,
-    this.gradient,
-    this.onTap,
-    this.width,
-    this.height,
-  }) : type = EnhancedCardType.outlined;
+class _EnhancedCardState extends State<EnhancedCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _hoverController;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _elevationAnimation;
 
-  const EnhancedCard.filled({
-    super.key,
-    this.child,
-    this.title,
-    this.description,
-    this.header,
-    this.footer,
-    this.padding,
-    this.backgroundColor,
-    this.borderColor,
-    this.elevation,
-    this.borderRadius,
-    this.shadows,
-    this.gradient,
-    this.onTap,
-    this.width,
-    this.height,
-  }) : type = EnhancedCardType.filled;
+  @override
+  void initState() {
+    super.initState();
 
-  const EnhancedCard.gradient({
-    super.key,
-    this.child,
-    this.title,
-    this.description,
-    this.header,
-    this.footer,
-    this.padding,
-    this.backgroundColor,
-    this.borderColor,
-    this.elevation,
-    this.borderRadius,
-    this.shadows,
-    required this.gradient,
-    this.onTap,
-    this.width,
-    this.height,
-  }) : type = EnhancedCardType.gradient;
+    _hoverController = AnimationController(
+      duration: AppTheme.fastAnimation,
+      vsync: this,
+    );
+
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.02,
+    ).animate(CurvedAnimation(
+      parent: _hoverController,
+      curve: AppTheme.smoothCurve,
+    ));
+
+    _elevationAnimation = Tween<double>(
+      begin: 0.0,
+      end: 8.0,
+    ).animate(CurvedAnimation(
+      parent: _hoverController,
+      curve: AppTheme.smoothCurve,
+    ));
+  }
+
+  @override
+  void dispose() {
+    _hoverController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final cardStyle = _getCardStyle();
 
-    // Get type-specific styling
-    final typeStyle = _getTypeStyle(colorScheme);
-
-    // Build the content
-    final content = _buildContent(context);
-
-    Widget card = Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: gradient == null
-            ? (backgroundColor ?? typeStyle.backgroundColor)
-            : null,
-        gradient: gradient,
-        borderRadius: borderRadius ?? BorderRadius.circular(12),
-        border: typeStyle.border,
-        boxShadow: shadows ?? typeStyle.shadows,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: onTap != null
-            ? InkWell(
-                onTap: onTap,
-                borderRadius: borderRadius ?? BorderRadius.circular(12),
-                child: content,
-              )
-            : content,
-      ),
-    );
-
-    return card;
-  }
-
-  Widget _buildContent(BuildContext context) {
-    final theme = Theme.of(context);
-    final defaultPadding = padding ?? const EdgeInsets.all(16);
-
-    final children = <Widget>[];
-
-    // Add header if provided
-    if (header != null) {
-      children.add(header!);
-      children.add(const SizedBox(height: 16));
-    }
-
-    // Add title and description
-    if (title != null || description != null) {
-      final titleDescColumn = <Widget>[];
-
-      if (title != null) {
-        titleDescColumn.add(
-          Text(
-            title!,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w600,
+    Widget card = AnimatedBuilder(
+      animation: _hoverController,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: widget.onTap != null ? _scaleAnimation.value : 1.0,
+          child: Container(
+            margin: widget.margin ?? const EdgeInsets.symmetric(vertical: 4),
+            decoration: BoxDecoration(
+              gradient: widget.gradient ?? cardStyle.gradient,
+              color: widget.gradient == null && cardStyle.gradient == null
+                  ? (widget.backgroundColor ?? cardStyle.backgroundColor)
+                  : null,
+              borderRadius: widget.borderRadius ??
+                  BorderRadius.circular(AppTheme.radiusLarge),
+              border: widget.border ?? cardStyle.border,
+              boxShadow: widget.shadows ??
+                  [
+                    ...AppTheme.softShadow,
+                    if (widget.onTap != null)
+                      BoxShadow(
+                        color: AppTheme.primary.withOpacity(
+                          0.1 * _elevationAnimation.value / 8.0,
+                        ),
+                        offset: Offset(0, _elevationAnimation.value),
+                        blurRadius: _elevationAnimation.value * 2,
+                      ),
+                  ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              borderRadius: widget.borderRadius ??
+                  BorderRadius.circular(AppTheme.radiusLarge),
+              child: InkWell(
+                onTap: widget.onTap,
+                onTapDown: widget.onTap != null
+                    ? (_) => _hoverController.forward()
+                    : null,
+                onTapUp: widget.onTap != null
+                    ? (_) => _hoverController.reverse()
+                    : null,
+                onTapCancel: () => _hoverController.reverse(),
+                borderRadius: widget.borderRadius ??
+                    BorderRadius.circular(AppTheme.radiusLarge),
+                splashColor: AppTheme.primary.withOpacity(0.1),
+                highlightColor: AppTheme.primary.withOpacity(0.05),
+                child: Container(
+                  padding: widget.padding ?? const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (widget.title != null ||
+                          widget.titleWidget != null) ...[
+                        widget.titleWidget ?? _buildTitle(),
+                        const SizedBox(height: 16),
+                      ],
+                      widget.child,
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
         );
-      }
+      },
+    );
 
-      if (description != null) {
-        if (title != null) {
-          titleDescColumn.add(const SizedBox(height: 8));
-        }
-        titleDescColumn.add(
-          Text(
-            description!,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+    // Add shimmer effect for primary and elevated cards
+    if (widget.showShimmer &&
+        (widget.type == EnhancedCardType.primary ||
+            widget.type == EnhancedCardType.elevated)) {
+      card = card
+          .animate(
+            onPlay: (controller) => controller.repeat(),
+          )
+          .shimmer(
+            duration: const Duration(seconds: 3),
+            color: Colors.white.withOpacity(0.1),
+          );
+    }
+
+    return card
+        .animate()
+        .fadeIn(duration: AppTheme.normalAnimation)
+        .slideY(begin: 0.1, duration: AppTheme.normalAnimation);
+  }
+
+  Widget _buildTitle() {
+    if (widget.title == null) return const SizedBox.shrink();
+
+    return Row(
+      children: [
+        Container(
+          width: 4,
+          height: 24,
+          decoration: BoxDecoration(
+            gradient: AppTheme.primaryGradient,
+            borderRadius: BorderRadius.circular(2),
           ),
-        );
-      }
-
-      children.add(Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: titleDescColumn,
-      ));
-
-      if (child != null) {
-        children.add(const SizedBox(height: 16));
-      }
-    }
-
-    // Add main content
-    if (child != null) {
-      children.add(child!);
-    }
-
-    // Add footer if provided
-    if (footer != null) {
-      if (children.isNotEmpty) {
-        children.add(const SizedBox(height: 16));
-      }
-      children.add(footer!);
-    }
-
-    return Padding(
-      padding: defaultPadding,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: children,
-      ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            widget.title!,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
+                ),
+          ),
+        ),
+      ],
     );
   }
 
-  _TypeStyle _getTypeStyle(ColorScheme colorScheme) {
-    switch (type) {
+  _CardStyle _getCardStyle() {
+    switch (widget.type) {
+      case EnhancedCardType.primary:
+        return _CardStyle(
+          backgroundColor: Colors.white,
+          gradient: LinearGradient(
+            colors: [
+              Colors.white,
+              AppTheme.primary.withOpacity(0.02),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        );
+      case EnhancedCardType.secondary:
+        return _CardStyle(
+          backgroundColor: AppTheme.accent.withOpacity(0.05),
+          border: Border.all(
+            color: AppTheme.accent.withOpacity(0.2),
+            width: 1,
+          ),
+        );
+      case EnhancedCardType.outline:
+        return _CardStyle(
+          backgroundColor: Colors.transparent,
+          border: Border.all(
+            color: AppTheme.primary.withOpacity(0.3),
+            width: 2,
+          ),
+        );
       case EnhancedCardType.elevated:
-        return _TypeStyle(
-          backgroundColor: colorScheme.surface,
-          border: null,
-          shadows: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        );
-      case EnhancedCardType.outlined:
-        return _TypeStyle(
-          backgroundColor: colorScheme.surface,
-          border: Border.all(color: borderColor ?? colorScheme.outline),
-          shadows: null,
+        return _CardStyle(
+          backgroundColor: Colors.white,
+          gradient: LinearGradient(
+            colors: [
+              Colors.white,
+              AppTheme.accent.withOpacity(0.03),
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
         );
       case EnhancedCardType.filled:
-        return _TypeStyle(
-          backgroundColor: colorScheme.surfaceContainerLow,
-          border: null,
-          shadows: null,
-        );
-      case EnhancedCardType.gradient:
-        return _TypeStyle(
-          backgroundColor: null,
-          border: null,
-          shadows: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+        return _CardStyle(
+          gradient: LinearGradient(
+            colors: [
+              AppTheme.primary.withOpacity(0.1),
+              AppTheme.secondary.withOpacity(0.05),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
         );
     }
   }
 }
 
-class _TypeStyle {
+class _CardStyle {
   final Color? backgroundColor;
   final Border? border;
-  final List<BoxShadow>? shadows;
+  final Gradient? gradient;
 
-  const _TypeStyle({
+  _CardStyle({
     this.backgroundColor,
     this.border,
-    this.shadows,
+    this.gradient,
   });
 }
 
@@ -309,7 +294,8 @@ class StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return EnhancedCard.outlined(
+    return EnhancedCard(
+      type: EnhancedCardType.outline,
       onTap: onTap,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -387,9 +373,10 @@ class InfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final cardColor = color ?? Theme.of(context).colorScheme.primary;
 
-    return EnhancedCard.filled(
+    return EnhancedCard(
+      type: EnhancedCardType.filled,
       backgroundColor: cardColor.withValues(alpha: 0.05),
-      borderColor: cardColor.withValues(alpha: 0.2),
+      border: Border.all(color: cardColor.withValues(alpha: 0.2)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
