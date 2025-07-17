@@ -513,13 +513,6 @@ class TaskDetailPage extends ConsumerWidget {
             'Created by',
             _getMemberName(ref, currentTask.createdBy),
           ),
-          const SizedBox(height: 20),
-          _buildInfoRow(
-            context,
-            Icons.repeat,
-            'Frequency',
-            _getFrequencyText(currentTask.frequency),
-          ),
         ],
       ),
     );
@@ -978,18 +971,6 @@ class TaskDetailPage extends ConsumerWidget {
   }
 
   // Helper methods
-  String _getFrequencyText(TaskFrequency frequency) {
-    switch (frequency) {
-      case TaskFrequency.once:
-        return 'One time only';
-      case TaskFrequency.daily:
-        return 'Daily';
-      case TaskFrequency.weekly:
-        return 'Weekly';
-      case TaskFrequency.monthly:
-        return 'Monthly';
-    }
-  }
 
   String _getStatusText(Task currentTask) {
     if (currentTask.needsVerification) {

@@ -536,61 +536,6 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
             ),
           ),
           const SizedBox(height: 16),
-          SpringButton(
-            onPressed: _selectFrequency,
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppTheme.accent.withOpacity(0.05),
-                    AppTheme.blue.withOpacity(0.02)
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-                border: Border.all(color: AppTheme.accent.withOpacity(0.2)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppTheme.accent.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(Icons.repeat,
-                        color: AppTheme.accent, size: 20),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Frequency',
-                          style:
-                              Theme.of(context).textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: AppTheme.textPrimary,
-                                  ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _getFrequencyText(_frequency),
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: AppTheme.textSecondary,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Icon(Icons.chevron_right, color: AppTheme.accent),
-                ],
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -892,45 +837,6 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
           59,
         );
       });
-    }
-  }
-
-  Future<void> _selectFrequency() async {
-    final frequency = await showDialog<TaskFrequency>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Select Frequency'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: TaskFrequency.values.map((freq) {
-            return RadioListTile<TaskFrequency>(
-              title: Text(_getFrequencyText(freq)),
-              value: freq,
-              groupValue: _frequency,
-              onChanged: (value) => Navigator.of(context).pop(value),
-            );
-          }).toList(),
-        ),
-      ),
-    );
-
-    if (frequency != null) {
-      setState(() {
-        _frequency = frequency;
-      });
-    }
-  }
-
-  String _getFrequencyText(TaskFrequency frequency) {
-    switch (frequency) {
-      case TaskFrequency.once:
-        return 'One time only';
-      case TaskFrequency.daily:
-        return 'Daily';
-      case TaskFrequency.weekly:
-        return 'Weekly';
-      case TaskFrequency.monthly:
-        return 'Monthly';
     }
   }
 
