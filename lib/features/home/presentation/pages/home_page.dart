@@ -114,50 +114,39 @@ class HomePage extends ConsumerWidget {
           ),
         ],
       ),
-      body: CustomScrollView(
-        slivers: [
+      body: Column(
+        children: [
           // Error banner if needed
           if (authState.status == AuthStatus.error && authState.failure != null)
-            SliverToBoxAdapter(
-              child: Container(
-                margin: const EdgeInsets.all(16),
-                child: EnhancedCard.elevated(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          color: Theme.of(context).colorScheme.onErrorContainer,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            authState.failure!.message,
-                            style: TextStyle(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onErrorContainer,
-                            ),
+            Container(
+              margin: const EdgeInsets.all(16),
+              child: EnhancedCard.elevated(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        color: Theme.of(context).colorScheme.onErrorContainer,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          authState.failure!.message,
+                          style: TextStyle(
+                            color:
+                                Theme.of(context).colorScheme.onErrorContainer,
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ),
-          // Quick stats section - only show on Pet and Family tabs, not on Tasks tab
-          if (selectedTab != 0) // Hide on Tasks tab (index 0)
-            const SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(16, 8, 16, 24),
-                child: QuickStatsSection(),
-              ),
-            ),
 
           // Main content
-          SliverFillRemaining(
+          Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: TabContentSwitcher(
@@ -463,150 +452,5 @@ Widget _getTabWidget(int index) {
       return const VirtualPet();
     case HomeTab.family:
       return const FamilyList();
-  }
-}
-
-class QuickStatsSection extends StatelessWidget {
-  const QuickStatsSection({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Consumer(
-      builder: (context, ref, _) {
-        final hasFamily = ref.watch(hasFamilyProvider);
-        final pendingTasks = ref.watch(pendingTasksProvider);
-        final petState = ref.watch(petNotifierProvider);
-        final user = ref.watch(currentUserProvider);
-
-        // Calculate task stats based on family status
-        final userPendingTasks = hasFamily && user?.familyId != null
-            ? pendingTasks.where((task) => task.assignedTo == user?.id).length
-            : 0;
-        final taskValue =
-            hasFamily && user?.familyId != null ? '$userPendingTasks' : '--';
-        final taskSubtitle =
-            hasFamily && user?.familyId != null ? 'Tasks' : 'Setup Needed';
-
-        // Calculate pet stats - showing happiness instead of health
-        final pet = petState.pet;
-        final petHappiness = pet?.stats['happiness'] ?? 0;
-        final petHappinessValue = pet != null ? '$petHappiness%' : '--';
-        final petHappinessSubtitle = pet != null
-            ? (petHappiness >= 80
-                ? 'Happy'
-                : petHappiness >= 50
-                    ? 'OK'
-                    : 'Needs Care')
-            : 'No Pet';
-
-        // Calculate completed tasks
-        final userId = ref.watch(currentUserProvider)?.id;
-        final completedTasks = ref
-            .watch(completedTasksProvider)
-            .where((task) => task.assignedTo == userId)
-            .length;
-        final numberOfCompletedTasks = hasFamily ? '$completedTasks' : '0';
-
-        return EnhancedCard.elevated(
-          child: Padding(
-            padding: const EdgeInsets.all(10),
-            child: Row(
-              children: [
-                Expanded(
-                  child: StatItem(
-                    icon: Icons.task_alt,
-                    label: 'Tasks',
-                    value: taskValue,
-                    subtitle: taskSubtitle,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-                Container(
-                  width: 1,
-                  height: 40,
-                  color: Theme.of(context).dividerColor,
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                ),
-                Expanded(
-                  child: StatItem(
-                    icon: Icons.pets,
-                    label: 'Pet Happiness',
-                    value: petHappinessValue,
-                    subtitle: petHappinessSubtitle,
-                    color: Theme.of(context).colorScheme.tertiary,
-                  ),
-                ),
-                Container(
-                  width: 1,
-                  height: 40,
-                  color: Theme.of(context).dividerColor,
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                ),
-                Expanded(
-                  child: StatItem(
-                    icon: Icons.check_circle_outline,
-                    label: 'Completed',
-                    value: numberOfCompletedTasks,
-                    subtitle: 'Completed',
-                    color: Theme.of(context).colorScheme.secondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class StatItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final String subtitle;
-  final Color color;
-
-  const StatItem({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.subtitle,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            icon,
-            color: color,
-            size: 24,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-        ),
-        Text(
-          subtitle,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-        ),
-      ],
-    );
   }
 }
