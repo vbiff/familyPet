@@ -58,11 +58,23 @@ class _TaskListState extends ConsumerState<TaskList>
     // Only load tasks if user has a real family
     if (user?.familyId != null) {
       debugPrint('🔄 TaskList: Loading tasks for family ${user!.familyId}');
+      debugPrint('🔄 TaskList: User ${user.displayName} (${user.role.name})');
+
       ref.read(taskNotifierProvider.notifier).loadTasks(
             familyId: user.familyId!,
           );
     } else {
       debugPrint('⚠️ TaskList: Cannot load tasks - no user or family ID');
+      if (user != null) {
+        debugPrint(
+            '⚠️ TaskList: User ${user.displayName} (${user.role.name}) has no family');
+
+        // For child users, this might indicate they haven't properly joined a family
+        if (user.role == UserRole.child) {
+          debugPrint(
+              '👶 Child user ${user.displayName} needs to join a family first');
+        }
+      }
     }
   }
 
@@ -124,12 +136,28 @@ class _TaskListState extends ConsumerState<TaskList>
                     text: 'Create',
                     size: EnhancedButtonSize.small,
                     onPressed: user?.familyId != null
-                        ? () => Navigator.of(context).push(
+                        ? () {
+                            debugPrint(
+                                '🎯 Creating task - User: ${user!.displayName} (${user.role.name}), Family: ${user.familyId}');
+                            Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (context) => const CreateTaskPage(),
                               ),
-                            )
-                        : null, // Disable button if no family
+                            );
+                          }
+                        : () {
+                            // Show helpful message when family is not set up
+                            final isChild = user?.role == UserRole.child;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(isChild
+                                    ? 'Ask your parent to invite you to the family first'
+                                    : 'Create or join a family to start creating tasks'),
+                                backgroundColor: Colors.orange,
+                                duration: const Duration(seconds: 4),
+                              ),
+                            );
+                          },
                   ),
                   const SizedBox(width: 8),
                   EnhancedButton.ghost(
@@ -457,29 +485,46 @@ class _TaskListState extends ConsumerState<TaskList>
           ),
           const SizedBox(height: 16),
           Text(
-            'No family setup',
+            isChild ? 'No family joined yet' : 'No family setup',
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
           Text(
             isChild
-                ? 'Ask your parent for the family invite code to join!'
-                : 'Please set up your family to manage tasks',
+                ? 'Ask your parent for the family invite code to see and complete tasks'
+                : 'Create or join a family to start managing tasks together',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
-          EnhancedButton.primary(
-            leadingIcon: isChild ? Icons.group_add : Icons.group_add,
-            text: isChild ? 'Join Family' : 'Set Up Family',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const FamilySetupPage(),
-              ),
+          if (!isChild)
+            EnhancedButton.primary(
+              leadingIcon: Icons.add,
+              text: 'Set Up Family',
+              onPressed: () {
+                // Navigate to family setup
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const FamilySetupPage(),
+                  ),
+                );
+              },
+            )
+          else
+            EnhancedButton.secondary(
+              leadingIcon: Icons.qr_code_scanner,
+              text: 'Join Family',
+              onPressed: () {
+                // Navigate to family setup (join family tab)
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const FamilySetupPage(),
+                  ),
+                );
+              },
             ),
-          ),
         ],
       ),
     );

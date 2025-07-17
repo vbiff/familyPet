@@ -117,35 +117,49 @@ class FamilyNotifier extends StateNotifier<FamilyState> {
     required String inviteCode,
     required String userId,
   }) async {
-    if (state.isOperating) return false;
+    try {
+      debugPrint('🔄 Attempting to join family with invite code: $inviteCode');
+      debugPrint('🔄 User ID: $userId');
 
-    state = state.copyWith(
-      status: FamilyStatus.joining,
-      isJoining: true,
-      errorMessage: null,
-    );
+      state = FamilyState.loading();
 
-    final result = await _joinFamily(JoinFamilyParams(
-      inviteCode: inviteCode,
-      userId: userId,
-    ));
+      final result = await _joinFamily(JoinFamilyParams(
+        inviteCode: inviteCode,
+        userId: userId,
+      ));
 
-    return result.fold(
-      (failure) {
-        state = state.copyWith(
-          status: FamilyStatus.error,
-          errorMessage: failure.message,
-          isJoining: false,
-        );
-        return false;
-      },
-      (family) {
-        state = FamilyState.loaded(family: family);
-        // Load family members
-        loadFamilyMembers(family.id);
-        return true;
-      },
-    );
+      final success = result.fold(
+        (failure) {
+          debugPrint('🚨 Failed to join family: ${failure.message}');
+          state = FamilyState.error(failure.message);
+          return false;
+        },
+        (family) {
+          debugPrint('✅ Successfully joined family: ${family.name}');
+          debugPrint('✅ Family ID: ${family.id}');
+          debugPrint('✅ Total members: ${family.totalMembers}');
+
+          state = FamilyState.loaded(family: family);
+
+          // Load family members after joining
+          loadFamilyMembers(family.id);
+
+          // For child users, ensure they can see family data immediately
+          Future.delayed(const Duration(milliseconds: 500), () {
+            debugPrint('🔄 Refreshing family data after join...');
+            loadCurrentFamily(userId);
+          });
+
+          return true;
+        },
+      );
+
+      return success;
+    } catch (e) {
+      debugPrint('🚨 Exception joining family: $e');
+      state = FamilyState.error('Failed to join family: $e');
+      return false;
+    }
   }
 
   Future<void> loadFamilyMembers(String familyId) async {

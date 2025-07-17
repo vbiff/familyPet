@@ -416,18 +416,60 @@ class _FamilySetupPageState extends ConsumerState<FamilySetupPage>
   }
 
   Future<void> _joinFamily() async {
-    if (!_joinFamilyFormKey.currentState!.validate()) return;
+    if (!_joinFamilyFormKey.currentState!.validate()) {
+      return;
+    }
 
-    final user = ref.read(authNotifierProvider).user;
-    if (user == null) return;
+    final user = ref.read(currentUserProvider);
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error: User not found'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final inviteCode = _inviteCodeController.text.trim().toUpperCase();
+
+    debugPrint(
+        '👶 Child user ${user.displayName} attempting to join family with code: $inviteCode');
 
     final success = await ref.read(familyNotifierProvider.notifier).joinFamily(
-          inviteCode: _inviteCodeController.text.trim().toUpperCase(),
+          inviteCode: inviteCode,
           userId: user.id,
         );
 
-    if (success) {
-      _inviteCodeController.clear();
+    if (success && mounted) {
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('🎉 Successfully joined family!'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 3),
+        ),
+      );
+
+      // For child users, refresh auth to ensure family_id is updated
+      debugPrint('🔄 Refreshing user auth data after joining family...');
+      await ref.read(authNotifierProvider.notifier).refreshUser();
+
+      // Wait a moment then navigate back
+      await Future.delayed(const Duration(seconds: 1));
+
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    } else if (mounted) {
+      // Error is already handled in the notifier
+      final familyState = ref.read(familyProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(familyState.errorMessage ?? 'Failed to join family'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 

@@ -24,6 +24,9 @@ abstract class FamilyRemoteDataSource {
   Future<void> updatePetStageImages(
       {required String familyId, required Map<String, String> petStageImages});
   Future<String?> getFamilyPetImageUrl(String familyId);
+
+  /// Safe family joining using database function
+  Future<String> safeJoinFamilyByInviteCode(String inviteCode, String userId);
 }
 
 class SupabaseFamilyRemoteDataSource implements FamilyRemoteDataSource {
@@ -132,6 +135,36 @@ class SupabaseFamilyRemoteDataSource implements FamilyRemoteDataSource {
   @override
   Future<void> addMemberToFamily(String familyId, String userId) async {
     try {
+      // Try using the safe database function first
+      final response = await _client.rpc('safe_add_family_member', params: {
+        'family_id_param': familyId,
+        'user_id_param': userId,
+      });
+
+      // Check if the function returned false (user already a member)
+      if (response == false) {
+        debugPrint('🔄 User $userId is already a member of family $familyId');
+        return; // Not an error, just already a member
+      }
+
+      debugPrint(
+          '✅ Successfully added user $userId to family $familyId using safe function');
+    } catch (e) {
+      // If the function doesn't exist, fall back to manual approach
+      if (e.toString().contains('Could not find the function') ||
+          e.toString().contains('PGRST202')) {
+        debugPrint('⚠️ Safe function not available, using manual approach');
+        await _addMemberToFamilyManual(familyId, userId);
+      } else {
+        debugPrint('🚨 Failed to add member to family: $e');
+        throw Exception('Failed to add member to family: $e');
+      }
+    }
+  }
+
+  /// Manual method for adding family members when database function is not available
+  Future<void> _addMemberToFamilyManual(String familyId, String userId) async {
+    try {
       // Get the user's role to update family's member lists
       final userResponse = await _client
           .from('profiles')
@@ -175,7 +208,11 @@ class SupabaseFamilyRemoteDataSource implements FamilyRemoteDataSource {
       await _client.from('profiles').update({
         'family_id': familyId,
       }).eq('id', userId);
+
+      debugPrint(
+          '✅ Successfully added user $userId to family $familyId using manual method');
     } catch (e) {
+      debugPrint('🚨 Manual add member failed: $e');
       throw Exception('Failed to add member to family: $e');
     }
   }
@@ -463,6 +500,52 @@ class SupabaseFamilyRemoteDataSource implements FamilyRemoteDataSource {
       return response?['pet_image_url'] as String?;
     } catch (e) {
       throw Exception('Failed to get family pet image URL: $e');
+    }
+  }
+
+  /// Safe family joining using database function
+  @override
+  Future<String> safeJoinFamilyByInviteCode(
+      String inviteCode, String userId) async {
+    try {
+      // Try using the safe database function first
+      final response =
+          await _client.rpc('safe_join_family_by_invite_code', params: {
+        'invite_code_param': inviteCode.toUpperCase(),
+        'user_id_param': userId,
+      });
+
+      // The function returns the family ID UUID as a string
+      final familyId = response as String;
+      debugPrint('✅ Successfully joined family using safe function: $familyId');
+      return familyId;
+    } catch (e) {
+      // If the function doesn't exist, fall back to manual approach
+      if (e.toString().contains('Could not find the function') ||
+          e.toString().contains('PGRST202')) {
+        debugPrint('⚠️ Safe function not available, using fallback approach');
+        return await _joinFamilyFallback(inviteCode.toUpperCase(), userId);
+      }
+
+      debugPrint('🚨 Failed to join family by invite code: $e');
+      throw Exception('Failed to join family by invite code: $e');
+    }
+  }
+
+  /// Fallback method for family joining when database function is not available
+  Future<String> _joinFamilyFallback(String inviteCode, String userId) async {
+    try {
+      // Step 1: Find the family by invite code
+      final family = await getFamilyByInviteCode(inviteCode);
+
+      // Step 2: Add the user to the family using the existing method
+      await addMemberToFamily(family.id, userId);
+
+      debugPrint('✅ Successfully joined family using fallback: ${family.id}');
+      return family.id;
+    } catch (e) {
+      debugPrint('🚨 Fallback family join failed: $e');
+      throw Exception('Failed to join family: $e');
     }
   }
 }

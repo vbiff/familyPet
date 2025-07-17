@@ -50,14 +50,14 @@ class SupabaseFamilyRepository implements FamilyRepository {
     required String userId,
   }) async {
     try {
-      // First, find the family with this invite code
-      final family = await _remoteDataSource.getFamilyByInviteCode(inviteCode);
+      // Use the safe database function for atomic family joining
+      final familyId = await _remoteDataSource.safeJoinFamilyByInviteCode(
+        inviteCode.toUpperCase(),
+        userId,
+      );
 
-      // Add the user to the family - database will handle duplicate membership
-      await _remoteDataSource.addMemberToFamily(family.id, userId);
-
-      // Return the updated family
-      final updatedFamily = await _remoteDataSource.getFamilyById(family.id);
+      // Get the updated family details
+      final updatedFamily = await _remoteDataSource.getFamilyById(familyId);
       return right(updatedFamily.toEntity());
     } catch (e) {
       final errorMessage = e.toString();
@@ -67,6 +67,16 @@ class SupabaseFamilyRepository implements FamilyRepository {
         return left(const ValidationFailure(
             message:
                 'Invalid invite code. Please check the code and try again.'));
+      }
+
+      if (errorMessage.contains('already a member')) {
+        return left(const ValidationFailure(
+            message: 'You are already a member of this family.'));
+      }
+
+      if (errorMessage.contains('already has a family')) {
+        return left(const ValidationFailure(
+            message: 'You are already a member of another family.'));
       }
 
       return left(
