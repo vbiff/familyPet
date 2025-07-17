@@ -33,8 +33,6 @@ class SecureStorageService {
         'authMethod': user.authMethod.name,
         'familyId': user.familyId,
         'avatarUrl': user.avatarUrl,
-        'isPinSetup': user.isPinSetup,
-        'lastPinUpdate': user.lastPinUpdate?.toIso8601String(),
         'createdAt': user.createdAt.toIso8601String(),
         'lastLoginAt': user.lastLoginAt.toIso8601String(),
         'metadata': user.metadata,
@@ -74,14 +72,10 @@ class SecureStorageService {
         ),
         authMethod: AuthMethod.values.firstWhere(
           (method) => method.name == data['authMethod'],
-          orElse: () => AuthMethod.pin,
+          orElse: () => AuthMethod.email,
         ),
         familyId: data['familyId'],
         avatarUrl: data['avatarUrl'],
-        isPinSetup: data['isPinSetup'] ?? false,
-        lastPinUpdate: data['lastPinUpdate'] != null
-            ? DateTime.parse(data['lastPinUpdate'])
-            : null,
         createdAt: DateTime.parse(data['createdAt']),
         lastLoginAt: DateTime.parse(data['lastLoginAt']),
         metadata: data['metadata'],

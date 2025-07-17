@@ -80,10 +80,10 @@ class AuthSelectionPage extends ConsumerWidget {
                     _buildOptionCard(
                       context: context,
                       title: 'I\'m a Child',
-                      subtitle: 'Join with a QR code or PIN',
+                      subtitle: 'Sign in with your email and password',
                       icon: Icons.child_care,
                       color: Theme.of(context).colorScheme.secondary,
-                      onTap: () => _showChildOptions(context),
+                      onTap: () => _navigateToChildSignin(context),
                     ),
 
                     const SizedBox(height: 20),
@@ -273,15 +273,15 @@ class AuthSelectionPage extends ConsumerWidget {
     );
   }
 
-  void _showChildOptions(BuildContext context) {
+  void _navigateToChildSignin(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.5,
+        initialChildSize: 0.45,
         minChildSize: 0.4,
-        maxChildSize: 0.7,
+        maxChildSize: 0.6,
         builder: (context, scrollController) => Container(
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
@@ -315,7 +315,7 @@ class AuthSelectionPage extends ConsumerWidget {
 
               const SizedBox(height: 32),
 
-              // Sign In with PIN - Primary action
+              // Sign In - Primary action
               Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
@@ -344,7 +344,7 @@ class AuthSelectionPage extends ConsumerWidget {
                     ),
                   ),
                   child: const Text(
-                    'Sign In with PIN',
+                    'Sign In',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -356,7 +356,7 @@ class AuthSelectionPage extends ConsumerWidget {
 
               const SizedBox(height: 20),
 
-              // Join with QR Code - Secondary action
+              // Create Account - Secondary action
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
@@ -378,7 +378,7 @@ class AuthSelectionPage extends ConsumerWidget {
                     ),
                   ),
                   child: Text(
-                    'Join with QR Code',
+                    'Create Account',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,

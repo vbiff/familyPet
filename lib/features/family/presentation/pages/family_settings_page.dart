@@ -9,7 +9,7 @@ import 'package:jhonny/features/family/domain/entities/family.dart'
 import 'package:jhonny/features/family/presentation/providers/family_provider.dart';
 import 'package:jhonny/features/family/presentation/providers/family_state.dart'
     as family_state;
-import 'package:jhonny/features/family/presentation/pages/child_invite_qr_page.dart';
+
 import 'package:jhonny/shared/widgets/enhanced_card.dart';
 import 'package:jhonny/shared/widgets/enhanced_button.dart';
 
@@ -259,19 +259,15 @@ class _FamilySettingsPageState extends ConsumerState<FamilySettingsPage> {
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: Icon(
-                Icons.qr_code,
+                Icons.person_add,
                 color: Theme.of(context).colorScheme.primary,
               ),
               title: const Text('Invite Child'),
-              subtitle:
-                  const Text('Generate QR code to add a child to your family'),
+              subtitle: const Text(
+                  'Help your child create an account to join your family'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const ChildInviteQrPage(),
-                  ),
-                );
+                _showChildInviteDialog(context);
               },
             ),
             if (!isCreator) const Divider(),
@@ -687,5 +683,41 @@ class _FamilySettingsPageState extends ConsumerState<FamilySettingsPage> {
         Navigator.of(context).pop(); // Go back to previous screen
       }
     }
+  }
+
+  void _showChildInviteDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Invite Your Child'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'To add your child to the family:',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            SizedBox(height: 16),
+            Text('1. Help your child create an account'),
+            SizedBox(height: 8),
+            Text('2. Have them sign up with their email and password'),
+            SizedBox(height: 8),
+            Text('3. They can join your family through the app'),
+            SizedBox(height: 16),
+            Text(
+              'No QR codes needed - just regular email signup!',
+              style: TextStyle(fontStyle: FontStyle.italic),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Got it'),
+          ),
+        ],
+      ),
+    );
   }
 }

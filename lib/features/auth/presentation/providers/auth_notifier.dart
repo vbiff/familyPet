@@ -60,8 +60,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String displayName,
     required UserRole role,
   }) async {
+    print('🔄 AuthNotifier: Starting signup...');
     state = state.copyWith(status: AuthStatus.loading);
 
+    print('🔄 AuthNotifier: Calling repository signup...');
     final result = await _authRepository.signUp(
       email: email,
       password: password,
@@ -69,16 +71,26 @@ class AuthNotifier extends StateNotifier<AuthState> {
       role: role,
     );
 
+    print('🔄 AuthNotifier: Repository result received');
     state = result.fold(
-      (failure) => state.copyWith(
-        status: AuthStatus.error,
-        failure: failure,
-      ),
-      (user) => state.copyWith(
-        status: AuthStatus.authenticated,
-        user: user,
-      ),
+      (failure) {
+        print('❌ AuthNotifier: Signup failed - ${failure.message}');
+        return state.copyWith(
+          status: AuthStatus.error,
+          failure: failure,
+        );
+      },
+      (user) {
+        print(
+            '✅ AuthNotifier: Signup successful - ${user.displayName} (${user.role})');
+        return state.copyWith(
+          status: AuthStatus.authenticated,
+          user: user,
+        );
+      },
     );
+
+    print('🔄 AuthNotifier: Final state - ${state.status}');
   }
 
   Future<void> signOut() async {

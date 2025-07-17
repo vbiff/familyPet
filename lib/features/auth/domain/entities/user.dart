@@ -8,8 +8,7 @@ enum UserRole {
 }
 
 enum AuthMethod {
-  email,
-  pin;
+  email;
 
   String get name => toString().split('.').last;
 }
@@ -24,8 +23,6 @@ class User extends Equatable {
   final DateTime lastLoginAt;
   final String? avatarUrl;
   final String? familyId;
-  final bool isPinSetup;
-  final DateTime? lastPinUpdate;
   final Map<String, dynamic>? metadata;
 
   const User({
@@ -38,8 +35,6 @@ class User extends Equatable {
     required this.lastLoginAt,
     this.avatarUrl,
     this.familyId,
-    this.isPinSetup = false,
-    this.lastPinUpdate,
     this.metadata,
   });
 
@@ -53,8 +48,6 @@ class User extends Equatable {
     DateTime? lastLoginAt,
     String? avatarUrl,
     String? familyId,
-    bool? isPinSetup,
-    DateTime? lastPinUpdate,
     Map<String, dynamic>? metadata,
   }) {
     return User(
@@ -67,8 +60,6 @@ class User extends Equatable {
       lastLoginAt: lastLoginAt ?? this.lastLoginAt,
       avatarUrl: avatarUrl ?? this.avatarUrl,
       familyId: familyId ?? this.familyId,
-      isPinSetup: isPinSetup ?? this.isPinSetup,
-      lastPinUpdate: lastPinUpdate ?? this.lastPinUpdate,
       metadata: metadata ?? this.metadata,
     );
   }
@@ -84,8 +75,6 @@ class User extends Equatable {
         lastLoginAt,
         avatarUrl,
         familyId,
-        isPinSetup,
-        lastPinUpdate,
         metadata,
       ];
 }

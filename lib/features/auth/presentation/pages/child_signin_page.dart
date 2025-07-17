@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_state.dart';
@@ -15,99 +14,64 @@ class ChildSigninPage extends ConsumerStatefulWidget {
 }
 
 class _ChildSigninPageState extends ConsumerState<ChildSigninPage> {
-  final TextEditingController _displayNameController = TextEditingController();
-  final TextEditingController _pinController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-  bool _isLoading = false;
-  bool _obscurePin = true;
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
-    _displayNameController.dispose();
-    _pinController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
+  }
+
+  String? _validateEmail(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Please enter your email';
+    }
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(value)) {
+      return 'Please enter a valid email address';
+    }
+    return null;
+  }
+
+  String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Please enter your password';
+    }
+    return null;
   }
 
   Future<void> _handleSignIn() async {
     if (!_formKey.currentState!.validate()) return;
 
-    print('🔐 Child signin: Starting login process');
-    print('🔐 Display name: ${_displayNameController.text.trim()}');
-    print('🔐 PIN length: ${_pinController.text.length}');
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      print('🔐 Calling authRepository.signInWithPin...');
-      final result = await ref.read(authRepositoryProvider).signInWithPin(
-            displayName: _displayNameController.text.trim(),
-            pin: _pinController.text,
-          );
-
-      print('🔐 Repository result received: ${result.runtimeType}');
-
-      result.fold(
-        (failure) {
-          print('❌ Login failed: ${failure.message}');
-          _showErrorSnackBar(failure.message);
-        },
-        (user) {
-          print('✅ Login successful: ${user.displayName} (${user.role})');
-          // Manually update auth state since PIN login doesn't go through normal auth flow
-          print('🔐 Manually updating auth state...');
-          ref.read(authNotifierProvider.notifier).state =
-              ref.read(authNotifierProvider).copyWith(
-                    status: AuthStatus.authenticated,
-                    user: user,
-                  );
-          print('🔐 Auth state updated manually');
-        },
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
+    await ref.read(authNotifierProvider.notifier).signIn(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        );
   }
 
-  void _togglePinVisibility() {
+  void _togglePasswordVisibility() {
     setState(() {
-      _obscurePin = !_obscurePin;
+      _obscurePassword = !_obscurePassword;
     });
-  }
-
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authNotifierProvider);
+    final isLoading = authState.status == AuthStatus.loading;
+
     // Listen for successful authentication
     ref.listen(authNotifierProvider, (previous, next) {
-      print('🔐 Auth state changed:');
-      print('  Previous: ${previous?.status}');
-      print('  Next: ${next.status}');
-      print('  User: ${next.user?.displayName}');
-
       if (next.status == AuthStatus.authenticated) {
-        print('✅ Auth successful, navigating to HomePage...');
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const HomePage()),
           (route) => false,
         );
-      } else {
-        print('⏳ Auth status: ${next.status}');
       }
     });
 
@@ -124,49 +88,56 @@ class _ChildSigninPageState extends ConsumerState<ChildSigninPage> {
                 const SizedBox(height: 40),
 
                 // Header
-                _buildHeader(),
+                Text(
+                  'Welcome Back!',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+
+                const SizedBox(height: 8),
+
+                Text(
+                  'Sign in to continue your adventure',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.7),
+                      ),
+                  textAlign: TextAlign.center,
+                ),
 
                 const SizedBox(height: 48),
 
-                // Name field
+                // Email Field
                 AuthTextField(
-                  label: 'Your Name',
-                  hint: 'Enter your name',
-                  controller: _displayNameController,
-                  keyboardType: TextInputType.name,
+                  label: 'Email Address',
+                  hint: 'Enter your email',
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  validator: _validateEmail,
                   textInputAction: TextInputAction.next,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your name';
-                    }
-                    return null;
-                  },
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
-                // PIN field
+                // Password Field
                 AuthTextField(
-                  label: 'PIN',
-                  hint: 'Enter your PIN',
-                  controller: _pinController,
-                  obscureText: _obscurePin,
-                  keyboardType: TextInputType.number,
+                  label: 'Password',
+                  hint: 'Enter your password',
+                  controller: _passwordController,
+                  obscureText: _obscurePassword,
+                  validator: _validatePassword,
                   textInputAction: TextInputAction.done,
                   onEditingComplete: _handleSignIn,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your PIN';
-                    }
-                    if (value.length < 4) {
-                      return 'PIN must be at least 4 digits';
-                    }
-                    return null;
-                  },
                   suffixIcon: IconButton(
-                    onPressed: _togglePinVisibility,
+                    onPressed: _togglePasswordVisibility,
                     icon: Icon(
-                      _obscurePin ? Icons.visibility : Icons.visibility_off,
+                      _obscurePassword
+                          ? Icons.visibility
+                          : Icons.visibility_off,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
@@ -178,8 +149,26 @@ class _ChildSigninPageState extends ConsumerState<ChildSigninPage> {
                 AuthButton(
                   label: 'Sign In',
                   onPressed: _handleSignIn,
-                  isLoading: _isLoading,
+                  isLoading: isLoading,
                 ),
+
+                if (authState.failure != null) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      authState.failure!.message,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onErrorContainer,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
 
                 const SizedBox(height: 24),
 
@@ -198,61 +187,15 @@ class _ChildSigninPageState extends ConsumerState<ChildSigninPage> {
     );
   }
 
-  Widget _buildHeader() {
-    return Column(
-      children: [
-        // App icon/logo
-        Container(
-          width: 80,
-          height: 80,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primaryContainer,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Icon(
-            Icons.pets,
-            size: 40,
-            color: Theme.of(context).colorScheme.onPrimaryContainer,
-          ),
-        ),
-
-        const SizedBox(height: 24),
-
-        // Welcome message
-        Text(
-          'Welcome back!',
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-          textAlign: TextAlign.center,
-        ),
-
-        const SizedBox(height: 8),
-
-        Text(
-          'Sign in with your name and PIN',
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withValues(alpha: 0.7),
-              ),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    );
-  }
-
   Widget _buildHelpSection() {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        color: Theme.of(context)
+            .colorScheme
+            .primaryContainer
+            .withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -266,29 +209,23 @@ class _ChildSigninPageState extends ConsumerState<ChildSigninPage> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Need help?',
+                'Need Help?',
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
-                  color: Theme.of(context).colorScheme.onSurface,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          _buildHelpItem(
-            Icons.person,
-            'Enter the same name you used when you first joined',
-          ),
+          _buildHelpItem(Icons.family_restroom,
+              'Ask your parent if you forgot your password'),
           const SizedBox(height: 8),
           _buildHelpItem(
-            Icons.lock,
-            'Use the PIN you created when you signed up',
-          ),
+              Icons.email, 'Make sure you\'re using the right email address'),
           const SizedBox(height: 8),
-          _buildHelpItem(
-            Icons.family_restroom,
-            'Ask your parents if you forgot your name or PIN',
-          ),
+          _buildHelpItem(Icons.create,
+              'Don\'t have an account? Ask your parent to help you sign up'),
         ],
       ),
     );
@@ -329,108 +266,12 @@ class _ChildSigninPageState extends ConsumerState<ChildSigninPage> {
             Navigator.of(context).pop();
           },
           icon: const Icon(Icons.arrow_back),
-          label: const Text('Back to Parent Login'),
+          label: const Text('Back to Login Options'),
           style: TextButton.styleFrom(
             foregroundColor: Theme.of(context).colorScheme.primary,
           ),
         ),
       ],
-    );
-  }
-}
-
-/// Simple PIN input widget with visual feedback
-class PinInputWidget extends StatefulWidget {
-  final Function(String) onChanged;
-  final Function(String) onCompleted;
-  final int length;
-  final bool obscureText;
-
-  const PinInputWidget({
-    super.key,
-    required this.onChanged,
-    required this.onCompleted,
-    this.length = 6,
-    this.obscureText = true,
-  });
-
-  @override
-  State<PinInputWidget> createState() => _PinInputWidgetState();
-}
-
-class _PinInputWidgetState extends State<PinInputWidget> {
-  final List<TextEditingController> _controllers = [];
-  final List<FocusNode> _focusNodes = [];
-
-  @override
-  void initState() {
-    super.initState();
-    for (int i = 0; i < widget.length; i++) {
-      _controllers.add(TextEditingController());
-      _focusNodes.add(FocusNode());
-    }
-  }
-
-  @override
-  void dispose() {
-    for (final controller in _controllers) {
-      controller.dispose();
-    }
-    for (final focusNode in _focusNodes) {
-      focusNode.dispose();
-    }
-    super.dispose();
-  }
-
-  void _onChanged(String value, int index) {
-    widget.onChanged(_getCurrentPin());
-
-    if (value.isNotEmpty && index < widget.length - 1) {
-      _focusNodes[index + 1].requestFocus();
-    }
-
-    if (_getCurrentPin().length == widget.length) {
-      widget.onCompleted(_getCurrentPin());
-    }
-  }
-
-  String _getCurrentPin() {
-    return _controllers.map((controller) => controller.text).join();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: List.generate(widget.length, (index) {
-        return SizedBox(
-          width: 45,
-          height: 55,
-          child: TextFormField(
-            controller: _controllers[index],
-            focusNode: _focusNodes[index],
-            textAlign: TextAlign.center,
-            keyboardType: TextInputType.number,
-            maxLength: 1,
-            obscureText: widget.obscureText,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: InputDecoration(
-              counterText: '',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              filled: true,
-              fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-            ),
-            onChanged: (value) => _onChanged(value, index),
-            onTap: () {
-              _controllers[index].selection = TextSelection.fromPosition(
-                TextPosition(offset: _controllers[index].text.length),
-              );
-            },
-          ),
-        );
-      }),
     );
   }
 }
