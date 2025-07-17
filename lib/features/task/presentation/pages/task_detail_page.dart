@@ -19,7 +19,7 @@ import 'package:jhonny/shared/widgets/delightful_button.dart';
 import 'package:jhonny/shared/widgets/enhanced_card.dart';
 import 'package:jhonny/core/theme/app_theme.dart';
 
-class TaskDetailPage extends ConsumerWidget {
+class TaskDetailPage extends ConsumerStatefulWidget {
   final Task task;
   static final _logger = Logger();
 
@@ -28,11 +28,16 @@ class TaskDetailPage extends ConsumerWidget {
     required this.task,
   });
 
+  @override
+  ConsumerState<TaskDetailPage> createState() => _TaskDetailPageState();
+}
+
+class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
   Task _getCurrentTask(WidgetRef ref) {
     final taskState = ref.watch(taskNotifierProvider);
     return taskState.tasks.firstWhere(
-      (t) => t.id == task.id,
-      orElse: () => task,
+      (t) => t.id == widget.task.id,
+      orElse: () => widget.task,
     );
   }
 
@@ -47,7 +52,7 @@ class TaskDetailPage extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final isUpdating = ref.watch(taskUpdatingProvider);
     final currentTask = _getCurrentTask(ref);
     final currentUser = ref.watch(currentUserProvider);
@@ -459,7 +464,7 @@ class TaskDetailPage extends ConsumerWidget {
           .from('task-images')
           .createSignedUrl(imageUrl, 3600);
     } catch (e) {
-      _logger.e('Failed to get authenticated image URL: $e');
+      TaskDetailPage._logger.e('Failed to get authenticated image URL: $e');
       // Return the original URL as fallback
       return imageUrl;
     }
@@ -1085,203 +1090,201 @@ class TaskDetailPage extends ConsumerWidget {
 
   Future<void> _markAsCompleted(BuildContext context, WidgetRef ref,
       Task currentTask, List<String> imageUrls) async {
-    // Use Future.microtask to ensure this happens outside the current build cycle
-    await Future.microtask(() async {
-      // Check if context is still mounted before using ref
+    try {
+      // Check context before any operations
       if (!context.mounted) return;
 
-      try {
-        // Update task with completion status and any uploaded images
-        final updatedImageUrls = [...currentTask.imageUrls, ...imageUrls];
+      // Update task with completion status and any uploaded images
+      final updatedImageUrls = [...currentTask.imageUrls, ...imageUrls];
 
-        // Check context before first async operation
+      await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
+            taskId: currentTask.id,
+            status: TaskStatus.completed,
+          );
+
+      // If there are new images, update the task with them
+      if (imageUrls.isNotEmpty) {
+        // Check context before second async operation
         if (!context.mounted) return;
+
+        await ref.read(taskNotifierProvider.notifier).updateTask(
+              UpdateTaskParams(
+                taskId: currentTask.id,
+                imageUrls: updatedImageUrls,
+              ),
+            );
+      }
+
+      // Show confetti when task is completed successfully
+      if (context.mounted) {
+        ConfettiOverlay.show(
+          context,
+          duration: const Duration(seconds: 2),
+        );
+      }
+    } catch (e) {
+      TaskDetailPage._logger.e('Mark as completed error: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to complete task: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _verifyTask(
+      BuildContext context, WidgetRef ref, Task currentTask) async {
+    try {
+      // Check context before any operations
+      if (!context.mounted) return;
+
+      final currentUser = ref.read(currentUserProvider);
+
+      // Validate user is a parent
+      if (currentUser?.role != UserRole.parent) {
+        TaskDetailPage._logger.w('Non-parent user attempted to verify task');
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Only parents can verify tasks'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      TaskDetailPage._logger
+          .d('Current task status: ${currentTask.status.name}');
+      TaskDetailPage._logger
+          .d('Is verified: ${currentTask.isVerifiedByParent}');
+      TaskDetailPage._logger
+          .d('Needs verification: ${currentTask.needsVerification}');
+      TaskDetailPage._logger.d('VerifiedById: ${currentTask.verifiedById}');
+
+      // Only verify if task is completed but not verified yet
+      if (currentTask.status == TaskStatus.completed &&
+          !currentTask.isVerifiedByParent) {
+        TaskDetailPage._logger.i('Attempting to verify task...');
+
+        final verifiedById = currentUser!.id;
+        TaskDetailPage._logger.d('Current user ID: $verifiedById');
+
+        // Check context is mounted before async operation
+        if (!context.mounted) return;
+
         await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
               taskId: currentTask.id,
               status: TaskStatus.completed,
+              verifiedById: verifiedById,
             );
 
-        // If there are new images, update the task with them
-        if (imageUrls.isNotEmpty && context.mounted) {
-          await ref.read(taskNotifierProvider.notifier).updateTask(
-                UpdateTaskParams(
-                  taskId: currentTask.id,
-                  imageUrls: updatedImageUrls,
-                ),
-              );
-        }
-
-        // Show confetti when task is completed successfully
+        // Show confetti when task is verified by parent
         if (context.mounted) {
           ConfettiOverlay.show(
             context,
             duration: const Duration(seconds: 2),
           );
         }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to complete task: $e'),
-              backgroundColor: Colors.red,
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
+
+        TaskDetailPage._logger.i('Verification request sent');
+      } else {
+        TaskDetailPage._logger.w('Cannot verify task');
+        TaskDetailPage._logger.w('Status: ${currentTask.status.name}');
+        TaskDetailPage._logger
+            .w('Already verified: ${currentTask.isVerifiedByParent}');
       }
-    });
-  }
-
-  Future<void> _verifyTask(
-      BuildContext context, WidgetRef ref, Task currentTask) async {
-    // Use Future.microtask to ensure this happens outside the current build cycle
-    await Future.microtask(() async {
-      if (!context.mounted) return;
-
-      try {
-        // Check if context is still mounted before reading ref
-        if (!context.mounted) return;
-        final currentUser = ref.read(currentUserProvider);
-
-        // Validate user is a parent
-        if (currentUser?.role != UserRole.parent) {
-          _logger.w('Non-parent user attempted to verify task');
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Only parents can verify tasks'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-          return;
-        }
-
-        _logger.d('Current task status: ${currentTask.status.name}');
-        _logger.d('Is verified: ${currentTask.isVerifiedByParent}');
-        _logger.d('Needs verification: ${currentTask.needsVerification}');
-        _logger.d('VerifiedById: ${currentTask.verifiedById}');
-
-        // Only verify if task is completed but not verified yet
-        if (currentTask.status == TaskStatus.completed &&
-            !currentTask.isVerifiedByParent) {
-          _logger.i('Attempting to verify task...');
-
-          final verifiedById = currentUser!.id;
-          _logger.d('Current user ID: $verifiedById');
-
-          // Check context is mounted before async operation
-          if (context.mounted) {
-            await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
-                  taskId: currentTask.id,
-                  status: TaskStatus.completed,
-                  verifiedById: verifiedById,
-                );
-
-            // Show confetti when task is verified by parent
-            ConfettiOverlay.show(
-              context,
-              duration: const Duration(seconds: 2),
-            );
-          }
-
-          _logger.i('Verification request sent');
-        } else {
-          _logger.w('Cannot verify task');
-          _logger.w('Status: ${currentTask.status.name}');
-          _logger.w('Already verified: ${currentTask.isVerifiedByParent}');
-        }
-      } catch (e) {
-        _logger.e('Verification error: $e');
-        // Show error feedback
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to verify task: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
+    } catch (e) {
+      TaskDetailPage._logger.e('Verification error: $e');
+      // Show error feedback only if context is still mounted
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to verify task: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
-    });
+    }
   }
 
   Future<void> _unverifyTask(
       BuildContext context, WidgetRef ref, Task currentTask) async {
-    // Use Future.microtask to ensure this happens outside the current build cycle
-    await Future.microtask(() async {
+    try {
+      // Check context before any async operations
       if (!context.mounted) return;
 
-      try {
-        // Check if context is still mounted before reading ref
-        if (!context.mounted) return;
-        final currentUser = ref.read(currentUserProvider);
+      final currentUser = ref.read(currentUserProvider);
 
-        // Validate user is a parent
-        if (currentUser?.role != UserRole.parent) {
-          _logger.w('Non-parent user attempted to unverify task');
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Only parents can remove verification'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-          return;
-        }
-
-        _logger.d('Attempting to unverify task...');
-        _logger.d('Current verified by: ${currentTask.verifiedById}');
-
-        // Only unverify if task is currently verified
-        if (currentTask.isVerifiedByParent && context.mounted) {
-          await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
-                taskId: currentTask.id,
-                status: TaskStatus.completed,
-                clearVerification: true, // Clear verification
-              );
-        }
-      } catch (e) {
-        // Show error feedback
+      // Validate user is a parent
+      if (currentUser?.role != UserRole.parent) {
+        TaskDetailPage._logger.w('Non-parent user attempted to unverify task');
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to unverify task: $e'),
+            const SnackBar(
+              content: Text('Only parents can remove verification'),
               backgroundColor: Colors.red,
             ),
           );
         }
+        return;
       }
-    });
-  }
 
-  Future<void> _rejectTask(
-      BuildContext context, WidgetRef ref, Task currentTask) async {
-    // Use Future.microtask to ensure this happens outside the current build cycle
-    await Future.microtask(() async {
-      if (!context.mounted) return;
+      TaskDetailPage._logger.d('Attempting to unverify task...');
+      TaskDetailPage._logger
+          .d('Current verified by: ${currentTask.verifiedById}');
 
-      try {
-        // Check if context is still mounted before using ref
+      // Only unverify if task is currently verified
+      if (currentTask.isVerifiedByParent) {
+        // Check context again before async operation
         if (!context.mounted) return;
 
         await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
               taskId: currentTask.id,
-              status: TaskStatus.pending,
+              status: TaskStatus.completed,
+              clearVerification: true, // Clear verification
             );
-      } catch (e) {
-        // Show error feedback
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to reject task: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
       }
-    });
+    } catch (e) {
+      TaskDetailPage._logger.e('Unverify task error: $e');
+      // Show error feedback only if context is still mounted
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to unverify task: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _rejectTask(
+      BuildContext context, WidgetRef ref, Task currentTask) async {
+    try {
+      // Check context before any operations
+      if (!context.mounted) return;
+
+      await ref.read(taskNotifierProvider.notifier).updateTaskStatus(
+            taskId: currentTask.id,
+            status: TaskStatus.pending,
+          );
+    } catch (e) {
+      TaskDetailPage._logger.e('Reject task error: $e');
+      // Show error feedback only if context is still mounted
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to reject task: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _handleMenuAction(BuildContext context, WidgetRef ref, String action) {
@@ -1301,7 +1304,8 @@ class TaskDetailPage extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Task'),
-        content: Text('Are you sure you want to delete "${task.title}"?'),
+        content:
+            Text('Are you sure you want to delete "${widget.task.title}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -1322,7 +1326,9 @@ class TaskDetailPage extends ConsumerWidget {
         if (!context.mounted) return;
 
         try {
-          await ref.read(taskNotifierProvider.notifier).deleteTask(task.id);
+          await ref
+              .read(taskNotifierProvider.notifier)
+              .deleteTask(widget.task.id);
           if (context.mounted) {
             Navigator.of(context).pop();
             ScaffoldMessenger.of(context).showSnackBar(
