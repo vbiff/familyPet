@@ -122,44 +122,19 @@ class _SimpleQrScannerWidgetState extends State<SimpleQrScannerWidget> {
     try {
       print('Starting scanner initialization...');
 
-      // First check permissions
-      bool hasPermission = await QrScannerService.checkCameraPermission();
-      print('Permission check result: $hasPermission');
+      // Always try to initialize camera directly since permission might work even if check fails
+      _controller = MobileScannerController(
+        formats: [BarcodeFormat.qrCode],
+        facing: CameraFacing.back,
+      );
 
-      // If permission check fails, try directly initializing camera as fallback
-      if (!hasPermission) {
-        print(
-            'Permission check failed, trying direct camera initialization...');
-        try {
-          final testController = MobileScannerController(
-            formats: [BarcodeFormat.qrCode],
-            facing: CameraFacing.back,
-          );
-
-          // Try to start the camera
-          await testController.start();
-
-          // If we get here, camera works despite permission check failure
-          print('Camera works despite permission check failure');
-          _controller = testController;
-          hasPermission = true;
-        } catch (e) {
-          print('Direct camera initialization also failed: $e');
-        }
-      } else {
-        // Permission granted, initialize normally
-        _controller = MobileScannerController(
-          formats: [BarcodeFormat.qrCode],
-          facing: CameraFacing.back,
-        );
-      }
-
+      // Assume permission granted if controller creation succeeds
       setState(() {
-        _hasPermission = hasPermission;
+        _hasPermission = true;
         _isInitializing = false;
       });
 
-      print('Scanner initialization complete. HasPermission: $hasPermission');
+      print('Scanner initialization complete. Camera ready.');
     } catch (e) {
       print('Error initializing scanner: $e');
       setState(() {

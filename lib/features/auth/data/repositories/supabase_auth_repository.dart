@@ -29,13 +29,14 @@ class SupabaseAuthRepository implements AuthRepository {
         },
       );
 
-      if (response.user == null) {
+      final user = response.user;
+      if (user == null) {
         return left(const AuthenticationFailure(
           message: 'Failed to create user account',
         ));
       }
 
-      final userId = response.user!.id;
+      final userId = user.id;
       final now = DateTime.now();
 
       // Create profile with comprehensive data
@@ -86,13 +87,14 @@ class SupabaseAuthRepository implements AuthRepository {
         password: password,
       );
 
-      if (response.user == null) {
+      final user = response.user;
+      if (user == null) {
         return left(const AuthenticationFailure(
           message: 'Invalid email or password',
         ));
       }
 
-      final userId = response.user!.id;
+      final userId = user.id;
       final now = DateTime.now();
 
       // Try to get existing profile
@@ -106,11 +108,9 @@ class SupabaseAuthRepository implements AuthRepository {
 
       if (profileResponse == null) {
         // Profile doesn't exist (e.g., after app reinstall), create it
-        final displayName =
-            response.user!.userMetadata?['display_name'] as String? ??
-                email.split('@').first;
-        final role =
-            response.user!.userMetadata?['role'] as String? ?? 'parent';
+        final displayName = user.userMetadata?['display_name'] as String? ??
+            email.split('@').first;
+        final role = user.userMetadata?['role'] as String? ?? 'parent';
 
         profile = {
           'id': userId,
@@ -343,58 +343,63 @@ class SupabaseAuthRepository implements AuthRepository {
     required String pin,
   }) async {
     try {
-      // Find user by display name and role (child with PIN setup)
-      final profileResponse = await _client
-          .from('profiles')
-          .select()
-          .eq('display_name', displayName)
-          .eq('role', 'child')
-          .eq('auth_method', 'pin')
-          .eq('is_pin_setup', true)
-          .maybeSingle();
+      print('🔐 Starting PIN login for: $displayName');
 
-      if (profileResponse == null) {
+      // Use the SECURITY DEFINER function to bypass RLS policies
+      final response =
+          await _client.rpc('authenticate_child_with_pin', params: {
+        'display_name_param': displayName,
+        'pin_param': pin,
+      });
+
+      print('🔐 Database response: $response');
+      print('🔐 Response type: ${response.runtimeType}');
+
+      if (response == null || (response as List).isEmpty) {
+        print('❌ No user found or empty response');
         return left(const AuthenticationFailure(
           message: 'User not found or PIN not set up',
         ));
       }
 
-      final userId = profileResponse['id'] as String;
+      final userData = (response).first;
+      print('🔐 User data: $userData');
 
-      // Verify PIN using database function
-      final pinVerifyResponse = await _client.rpc('verify_pin', params: {
-        'user_id': userId,
-        'pin_text': pin,
-      });
+      final pinValid = userData['pin_valid'] as bool;
+      print('🔐 PIN valid: $pinValid');
 
-      if (pinVerifyResponse != true) {
+      if (!pinValid) {
+        print('❌ PIN validation failed');
         return left(const AuthenticationFailure(
           message: 'Invalid PIN',
         ));
       }
 
-      // Update last login
-      await _client.from('profiles').update(
-          {'last_login_at': DateTime.now().toIso8601String()}).eq('id', userId);
+      print('✅ PIN login successful, creating User object');
 
       // Create User entity
-      return right(User(
-        id: userId,
-        email: profileResponse['email'] ?? '',
-        displayName: profileResponse['display_name'],
-        avatarUrl: profileResponse['avatar_url'],
+      final user = User(
+        id: userData['user_id'] as String,
+        email: userData['email'] ?? '',
+        displayName: userData['display_name'],
+        avatarUrl: userData['avatar_url'],
         role: UserRole.child,
         authMethod: AuthMethod.pin,
-        familyId: profileResponse['family_id'],
-        createdAt: DateTime.parse(profileResponse['created_at']),
+        familyId: userData['family_id'],
+        createdAt: DateTime.parse(userData['created_at']),
         lastLoginAt: DateTime.now(),
         isPinSetup: true,
-        lastPinUpdate: profileResponse['last_pin_update'] != null
-            ? DateTime.parse(profileResponse['last_pin_update'])
+        lastPinUpdate: userData['last_pin_update'] != null
+            ? DateTime.parse(userData['last_pin_update'])
             : null,
-        metadata: profileResponse['metadata'],
-      ));
+        metadata: userData['metadata'],
+      );
+
+      print('✅ User object created: ${user.displayName} (${user.id})');
+      return right(user);
     } catch (e) {
+      print('❌ PIN login error: ${e.toString()}');
+      print('❌ Error type: ${e.runtimeType}');
       return left(UnexpectedFailure(
         message: 'Failed to sign in with PIN: ${e.toString()}',
       ));
@@ -445,13 +450,14 @@ class SupabaseAuthRepository implements AuthRepository {
         },
       );
 
-      if (authResponse.user == null) {
+      final user = authResponse.user;
+      if (user == null) {
         return left(const AuthenticationFailure(
           message: 'Failed to create child account',
         ));
       }
 
-      final userId = authResponse.user!.id;
+      final userId = user.id;
       final now = DateTime.now();
 
       // Setup PIN using database function
@@ -636,18 +642,31 @@ class SupabaseAuthRepository implements AuthRepository {
     required String token,
   }) async {
     try {
+      print('🔍 Validating token: $token');
+
       final response = await _client.rpc('validate_child_invitation_token',
           params: {'token_param': token});
 
+      print('🔍 Database response: $response');
+      print('🔍 Response type: ${response.runtimeType}');
+
+      if (response is List) {
+        print('🔍 Response is List with length: ${response.length}');
+      }
+
       if (response == null || (response as List).isEmpty) {
+        print('❌ Token validation failed: empty or null response');
         return left(const ValidationFailure(
           message: 'Invalid, expired, or already used invitation token',
         ));
       }
 
       final result = (response).first;
+      print('✅ Token validation successful: $result');
       return right(TokenValidationResultModel.fromJson(result).toEntity());
     } catch (e) {
+      print('❌ Token validation error: ${e.toString()}');
+      print('❌ Error type: ${e.runtimeType}');
       return left(UnexpectedFailure(
         message: 'Failed to validate invitation token: ${e.toString()}',
       ));

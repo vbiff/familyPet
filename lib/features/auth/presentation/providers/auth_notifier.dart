@@ -108,12 +108,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
     state = result.fold(
       (failure) => state.copyWith(failure: failure),
-      (_) => state.copyWith(
-        user: state.user!.copyWith(
-          displayName: displayName ?? state.user!.displayName,
-          avatarUrl: avatarUrl ?? state.user!.avatarUrl,
-        ),
-      ),
+      (_) {
+        final currentUser = state.user;
+        if (currentUser == null) return state;
+
+        return state.copyWith(
+          user: currentUser.copyWith(
+            displayName: displayName ?? currentUser.displayName,
+            avatarUrl: avatarUrl ?? currentUser.avatarUrl,
+          ),
+        );
+      },
     );
   }
 

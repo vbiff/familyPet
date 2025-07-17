@@ -14,74 +14,84 @@ class AuthSelectionPage extends ConsumerWidget {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 40),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(24.0),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight - 48, // Account for padding
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 20),
 
-              // Logo/Icon
-              Icon(
-                Icons.family_restroom,
-                size: 80,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-
-              const SizedBox(height: 32),
-
-              // Title
-              Text(
-                'Welcome to Jhonny',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onSurface,
+                    // Logo/Icon
+                    Icon(
+                      Icons.family_restroom,
+                      size: 80,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
-                textAlign: TextAlign.center,
-              ),
 
-              const SizedBox(height: 16),
+                    const SizedBox(height: 32),
 
-              // Subtitle
-              Text(
-                'Choose how you\'d like to join',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.7),
+                    // Title
+                    Text(
+                      'Welcome to Jhonny',
+                      style:
+                          Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                      textAlign: TextAlign.center,
                     ),
-                textAlign: TextAlign.center,
+
+                    const SizedBox(height: 16),
+
+                    // Subtitle
+                    Text(
+                      'Choose how you\'d like to join',
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.7),
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    // Parent Card
+                    _buildOptionCard(
+                      context: context,
+                      title: 'I\'m a Parent',
+                      subtitle: 'Create and manage family tasks',
+                      icon: Icons.person,
+                      color: Theme.of(context).colorScheme.primary,
+                      onTap: () => _navigateToParentAuth(context),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Child Card
+                    _buildOptionCard(
+                      context: context,
+                      title: 'I\'m a Child',
+                      subtitle: 'Join with a QR code or PIN',
+                      icon: Icons.child_care,
+                      color: Theme.of(context).colorScheme.secondary,
+                      onTap: () => _showChildOptions(context),
+                    ),
+
+                    const SizedBox(height: 20),
+                  ],
+                ),
               ),
-
-              const SizedBox(height: 48),
-
-              // Parent Card
-              _buildOptionCard(
-                context: context,
-                title: 'I\'m a Parent',
-                subtitle: 'Create and manage family tasks',
-                icon: Icons.person,
-                color: Theme.of(context).colorScheme.primary,
-                onTap: () => _navigateToParentAuth(context),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Child Card
-              _buildOptionCard(
-                context: context,
-                title: 'I\'m a Child',
-                subtitle: 'Join with a QR code or PIN',
-                icon: Icons.child_care,
-                color: Theme.of(context).colorScheme.secondary,
-                onTap: () => _showChildOptions(context),
-              ),
-
-              const SizedBox(height: 40),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );

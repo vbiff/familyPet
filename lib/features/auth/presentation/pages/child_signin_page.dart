@@ -32,22 +32,38 @@ class _ChildSigninPageState extends ConsumerState<ChildSigninPage> {
   Future<void> _handleSignIn() async {
     if (!_formKey.currentState!.validate()) return;
 
+    print('🔐 Child signin: Starting login process');
+    print('🔐 Display name: ${_displayNameController.text.trim()}');
+    print('🔐 PIN length: ${_pinController.text.length}');
+
     setState(() {
       _isLoading = true;
     });
 
     try {
+      print('🔐 Calling authRepository.signInWithPin...');
       final result = await ref.read(authRepositoryProvider).signInWithPin(
             displayName: _displayNameController.text.trim(),
             pin: _pinController.text,
           );
 
+      print('🔐 Repository result received: ${result.runtimeType}');
+
       result.fold(
         (failure) {
+          print('❌ Login failed: ${failure.message}');
           _showErrorSnackBar(failure.message);
         },
         (user) {
-          // Success handled by auth state listener
+          print('✅ Login successful: ${user.displayName} (${user.role})');
+          // Manually update auth state since PIN login doesn't go through normal auth flow
+          print('🔐 Manually updating auth state...');
+          ref.read(authNotifierProvider.notifier).state =
+              ref.read(authNotifierProvider).copyWith(
+                    status: AuthStatus.authenticated,
+                    user: user,
+                  );
+          print('🔐 Auth state updated manually');
         },
       );
     } finally {
@@ -79,11 +95,19 @@ class _ChildSigninPageState extends ConsumerState<ChildSigninPage> {
   Widget build(BuildContext context) {
     // Listen for successful authentication
     ref.listen(authNotifierProvider, (previous, next) {
+      print('🔐 Auth state changed:');
+      print('  Previous: ${previous?.status}');
+      print('  Next: ${next.status}');
+      print('  User: ${next.user?.displayName}');
+
       if (next.status == AuthStatus.authenticated) {
+        print('✅ Auth successful, navigating to HomePage...');
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const HomePage()),
           (route) => false,
         );
+      } else {
+        print('⏳ Auth status: ${next.status}');
       }
     });
 

@@ -27,21 +27,32 @@ class QrCodeService {
   /// Parses QR code data to extract child invitation information
   static ChildInviteQrData? parseChildInviteQrData(String qrData) {
     try {
+      print('🔍 Raw QR data: $qrData');
+
       // Remove app scheme if present
       String jsonData = qrData;
       if (qrData.startsWith(_appScheme)) {
         jsonData = qrData.substring(_appScheme.length);
       }
 
+      print('🔍 JSON data after scheme removal: $jsonData');
+
       final Map<String, dynamic> data = jsonDecode(jsonData);
+      print('🔍 Parsed QR data: $data');
+      print('🔍 Extracted token: ${data['token']}');
 
       // Validate required fields
       if (data['action'] != _childInviteAction ||
           data['token'] == null ||
           data['familyName'] == null) {
+        print('❌ QR validation failed - missing required fields');
+        print('   Action: ${data['action']} (expected: $_childInviteAction)');
+        print('   Token: ${data['token']}');
+        print('   Family Name: ${data['familyName']}');
         return null;
       }
 
+      print('✅ QR parsed successfully - Token: ${data['token']}');
       return ChildInviteQrData(
         token: data['token'],
         familyName: data['familyName'],
@@ -51,6 +62,7 @@ class QrCodeService {
             : DateTime.now(),
       );
     } catch (e) {
+      print('❌ QR parsing error: $e');
       return null;
     }
   }

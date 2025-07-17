@@ -4,7 +4,7 @@ import 'package:jhonny/core/theme/app_theme.dart';
 
 class AuthButton extends StatefulWidget {
   final String label;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final bool isLoading;
   final bool isOutlined;
 
@@ -51,71 +51,54 @@ class _AuthButtonState extends State<AuthButton>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _scaleAnimation,
-      builder: (context, child) {
-        return Transform.scale(
-          scale: _scaleAnimation.value,
-          child: GestureDetector(
-            onTapDown: widget.onPressed != null
-                ? (_) => _pressController.forward()
-                : null,
-            onTapUp: widget.onPressed != null
-                ? (_) {
-                    _pressController.reverse();
-                    Future.delayed(const Duration(milliseconds: 100), () {
-                      widget.onPressed.call();
-                    });
-                  }
-                : null,
-            onTapCancel: () => _pressController.reverse(),
-            child: Container(
-              width: double.infinity,
-              height: 56,
-              decoration: BoxDecoration(
-                gradient: widget.isOutlined
-                    ? null
-                    : const LinearGradient(
-                        colors: [AppTheme.primary, AppTheme.secondary],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                color: widget.isOutlined ? Colors.transparent : null,
-                borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
-                border: widget.isOutlined
-                    ? Border.all(color: AppTheme.primary, width: 2)
-                    : null,
-                boxShadow: widget.isOutlined ? null : AppTheme.softShadow,
+    return Container(
+      width: double.infinity,
+      height: 56,
+      decoration: BoxDecoration(
+        gradient: widget.isOutlined
+            ? null
+            : const LinearGradient(
+                colors: [AppTheme.primary, AppTheme.secondary],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: widget.isLoading ? null : widget.onPressed,
-                  borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
-                  splashColor: widget.isOutlined
-                      ? AppTheme.primary.withOpacity(0.1)
-                      : Colors.white.withOpacity(0.2),
-                  highlightColor: widget.isOutlined
-                      ? AppTheme.primary.withOpacity(0.05)
-                      : Colors.white.withOpacity(0.1),
-                  child: Center(
-                    child: _buildChild(context),
-                  ),
-                ),
-              ),
-            ).animate(
-              effects: widget.isOutlined
-                  ? []
-                  : [
-                      ShimmerEffect(
-                        duration: const Duration(seconds: 3),
-                        color: Colors.white.withOpacity(0.2),
-                      ),
-                    ],
-            ),
+        color: widget.isOutlined ? Colors.transparent : null,
+        borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
+        border: widget.isOutlined
+            ? Border.all(color: AppTheme.primary, width: 2)
+            : null,
+        boxShadow: widget.isOutlined ? null : AppTheme.softShadow,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: (widget.isLoading || widget.onPressed == null)
+              ? null
+              : () {
+                  print('AuthButton onTap called');
+                  widget.onPressed?.call();
+                },
+          borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
+          splashColor: widget.isOutlined
+              ? AppTheme.primary.withOpacity(0.1)
+              : Colors.white.withOpacity(0.2),
+          highlightColor: widget.isOutlined
+              ? AppTheme.primary.withOpacity(0.05)
+              : Colors.white.withOpacity(0.1),
+          child: Center(
+            child: _buildChild(context),
           ),
-        );
-      },
+        ),
+      ),
+    ).animate(
+      effects: widget.isOutlined
+          ? []
+          : [
+              ShimmerEffect(
+                duration: const Duration(seconds: 3),
+                color: Colors.white.withOpacity(0.2),
+              ),
+            ],
     );
   }
 

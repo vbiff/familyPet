@@ -40,7 +40,7 @@ class _ChildSignupPageState extends ConsumerState<ChildSignupPage> {
       setState(() {
         _qrData = result.childInviteData;
         // Pre-fill display name if suggested
-        if (_qrData!.childDisplayName != null) {
+        if (_qrData?.childDisplayName != null) {
           _displayNameController.text = _qrData!.childDisplayName!;
         }
       });
@@ -75,13 +75,41 @@ class _ChildSignupPageState extends ConsumerState<ChildSignupPage> {
   }
 
   Future<void> _createAccount() async {
-    if (!_formKey.currentState!.validate() || _qrData == null) return;
+    print('Create account button pressed');
+    print('PIN controller text: "${_pinController.text}"');
+    print('PIN controller text length: ${_pinController.text.length}');
+    print('Confirm PIN controller text: "${_confirmPinController.text}"');
+    print(
+        'Confirm PIN controller text length: ${_confirmPinController.text.length}');
+    print('Display name controller text: "${_displayNameController.text}"');
+
+    // Check form validation
+    final isFormValid = _formKey.currentState?.validate() == true;
+    print('Form valid: $isFormValid');
+    print('QR data exists: ${_qrData != null}');
+    print('QR token: ${_qrData?.token}');
+
+    if (!isFormValid) {
+      _showErrorSnackBar('Please fill in all required fields correctly');
+      return;
+    }
+
+    if (_qrData == null) {
+      _showErrorSnackBar(
+          'QR code data is missing. Please scan the QR code again.');
+      return;
+    }
 
     setState(() {
       _isLoading = true;
     });
 
     try {
+      print('Starting account creation...');
+      print('Token: ${_qrData!.token}');
+      print('Display name: ${_displayNameController.text.trim()}');
+      print('PIN length: ${_pinController.text.length}');
+
       final result = await ref.read(authRepositoryProvider).signUpChildWithPin(
             token: _qrData!.token,
             displayName: _displayNameController.text.trim(),
@@ -90,9 +118,11 @@ class _ChildSignupPageState extends ConsumerState<ChildSignupPage> {
 
       result.fold(
         (failure) {
+          print('Account creation failed: ${failure.message}');
           _showErrorSnackBar(failure.message);
         },
         (user) {
+          print('Account creation successful for user: ${user.displayName}');
           // Navigate to home page
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (context) => const HomePage()),
@@ -100,6 +130,9 @@ class _ChildSignupPageState extends ConsumerState<ChildSignupPage> {
           );
         },
       );
+    } catch (e) {
+      print('Unexpected error during account creation: $e');
+      _showErrorSnackBar('An unexpected error occurred: $e');
     } finally {
       if (mounted) {
         setState(() {
@@ -141,14 +174,17 @@ class _ChildSignupPageState extends ConsumerState<ChildSignupPage> {
 
             // Page content
             Expanded(
-              child: PageView(
-                controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  _buildQrScannerPage(),
-                  _buildPersonalInfoPage(),
-                  _buildPinSetupPage(),
-                ],
+              child: Form(
+                key: _formKey,
+                child: PageView(
+                  controller: _pageController,
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: [
+                    _buildQrScannerPage(),
+                    _buildPersonalInfoPage(),
+                    _buildPinSetupPage(),
+                  ],
+                ),
               ),
             ),
           ],
@@ -324,75 +360,72 @@ class _ChildSignupPageState extends ConsumerState<ChildSignupPage> {
   Widget _buildPersonalInfoPage() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Family info (if available)
-            if (_qrData != null) ...[
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Joining Family',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _qrData!.familyName,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Family info (if available)
+          if (_qrData != null) ...[
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(12),
               ),
-              const SizedBox(height: 32),
-            ],
-
-            // Display name field
-            AuthTextField(
-              label: 'Your Name',
-              hint: 'What should we call you?',
-              controller: _displayNameController,
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Please enter your name';
-                }
-                if (value.trim().length < 2) {
-                  return 'Name must be at least 2 characters';
-                }
-                return null;
-              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Joining Family',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _qrData?.familyName ?? 'Unknown Family',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
             ),
-
             const SizedBox(height: 32),
-
-            // Next button
-            AuthButton(
-              label: 'Continue',
-              onPressed: () {
-                if (_formKey.currentState?.validate() ?? false) {
-                  _nextPage();
-                }
-              },
-              isLoading: false,
-            ),
           ],
-        ),
+
+          // Display name field
+          AuthTextField(
+            label: 'Your Name',
+            hint: 'What should we call you?',
+            controller: _displayNameController,
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Please enter your name';
+              }
+              if (value.trim().length < 2) {
+                return 'Name must be at least 2 characters';
+              }
+              return null;
+            },
+          ),
+
+          const SizedBox(height: 32),
+
+          // Next button
+          AuthButton(
+            label: 'Continue',
+            onPressed: () {
+              if (_formKey.currentState?.validate() ?? false) {
+                _nextPage();
+              }
+            },
+            isLoading: false,
+          ),
+        ],
       ),
     );
   }
