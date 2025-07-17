@@ -75,13 +75,7 @@ class VirtualPet extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Your Virtual Pet',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 28),
 
           // Show loading state
           if (petState.isLoading)
@@ -183,54 +177,59 @@ class VirtualPet extends ConsumerWidget {
               elevation: 0,
               color: Theme.of(context).colorScheme.surfaceContainerLow,
               child: Padding(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(28),
                 child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     // Pet avatar
-                    Container(
-                      width: 180,
-                      height: 180,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Theme.of(context).colorScheme.primaryContainer,
-                            Theme.of(context).colorScheme.secondaryContainer,
-                          ],
-                        ),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          // Display actual pet image based on mood
-                          ClipOval(
-                            child: _buildPetImage(
-                              context,
-                              familyState.family?.petImageUrl,
-                              familyState.family?.petStageImages,
-                              petState.petStage,
-                              petState.currentMood,
-                            ),
+                    Center(
+                      child: Container(
+                        width: 180,
+                        height: 180,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Theme.of(context).colorScheme.primaryContainer,
+                              Theme.of(context).colorScheme.secondaryContainer,
+                            ],
                           ),
-                          if (petState.isUpdating)
-                            Positioned(
-                              top: 12,
-                              right: 12,
-                              child: SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // Display actual pet image based on mood
+                            ClipOval(
+                              child: _buildPetImage(
+                                context,
+                                familyState.family?.petImageUrl,
+                                familyState.family?.petStageImages,
+                                petState.petStage,
+                                petState.currentMood,
                               ),
                             ),
-                        ],
+                            if (petState.isUpdating)
+                              Positioned(
+                                top: 12,
+                                right: 12,
+                                child: SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
                     Text(
                       petState.petName,
@@ -238,19 +237,20 @@ class VirtualPet extends ConsumerWidget {
                           Theme.of(context).textTheme.headlineMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
+                      textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
 
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
+                              horizontal: 14, vertical: 8),
                           decoration: BoxDecoration(
                             color:
                                 Theme.of(context).colorScheme.primaryContainer,
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(18),
                           ),
                           child: Text(
                             petStageDisplay,
@@ -259,19 +259,19 @@ class VirtualPet extends ConsumerWidget {
                                   .colorScheme
                                   .onPrimaryContainer,
                               fontWeight: FontWeight.w600,
-                              fontSize: 12,
+                              fontSize: 13,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 12),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
+                              horizontal: 14, vertical: 8),
                           decoration: BoxDecoration(
                             color: Theme.of(context)
                                 .colorScheme
                                 .secondaryContainer,
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(18),
                           ),
                           child: Text(
                             petMoodDisplay,
@@ -280,22 +280,24 @@ class VirtualPet extends ConsumerWidget {
                                   .colorScheme
                                   .onSecondaryContainer,
                               fontWeight: FontWeight.w600,
-                              fontSize: 12,
+                              fontSize: 13,
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 14),
 
                     Text(
                       'Level ${petState.petLevel} • ${petState.petExperience} XP',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color:
                                 Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w500,
                           ),
+                      textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 8),
 
                     // Show current mood and hunger status
                     if (petState.currentMood.isHungryState)
@@ -325,31 +327,38 @@ class VirtualPet extends ConsumerWidget {
                         ),
                       ),
 
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 8),
 
                     Text(
                       petAge,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color:
                                 Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w500,
                           ),
+                      textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 8),
 
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.tertiaryContainer,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        petEvolutionStatus,
-                        style: TextStyle(
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
                           color:
-                              Theme.of(context).colorScheme.onTertiaryContainer,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 11,
+                              Theme.of(context).colorScheme.tertiaryContainer,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          petEvolutionStatus,
+                          style: TextStyle(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onTertiaryContainer,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
                       ),
                     ),
@@ -358,7 +367,7 @@ class VirtualPet extends ConsumerWidget {
               ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
 
             // Stats section
             Text(
@@ -367,7 +376,7 @@ class VirtualPet extends ConsumerWidget {
                     fontWeight: FontWeight.w600,
                   ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
             Row(
               children: [
@@ -380,7 +389,7 @@ class VirtualPet extends ConsumerWidget {
                     color: Colors.red,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Expanded(
                   child: _buildStatCard(
                     context,
@@ -393,7 +402,7 @@ class VirtualPet extends ConsumerWidget {
               ],
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
 
             Row(
               children: [
@@ -406,7 +415,7 @@ class VirtualPet extends ConsumerWidget {
                     color: Colors.orange,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Expanded(
                   child: _buildStatCard(
                     context,
@@ -420,7 +429,7 @@ class VirtualPet extends ConsumerWidget {
               ],
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
 
             // Action buttons
             Text(
@@ -429,7 +438,7 @@ class VirtualPet extends ConsumerWidget {
                     fontWeight: FontWeight.w600,
                   ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
             // Pet Actions
             if (petState.isLoading) ...[
@@ -690,35 +699,41 @@ class VirtualPet extends ConsumerWidget {
       elevation: 0,
       color: Theme.of(context).colorScheme.surfaceContainerLow,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(18),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Icon(
               icon,
               color: color,
-              size: 24,
+              size: 28,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
                   ),
+              textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Text(
               isExperience ? '$value XP' : '$value%',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: color,
                   ),
+              textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             if (!isExperience)
               LinearProgressIndicator(
                 value: value / 100,
                 backgroundColor: color.withValues(alpha: 0.2),
                 valueColor: AlwaysStoppedAnimation<Color>(color),
+                minHeight: 4,
               ),
           ],
         ),
