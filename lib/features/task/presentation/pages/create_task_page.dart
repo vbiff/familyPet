@@ -811,12 +811,15 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
   }
 
   Widget _buildActionButtons(bool isProcessing) {
+    final user = ref.watch(currentUserProvider);
+    final hasFamily = user?.familyId != null;
+
     return DelightfulButton(
       text: _isEditMode ? 'Save Changes' : 'Create Task',
       icon: _isEditMode ? Icons.save : Icons.add,
       style: DelightfulButtonStyle.primary,
       width: double.infinity,
-      onPressed: isProcessing ? null : _submitForm,
+      onPressed: (isProcessing || !hasFamily) ? null : _submitForm,
       isLoading: isProcessing,
     );
   }
@@ -855,6 +858,20 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Error: User not found')),
       );
+      return;
+    }
+
+    // Double-check that user has a family before creating task
+    if (user.familyId == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:
+                Text('You must join or create a family before creating tasks'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
       return;
     }
 

@@ -26,6 +26,9 @@ abstract class FamilyRepository {
   /// Get current user's family
   Future<Either<Failure, Family?>> getCurrentUserFamily(String userId);
 
+  /// Get user's role
+  Future<Either<Failure, String?>> getUserRole(String userId);
+
   /// Update family details
   Future<Either<Failure, Family>> updateFamily(Family family);
 

@@ -123,11 +123,13 @@ class _TaskListState extends ConsumerState<TaskList>
                     leadingIcon: Icons.add,
                     text: 'Create',
                     size: EnhancedButtonSize.small,
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const CreateTaskPage(),
-                      ),
-                    ),
+                    onPressed: user?.familyId != null
+                        ? () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const CreateTaskPage(),
+                              ),
+                            )
+                        : null, // Disable button if no family
                   ),
                   const SizedBox(width: 8),
                   EnhancedButton.ghost(
@@ -151,6 +153,7 @@ class _TaskListState extends ConsumerState<TaskList>
 
   Widget buildTaskContent(
       BuildContext context, TaskState taskState, List<Task> tasks) {
+    final user = ref.watch(currentUserProvider);
     if (taskState.status == TaskStateStatus.loading) {
       return const Center(
         child: CircularProgressIndicator(),
@@ -218,11 +221,13 @@ class _TaskListState extends ConsumerState<TaskList>
             EnhancedButton.primary(
               leadingIcon: Icons.add,
               text: 'Create First Task',
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const CreateTaskPage(),
-                ),
-              ),
+              onPressed: user?.familyId != null
+                  ? () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const CreateTaskPage(),
+                        ),
+                      )
+                  : null, // Disable button if no family
             ),
           ],
         ),
@@ -438,6 +443,9 @@ class _TaskListState extends ConsumerState<TaskList>
   }
 
   Widget _buildNoFamilyContent(BuildContext context) {
+    final user = ref.watch(currentUserProvider);
+    final isChild = user?.role == UserRole.child;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -454,7 +462,9 @@ class _TaskListState extends ConsumerState<TaskList>
           ),
           const SizedBox(height: 8),
           Text(
-            'Please set up your family to manage tasks',
+            isChild
+                ? 'Ask your parent for the family invite code to join!'
+                : 'Please set up your family to manage tasks',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -462,8 +472,8 @@ class _TaskListState extends ConsumerState<TaskList>
           ),
           const SizedBox(height: 24),
           EnhancedButton.primary(
-            leadingIcon: Icons.group_add,
-            text: 'Set Up Family',
+            leadingIcon: isChild ? Icons.group_add : Icons.group_add,
+            text: isChild ? 'Join Family' : 'Set Up Family',
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (context) => const FamilySetupPage(),

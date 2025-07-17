@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jhonny/features/auth/domain/entities/user.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jhonny/features/family/presentation/providers/family_provider.dart';
 import 'package:jhonny/features/family/presentation/providers/family_state.dart';
@@ -92,6 +93,9 @@ class _FamilyListState extends ConsumerState<FamilyList> {
   }
 
   Widget _buildNoFamilyState(BuildContext context) {
+    final user = ref.watch(currentUserProvider);
+    final isChild = user?.role == UserRole.child;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -110,7 +114,9 @@ class _FamilyListState extends ConsumerState<FamilyList> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Create a family or join an existing one to start managing tasks together.',
+            isChild
+                ? 'Ask your parent for the family invite code to join and start completing tasks!'
+                : 'Create a family or join an existing one to start managing tasks together.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context)
                       .colorScheme
@@ -122,8 +128,8 @@ class _FamilyListState extends ConsumerState<FamilyList> {
           const SizedBox(height: 32),
           ElevatedButton.icon(
             onPressed: () => _navigateToFamilySetup(context),
-            icon: const Icon(Icons.add),
-            label: const Text('Setup Family'),
+            icon: Icon(isChild ? Icons.group_add : Icons.add),
+            label: Text(isChild ? 'Join Family' : 'Setup Family'),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),

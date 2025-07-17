@@ -59,6 +59,13 @@ class CreateTask {
           const ValidationFailure(message: 'Due date cannot be in the past'));
     }
 
+    // Validate family membership - tasks can only be created within a family
+    if (params.familyId.trim().isEmpty) {
+      return left(const ValidationFailure(
+          message:
+              'Tasks can only be created within a family. Please join or create a family first.'));
+    }
+
     return await _repository.createTask(
       title: params.title.trim(),
       description: params.description.trim(),

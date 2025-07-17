@@ -8,6 +8,7 @@ abstract class FamilyRemoteDataSource {
   Future<FamilyModel> getFamilyById(String familyId);
   Future<FamilyModel> getFamilyByInviteCode(String inviteCode);
   Future<FamilyModel?> getCurrentUserFamily(String userId);
+  Future<String?> getUserRole(String userId);
   Future<FamilyModel> updateFamily(FamilyModel family);
   Future<void> addMemberToFamily(String familyId, String userId);
   Future<void> removeMemberFromFamily(String familyId, String userId);
@@ -94,6 +95,21 @@ class SupabaseFamilyRemoteDataSource implements FamilyRemoteDataSource {
       return await getFamilyById(familyId);
     } catch (e) {
       return null; // User might not have a family yet
+    }
+  }
+
+  @override
+  Future<String?> getUserRole(String userId) async {
+    try {
+      final profileResponse = await _client
+          .from('profiles')
+          .select('role')
+          .eq('id', userId)
+          .single();
+
+      return profileResponse['role'] as String?;
+    } catch (e) {
+      return null; // User might not exist
     }
   }
 

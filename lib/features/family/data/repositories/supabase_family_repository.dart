@@ -110,6 +110,16 @@ class SupabaseFamilyRepository implements FamilyRepository {
   }
 
   @override
+  Future<Either<Failure, String?>> getUserRole(String userId) async {
+    try {
+      final role = await _remoteDataSource.getUserRole(userId);
+      return right(role);
+    } catch (e) {
+      return left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, Family>> updateFamily(Family family) async {
     try {
       final familyModel = FamilyModel.fromEntity(family);

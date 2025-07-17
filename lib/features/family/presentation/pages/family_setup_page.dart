@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:jhonny/features/auth/domain/entities/user.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
 import 'package:jhonny/features/family/presentation/providers/family_provider.dart';
 import 'package:jhonny/features/family/presentation/providers/family_state.dart';
@@ -23,7 +24,10 @@ class _FamilySetupPageState extends ConsumerState<FamilySetupPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    // Tab controller length will be set based on user role
+    final user = ref.read(currentUserProvider);
+    final isChild = user?.role == UserRole.child;
+    _tabController = TabController(length: isChild ? 1 : 2, vsync: this);
   }
 
   @override
@@ -37,6 +41,8 @@ class _FamilySetupPageState extends ConsumerState<FamilySetupPage>
   @override
   Widget build(BuildContext context) {
     final familyState = ref.watch(familyProvider);
+    final user = ref.watch(currentUserProvider);
+    final isChild = user?.role == UserRole.child;
 
     // If user already has a family, show different UI
     if (familyState.hasFamily) {
@@ -89,7 +95,9 @@ class _FamilySetupPageState extends ConsumerState<FamilySetupPage>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Create a new family or join an existing one to start managing tasks together.',
+                  isChild
+                      ? 'Ask your parent for the family invite code to join and start completing tasks!'
+                      : 'Create a new family or join an existing one to start managing tasks together.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context)
                             .colorScheme
@@ -116,10 +124,14 @@ class _FamilySetupPageState extends ConsumerState<FamilySetupPage>
             ),
             child: TabBar(
               controller: _tabController,
-              tabs: const [
-                Tab(text: 'Create Family'),
-                Tab(text: 'Join Family'),
-              ],
+              tabs: isChild
+                  ? const [
+                      Tab(text: 'Join Family'),
+                    ]
+                  : const [
+                      Tab(text: 'Create Family'),
+                      Tab(text: 'Join Family'),
+                    ],
             ),
           ),
 
@@ -127,10 +139,14 @@ class _FamilySetupPageState extends ConsumerState<FamilySetupPage>
           Expanded(
             child: TabBarView(
               controller: _tabController,
-              children: [
-                _buildCreateFamilyTab(context, familyState),
-                _buildJoinFamilyTab(context, familyState),
-              ],
+              children: isChild
+                  ? [
+                      _buildJoinFamilyTab(context, familyState),
+                    ]
+                  : [
+                      _buildCreateFamilyTab(context, familyState),
+                      _buildJoinFamilyTab(context, familyState),
+                    ],
             ),
           ),
         ],
@@ -139,6 +155,19 @@ class _FamilySetupPageState extends ConsumerState<FamilySetupPage>
   }
 
   Widget _buildCreateFamilyTab(BuildContext context, FamilyState familyState) {
+    final user = ref.watch(currentUserProvider);
+    final isChild = user?.role == UserRole.child;
+
+    // Children shouldn't see the create family tab
+    if (isChild) {
+      return const Center(
+        child: Text(
+          'Only parents can create families.\nPlease ask your parent to create one for you!',
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Form(

@@ -43,6 +43,20 @@ class CreateFamily {
           const ValidationFailure(message: 'Creator ID cannot be empty'));
     }
 
+    // Check if user is a parent (only parents can create families)
+    final userRoleResult = await _repository.getUserRole(params.createdById);
+    final userRole = userRoleResult.fold(
+      (failure) => null,
+      (role) => role,
+    );
+
+    if (userRole != 'parent') {
+      return left(const ValidationFailure(
+        message:
+            'Only parents can create families. Children should join existing families using invite codes.',
+      ));
+    }
+
     // Check if user already has a family
     final existingFamilyResult =
         await _repository.getCurrentUserFamily(params.createdById);
