@@ -37,6 +37,17 @@ class HomePage extends ConsumerWidget {
     // Load family data when user is authenticated and available
     ref.listen(authNotifierProvider, (previous, next) {
       if (next.status == AuthStatus.unauthenticated) {
+        // Clean up all providers when user logs out to prevent disposed ref issues
+        try {
+          ref.invalidate(taskNotifierProvider);
+          ref.invalidate(familyNotifierProvider);
+          ref.invalidate(petNotifierProvider);
+          ref.invalidate(selectedTabProvider);
+          print('🧹 Cleaned up all providers after logout');
+        } catch (e) {
+          print('⚠️ Error during provider cleanup: $e');
+        }
+
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
             builder: (context) => const AuthSelectionPage(),

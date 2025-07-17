@@ -33,6 +33,14 @@ class TaskDetailPage extends ConsumerStatefulWidget {
 }
 
 class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
+  bool _isDisposed = false;
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
+  }
+
   Task _getCurrentTask(WidgetRef ref) {
     final taskState = ref.watch(taskNotifierProvider);
     return taskState.tasks.firstWhere(
@@ -959,7 +967,8 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
         return TaskCompletionDialog(
           task: currentTask,
           onCompleted: (List<String> imageUrls) async {
-            await _markAsCompleted(context, ref, currentTask, imageUrls);
+            await _markAsCompleted(context, ref, currentTask,
+                imageUrls: imageUrls);
           },
         );
       },
@@ -1088,11 +1097,15 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
     );
   }
 
-  Future<void> _markAsCompleted(BuildContext context, WidgetRef ref,
-      Task currentTask, List<String> imageUrls) async {
+  Future<void> _markAsCompleted(
+      BuildContext context, WidgetRef ref, Task currentTask,
+      {List<String> imageUrls = const []}) async {
     try {
       // Check context before any operations
       if (!context.mounted) return;
+
+      // Check if widget is still mounted and not disposed
+      if (!mounted || _isDisposed) return;
 
       // Update task with completion status and any uploaded images
       final updatedImageUrls = [...currentTask.imageUrls, ...imageUrls];
@@ -1101,7 +1114,7 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
       final taskNotifier = ref.read(taskNotifierProvider.notifier);
 
       // Check context again right before first async operation
-      if (!context.mounted) return;
+      if (!context.mounted || !mounted || _isDisposed) return;
 
       await taskNotifier.updateTaskStatus(
         taskId: currentTask.id,
@@ -1111,7 +1124,7 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
       // If there are new images, update the task with them
       if (imageUrls.isNotEmpty) {
         // Check context before second async operation
-        if (!context.mounted) return;
+        if (!context.mounted || !mounted || _isDisposed) return;
 
         await taskNotifier.updateTask(
           UpdateTaskParams(
@@ -1122,7 +1135,7 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
       }
 
       // Show confetti when task is completed successfully
-      if (context.mounted) {
+      if (context.mounted && mounted && !_isDisposed) {
         ConfettiOverlay.show(
           context,
           duration: const Duration(seconds: 2),
@@ -1130,7 +1143,16 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
       }
     } catch (e) {
       TaskDetailPage._logger.e('Mark as completed error: $e');
-      if (context.mounted) {
+
+      // Check for disposed ref errors specifically
+      if (e.toString().contains('disposed') ||
+          e.toString().contains('Bad state')) {
+        TaskDetailPage._logger
+            .w('Widget or ref was disposed during task completion');
+        return; // Silently return for disposed ref errors
+      }
+
+      if (context.mounted && mounted && !_isDisposed) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to complete task: $e'),
@@ -1148,12 +1170,15 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
       // Check context before any operations
       if (!context.mounted) return;
 
+      // Check if widget is still mounted and not disposed
+      if (!mounted || _isDisposed) return;
+
       final currentUser = ref.read(currentUserProvider);
 
       // Validate user is a parent
       if (currentUser?.role != UserRole.parent) {
         TaskDetailPage._logger.w('Non-parent user attempted to verify task');
-        if (context.mounted) {
+        if (context.mounted && mounted && !_isDisposed) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Only parents can verify tasks'),
@@ -1184,7 +1209,7 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
         final taskNotifier = ref.read(taskNotifierProvider.notifier);
 
         // Check context is mounted before async operation
-        if (!context.mounted) return;
+        if (!context.mounted || !mounted || _isDisposed) return;
 
         await taskNotifier.updateTaskStatus(
           taskId: currentTask.id,
@@ -1193,7 +1218,7 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
         );
 
         // Show confetti when task is verified by parent
-        if (context.mounted) {
+        if (context.mounted && mounted && !_isDisposed) {
           ConfettiOverlay.show(
             context,
             duration: const Duration(seconds: 2),
@@ -1209,8 +1234,17 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
       }
     } catch (e) {
       TaskDetailPage._logger.e('Verification error: $e');
+
+      // Check for disposed ref errors specifically
+      if (e.toString().contains('disposed') ||
+          e.toString().contains('Bad state')) {
+        TaskDetailPage._logger
+            .w('Widget or ref was disposed during task verification');
+        return; // Silently return for disposed ref errors
+      }
+
       // Show error feedback only if context is still mounted
-      if (context.mounted) {
+      if (context.mounted && mounted && !_isDisposed) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to verify task: $e'),
@@ -1227,12 +1261,15 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
       // Check context before any async operations
       if (!context.mounted) return;
 
+      // Check if widget is still mounted and not disposed
+      if (!mounted || _isDisposed) return;
+
       final currentUser = ref.read(currentUserProvider);
 
       // Validate user is a parent
       if (currentUser?.role != UserRole.parent) {
         TaskDetailPage._logger.w('Non-parent user attempted to unverify task');
-        if (context.mounted) {
+        if (context.mounted && mounted && !_isDisposed) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Only parents can remove verification'),
@@ -1253,7 +1290,7 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
         final taskNotifier = ref.read(taskNotifierProvider.notifier);
 
         // Check context again before async operation
-        if (!context.mounted) return;
+        if (!context.mounted || !mounted || _isDisposed) return;
 
         await taskNotifier.updateTaskStatus(
           taskId: currentTask.id,
@@ -1263,8 +1300,17 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
       }
     } catch (e) {
       TaskDetailPage._logger.e('Unverify task error: $e');
+
+      // Check for disposed ref errors specifically
+      if (e.toString().contains('disposed') ||
+          e.toString().contains('Bad state')) {
+        TaskDetailPage._logger
+            .w('Widget or ref was disposed during task unverification');
+        return; // Silently return for disposed ref errors
+      }
+
       // Show error feedback only if context is still mounted
-      if (context.mounted) {
+      if (context.mounted && mounted && !_isDisposed) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to unverify task: $e'),
@@ -1281,11 +1327,14 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
       // Check context before any operations
       if (!context.mounted) return;
 
+      // Check if widget is still mounted and not disposed
+      if (!mounted || _isDisposed) return;
+
       // Store the notifier reference before the async operation
       final taskNotifier = ref.read(taskNotifierProvider.notifier);
 
       // Check context again right before async operation
-      if (!context.mounted) return;
+      if (!context.mounted || !mounted || _isDisposed) return;
 
       await taskNotifier.updateTaskStatus(
         taskId: currentTask.id,
@@ -1293,8 +1342,17 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
       );
     } catch (e) {
       TaskDetailPage._logger.e('Reject task error: $e');
+
+      // Check for disposed ref errors specifically
+      if (e.toString().contains('disposed') ||
+          e.toString().contains('Bad state')) {
+        TaskDetailPage._logger
+            .w('Widget or ref was disposed during task rejection');
+        return; // Silently return for disposed ref errors
+      }
+
       // Show error feedback only if context is still mounted
-      if (context.mounted) {
+      if (context.mounted && mounted && !_isDisposed) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to reject task: $e'),
