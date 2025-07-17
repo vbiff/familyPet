@@ -56,7 +56,7 @@
 	
 	<!-- Camera and Photo Library permissions -->
 	<key>NSCameraUsageDescription</key>
-	<string>This app needs camera access to take photos for task verification and profile pictures.</string>
+	<string>This app needs camera access to scan QR codes for child signup and take photos for task verification and profile pictures.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app needs photo library access to select images for task verification and profile pictures.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>

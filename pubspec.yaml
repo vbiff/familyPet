@@ -45,7 +45,7 @@ dependencies:
   lottie: ^3.0.0
   flutter_svg: ^2.0.9
   qr_flutter: ^4.1.0
-  qr_code_scanner: ^1.0.1
+  mobile_scanner: ^3.5.7
   
   # Notifications
   flutter_local_notifications: ^17.2.2
