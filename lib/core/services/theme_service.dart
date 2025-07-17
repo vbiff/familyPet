@@ -3,82 +3,47 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-enum ThemeMode { light, dark, system }
+enum ThemeMode { light }
 
 class ThemeService {
   static const String _kThemeModeKey = 'theme_mode';
-  static const String _kUseSystemThemeKey = 'use_system_theme';
 
   final _themeController = StreamController<ThemeMode>.broadcast();
-  ThemeMode _currentThemeMode = ThemeMode.system;
+  ThemeMode _currentThemeMode = ThemeMode.light;
 
   Stream<ThemeMode> get themeStream => _themeController.stream;
   ThemeMode get currentThemeMode => _currentThemeMode;
 
   Future<void> initialize() async {
-    await _loadThemeFromStorage();
-  }
-
-  Future<void> _loadThemeFromStorage() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final useSystemTheme = prefs.getBool(_kUseSystemThemeKey) ?? true;
-
-      if (useSystemTheme) {
-        _currentThemeMode = ThemeMode.system;
-      } else {
-        final isDarkMode = prefs.getBool(_kThemeModeKey) ?? false;
-        _currentThemeMode = isDarkMode ? ThemeMode.dark : ThemeMode.light;
-      }
-
-      _themeController.add(_currentThemeMode);
-    } catch (e) {
-      // If there's an error, default to system theme
-      _currentThemeMode = ThemeMode.system;
-      _themeController.add(_currentThemeMode);
-    }
+    // Always set to light theme
+    _currentThemeMode = ThemeMode.light;
+    _themeController.add(_currentThemeMode);
   }
 
   Future<void> setThemeMode(ThemeMode themeMode) async {
-    if (_currentThemeMode == themeMode) return;
-
-    _currentThemeMode = themeMode;
+    // Only allow light theme
+    _currentThemeMode = ThemeMode.light;
     _themeController.add(_currentThemeMode);
-
     await _saveThemeToStorage();
   }
 
   Future<void> toggleDarkMode() async {
-    final newMode =
-        _currentThemeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
-    await setThemeMode(newMode);
+    // Do nothing - no dark mode available
   }
 
   Future<void> _saveThemeToStorage() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-
-      if (_currentThemeMode == ThemeMode.system) {
-        await prefs.setBool(_kUseSystemThemeKey, true);
-      } else {
-        await prefs.setBool(_kUseSystemThemeKey, false);
-        await prefs.setBool(
-            _kThemeModeKey, _currentThemeMode == ThemeMode.dark);
-      }
+      // Always save as light theme
+      await prefs.setBool(_kThemeModeKey, false);
     } catch (e) {
       debugPrint('Error saving theme preference: $e');
     }
   }
 
   bool isDarkMode(BuildContext context) {
-    switch (_currentThemeMode) {
-      case ThemeMode.dark:
-        return true;
-      case ThemeMode.light:
-        return false;
-      case ThemeMode.system:
-        return MediaQuery.of(context).platformBrightness == Brightness.dark;
-    }
+    // Always return false - no dark mode
+    return false;
   }
 
   void dispose() {

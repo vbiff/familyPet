@@ -87,111 +87,82 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return StreamBuilder<theme_service.ThemeMode>(
-      stream: themeService.themeStream,
-      initialData: themeService.currentThemeMode,
-      builder: (context, themeSnapshot) {
-        final themeMode = themeSnapshot.data ?? theme_service.ThemeMode.system;
+    return MaterialApp(
+      title: 'Jhonny - Family Task Manager',
+      debugShowCheckedModeBanner: false,
 
-        return MaterialApp(
-          title: 'Jhonny - Family Task Manager',
-          debugShowCheckedModeBanner: false,
+      // Theme configuration - always light theme
+      theme: theme_service.AppThemes.lightTheme,
+      themeMode: ThemeMode.light,
 
-          // Theme configuration
-          theme: theme_service.AppThemes.lightTheme,
-          darkTheme: theme_service.AppThemes.darkTheme,
-          themeMode: _mapToFlutterThemeMode(themeMode),
+      // Localization
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('en', 'US'),
+        Locale('es', 'ES'),
+        Locale('fr', 'FR'),
+      ],
 
-          // Localization
-          localizationsDelegates: const [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: const [
-            Locale('en', 'US'),
-            Locale('es', 'ES'),
-            Locale('fr', 'FR'),
-          ],
+      // High contrast and accessibility - only light theme
+      highContrastTheme: _buildHighContrastTheme(Brightness.light),
 
-          // High contrast and accessibility
-          highContrastTheme: _buildHighContrastTheme(Brightness.light),
-          highContrastDarkTheme: _buildHighContrastTheme(Brightness.dark),
+      // Navigation
+      home: const AppWrapper(),
 
-          // Navigation
-          home: const AppWrapper(),
+      // Global theme overrides
+      builder: (context, child) {
+        // Update system UI overlay for light theme
+        _updateSystemUI(context);
 
-          // Global theme overrides
-          builder: (context, child) {
-            // Update system UI overlay based on theme
-            _updateSystemUI(context);
-
-            return MediaQuery(
-              data: MediaQuery.of(context).copyWith(
-                // Ensure text doesn't scale beyond reasonable limits
-                textScaler: TextScaler.linear(
-                  MediaQuery.of(context).textScaler.scale(1.0).clamp(0.8, 1.3),
-                ),
-              ),
-              child: child!,
-            );
-          },
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            // Ensure text doesn't scale beyond reasonable limits
+            textScaler: TextScaler.linear(
+              MediaQuery.of(context).textScaler.scale(1.0).clamp(0.8, 1.3),
+            ),
+          ),
+          child: child!,
         );
       },
     );
   }
 
-  ThemeMode _mapToFlutterThemeMode(theme_service.ThemeMode themeMode) {
-    switch (themeMode) {
-      case theme_service.ThemeMode.light:
-        return ThemeMode.light;
-      case theme_service.ThemeMode.dark:
-        return ThemeMode.dark;
-      case theme_service.ThemeMode.system:
-        return ThemeMode.system;
-    }
-  }
-
   void _updateSystemUI(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
-    final isDark = brightness == Brightness.dark;
-
+    // Always use light theme UI styling
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
-        statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
         systemNavigationBarColor: Theme.of(context).scaffoldBackgroundColor,
-        systemNavigationBarIconBrightness:
-            isDark ? Brightness.light : Brightness.dark,
+        systemNavigationBarIconBrightness: Brightness.dark,
         systemNavigationBarDividerColor: Colors.transparent,
       ),
     );
   }
 
   ThemeData _buildHighContrastTheme(Brightness brightness) {
-    final baseTheme = brightness == Brightness.light
-        ? theme_service.AppThemes.lightTheme
-        : theme_service.AppThemes.darkTheme;
+    // Always use light theme as base for high contrast
+    final baseTheme = theme_service.AppThemes.lightTheme;
 
     return baseTheme.copyWith(
       colorScheme: baseTheme.colorScheme.copyWith(
-        // Increase contrast for accessibility
-        primary: brightness == Brightness.light ? Colors.black : Colors.white,
-        onPrimary: brightness == Brightness.light ? Colors.white : Colors.black,
-        secondary: brightness == Brightness.light
-            ? Colors.grey[800]
-            : Colors.grey[200],
-        onSecondary:
-            brightness == Brightness.light ? Colors.white : Colors.black,
-        surface: brightness == Brightness.light ? Colors.white : Colors.black,
-        onSurface: brightness == Brightness.light ? Colors.black : Colors.white,
+        // Increase contrast for accessibility in light theme
+        primary: Colors.black,
+        onPrimary: Colors.white,
+        secondary: Colors.grey[800]!,
+        onSecondary: Colors.white,
+        surface: Colors.white,
+        onSurface: Colors.black,
       ),
       // Increase text contrast
       textTheme: baseTheme.textTheme.apply(
-        bodyColor: brightness == Brightness.light ? Colors.black : Colors.white,
-        displayColor:
-            brightness == Brightness.light ? Colors.black : Colors.white,
+        bodyColor: Colors.black,
+        displayColor: Colors.black,
       ),
     );
   }
