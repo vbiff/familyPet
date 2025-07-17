@@ -90,7 +90,7 @@ class _TaskCompletionDialogState extends ConsumerState<TaskCompletionDialog> {
             // Content
             Flexible(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -119,7 +119,7 @@ class _TaskCompletionDialogState extends ConsumerState<TaskCompletionDialog> {
 
             // Actions
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surfaceContainerLow,
                 borderRadius: const BorderRadius.only(
@@ -130,22 +130,57 @@ class _TaskCompletionDialogState extends ConsumerState<TaskCompletionDialog> {
               child: Row(
                 children: [
                   Expanded(
-                    child: EnhancedButton.outline(
-                      text: 'Cancel',
-                      onPressed: _isCompleting
-                          ? null
-                          : () => Navigator.of(context).pop(),
+                    child: SizedBox(
+                      height: 40,
+                      child: OutlinedButton(
+                        onPressed: _isCompleting
+                            ? null
+                            : () => Navigator.of(context).pop(),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(fontSize: 13),
+                        ),
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
                   Expanded(
                     flex: 2,
-                    child: EnhancedButton.primary(
-                      text: _isCompleting ? 'Completing...' : 'Complete Task',
-                      leadingIcon: _isCompleting ? null : Icons.check,
-                      isLoading: _isCompleting,
-                      onPressed: _isCompleting ? null : _completeTask,
-                      backgroundColor: Colors.green,
+                    child: SizedBox(
+                      height: 40,
+                      child: ElevatedButton.icon(
+                        onPressed: _isCompleting ? null : _completeTask,
+                        icon: _isCompleting
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.check, size: 16),
+                        label: Text(
+                          _isCompleting ? 'Completing...' : 'Complete Task',
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ],

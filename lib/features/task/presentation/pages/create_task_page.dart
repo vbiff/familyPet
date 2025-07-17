@@ -7,6 +7,7 @@ import 'package:jhonny/features/task/presentation/providers/task_provider.dart';
 import 'package:jhonny/features/family/presentation/providers/family_provider.dart';
 import 'package:jhonny/shared/widgets/widgets.dart';
 import 'package:jhonny/shared/widgets/delightful_button.dart';
+import 'package:jhonny/shared/widgets/animated_interactions.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:jhonny/core/theme/app_theme.dart';
 
@@ -90,22 +91,27 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
     // final familyMembers = ref.watch(familyMembersProvider);
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text(_isEditMode ? 'Edit Task' : 'Create New Task'),
+        title: Text(
+          _isEditMode ? 'Edit Task' : 'Create New Task',
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+              ),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
+        leading: AnimatedIconButton(
+          icon: Icons.arrow_back,
+          onPressed: () => Navigator.of(context).pop(),
+          color: AppTheme.textPrimary,
+        ),
       ),
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              AppTheme.background,
-              AppTheme.accent.withOpacity(0.05),
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
+        decoration: const BoxDecoration(
+          gradient: AppTheme.backgroundGradient,
         ),
         child: SafeArea(
           child: LayoutBuilder(
@@ -115,21 +121,39 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
                 child: CustomScrollView(
                   slivers: [
                     SliverPadding(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.fromLTRB(20, 28, 20, 32),
                       sliver: SliverList(
                         delegate: SliverChildListDelegate([
-                          _buildCategorySection(),
-                          const SizedBox(height: 24),
-                          _buildTaskInfoSection(),
-                          const SizedBox(height: 24),
-                          _buildAssignmentSection(),
-                          const SizedBox(height: 24),
-                          _buildSchedulingSection(),
-                          const SizedBox(height: 24),
-                          _buildDifficultySection(),
-                          const SizedBox(height: 32),
-                          _buildActionButtons(isProcessing),
-                          const SizedBox(height: 16), // Extra bottom padding
+                          _buildCategorySection()
+                              .animate()
+                              .fadeIn(delay: 100.ms)
+                              .slideY(begin: 0.2),
+                          const SizedBox(height: 28),
+                          _buildTaskInfoSection()
+                              .animate()
+                              .fadeIn(delay: 200.ms)
+                              .slideY(begin: 0.2),
+                          const SizedBox(height: 28),
+                          _buildAssignmentSection()
+                              .animate()
+                              .fadeIn(delay: 300.ms)
+                              .slideY(begin: 0.2),
+                          const SizedBox(height: 28),
+                          _buildSchedulingSection()
+                              .animate()
+                              .fadeIn(delay: 400.ms)
+                              .slideY(begin: 0.2),
+                          const SizedBox(height: 28),
+                          _buildDifficultySection()
+                              .animate()
+                              .fadeIn(delay: 500.ms)
+                              .slideY(begin: 0.2),
+                          const SizedBox(height: 40),
+                          _buildActionButtons(isProcessing)
+                              .animate()
+                              .fadeIn(delay: 600.ms)
+                              .slideY(begin: 0.3),
+                          const SizedBox(height: 24), // Extra bottom padding
                         ]),
                       ),
                     ),
@@ -146,7 +170,34 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
   Widget _buildTaskInfoSection() {
     return EnhancedCard(
       type: EnhancedCardType.elevated,
-      title: 'Task Information',
+      backgroundColor: AppTheme.surface,
+      showShimmer: true,
+      titleWidget: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.accent.withOpacity(0.2),
+                  AppTheme.blue.withOpacity(0.1)
+                ],
+              ),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child:
+                const Icon(Icons.edit_note, color: AppTheme.accent, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            'Task Information',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                ),
+          ),
+        ],
+      ),
       child: Column(
         children: [
           EnhancedInput(
@@ -160,10 +211,10 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
               return null;
             },
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           EnhancedInput.multiline(
             label: 'Description',
-            placeholder: 'Describe what needs to be done',
+            placeholder: 'Describe what needs to be done...',
             controller: _descriptionController,
             maxLines: 3,
           ),
@@ -235,29 +286,64 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
 
     return EnhancedCard(
       type: EnhancedCardType.elevated,
-      title: 'Assignment',
+      backgroundColor: AppTheme.surface,
+      showShimmer: true,
+      titleWidget: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.secondary.withOpacity(0.2),
+                  AppTheme.lavender.withOpacity(0.1)
+                ],
+              ),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.person_add,
+                color: AppTheme.secondary, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            'Assignment',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                ),
+          ),
+        ],
+      ),
       child: Column(
         children: [
           if (!hasFamily)
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.errorContainer,
-                borderRadius: BorderRadius.circular(8),
+                gradient: LinearGradient(
+                  colors: [
+                    AppTheme.error.withOpacity(0.1),
+                    AppTheme.error.withOpacity(0.05)
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                border: Border.all(color: AppTheme.error.withOpacity(0.3)),
               ),
-              child: Row(
+              child: const Row(
                 children: [
                   Icon(
-                    Icons.warning,
-                    color: Theme.of(context).colorScheme.error,
+                    Icons.warning_rounded,
+                    color: AppTheme.error,
+                    size: 24,
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'You need to create or join a family first',
                       style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                        fontWeight: FontWeight.w500,
+                        color: AppTheme.error,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
                       ),
                     ),
                   ),
@@ -266,7 +352,10 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
             )
           else if (assignmentOptions.isEmpty)
             const Center(
-              child: CircularProgressIndicator(),
+              child: CircularProgressIndicator(
+                color: AppTheme.primary,
+                strokeWidth: 3,
+              ),
             )
           else
             DropdownButtonFormField<String>(
@@ -274,9 +363,24 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
                   assignmentOptions.any((option) => option['id'] == _assignedTo)
                       ? _assignedTo
                       : null,
-              decoration: const InputDecoration(
-                labelText: 'Assign to',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: 'Assign to family member',
+                labelStyle: const TextStyle(color: AppTheme.textSecondary),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                  borderSide:
+                      BorderSide(color: AppTheme.primary.withOpacity(0.3)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                  borderSide:
+                      BorderSide(color: AppTheme.secondary.withOpacity(0.3)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                  borderSide:
+                      const BorderSide(color: AppTheme.secondary, width: 2),
+                ),
               ),
               isExpanded: true,
               items: assignmentOptions.map<DropdownMenuItem<String>>((option) {
@@ -287,15 +391,38 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
 
                 return DropdownMenuItem<String>(
                   value: option['id'] as String,
-                  child: Text(
-                    displayText,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w500,
-                      color: isCurrentUser
-                          ? Theme.of(context).colorScheme.primary
-                          : null,
-                    ),
-                    overflow: TextOverflow.ellipsis,
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: isCurrentUser
+                              ? AppTheme.primary.withOpacity(0.1)
+                              : AppTheme.accent.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Icon(
+                          isCurrentUser ? Icons.star : Icons.person,
+                          size: 16,
+                          color: isCurrentUser
+                              ? AppTheme.primary
+                              : AppTheme.accent,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          displayText,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: isCurrentUser
+                                ? AppTheme.primary
+                                : AppTheme.textPrimary,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                 );
               }).toList(),
@@ -324,33 +451,145 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
   Widget _buildSchedulingSection() {
     return EnhancedCard(
       type: EnhancedCardType.elevated,
-      title: 'Scheduling',
+      backgroundColor: AppTheme.surface,
+      showShimmer: true,
+      titleWidget: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.green.withOpacity(0.2),
+                  AppTheme.blue.withOpacity(0.1)
+                ],
+              ),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.schedule, color: AppTheme.green, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            'Scheduling',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                ),
+          ),
+        ],
+      ),
       child: Column(
         children: [
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: Icon(
-              Icons.calendar_today,
-              color: Theme.of(context).colorScheme.primary,
+          SpringButton(
+            onPressed: _selectDueDate,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppTheme.primary.withOpacity(0.05),
+                    AppTheme.accent.withOpacity(0.02)
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                border: Border.all(color: AppTheme.primary.withOpacity(0.2)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.calendar_today,
+                        color: AppTheme.primary, size: 20),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Due Date',
+                          style:
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppTheme.textPrimary,
+                                  ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${_dueDate.day}/${_dueDate.month}/${_dueDate.year}',
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: AppTheme.textSecondary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, color: AppTheme.accent),
+                ],
+              ),
             ),
-            title: const Text('Due Date'),
-            subtitle: Text(
-              '${_dueDate.day}/${_dueDate.month}/${_dueDate.year}',
-            ),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: _selectDueDate,
           ),
-          const Divider(),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: Icon(
-              Icons.repeat,
-              color: Theme.of(context).colorScheme.primary,
+          const SizedBox(height: 16),
+          SpringButton(
+            onPressed: _selectFrequency,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppTheme.accent.withOpacity(0.05),
+                    AppTheme.blue.withOpacity(0.02)
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                border: Border.all(color: AppTheme.accent.withOpacity(0.2)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.accent.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.repeat,
+                        color: AppTheme.accent, size: 20),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Frequency',
+                          style:
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppTheme.textPrimary,
+                                  ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _getFrequencyText(_frequency),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: AppTheme.textSecondary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, color: AppTheme.accent),
+                ],
+              ),
             ),
-            title: const Text('Frequency'),
-            subtitle: Text(_getFrequencyText(_frequency)),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: _selectFrequency,
           ),
         ],
       ),
@@ -360,14 +599,54 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
   Widget _buildCategorySection() {
     return EnhancedCard(
       type: EnhancedCardType.elevated,
-      title: 'Category',
+      backgroundColor: AppTheme.surface,
+      showShimmer: true,
+      titleWidget: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.primary.withOpacity(0.2),
+                  AppTheme.secondary.withOpacity(0.1)
+                ],
+              ),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child:
+                const Icon(Icons.category, color: AppTheme.primary, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            'Category',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                ),
+          ),
+        ],
+      ),
       child: Column(
         children: [
           DropdownButtonFormField<TaskCategory>(
             value: _category,
-            decoration: const InputDecoration(
-              labelText: 'Category',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: 'Select category',
+              labelStyle: const TextStyle(color: AppTheme.textSecondary),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                borderSide:
+                    BorderSide(color: AppTheme.primary.withOpacity(0.3)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                borderSide: BorderSide(color: AppTheme.accent.withOpacity(0.3)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                borderSide: const BorderSide(color: AppTheme.primary, width: 2),
+              ),
             ),
             isExpanded: true,
             items: TaskCategory.values
@@ -376,12 +655,15 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
                 value: category,
                 child: Row(
                   children: [
-                    Text(category.icon, style: const TextStyle(fontSize: 18)),
-                    const SizedBox(width: 8),
+                    Text(category.icon, style: const TextStyle(fontSize: 20)),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         category.displayName,
-                        style: const TextStyle(fontWeight: FontWeight.w500),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textPrimary,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -407,40 +689,102 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
   Widget _buildDifficultySection() {
     return EnhancedCard(
       type: EnhancedCardType.elevated,
-      title: 'Difficulty & Points',
+      backgroundColor: AppTheme.surface,
+      showShimmer: true,
+      titleWidget: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.orange.withOpacity(0.2),
+                  AppTheme.yellow.withOpacity(0.1)
+                ],
+              ),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.local_fire_department,
+                color: AppTheme.orange, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            'Difficulty & Points',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                ),
+          ),
+        ],
+      ),
       child: Column(
         children: [
           DropdownButtonFormField<TaskDifficulty>(
             value: _difficulty,
-            decoration: const InputDecoration(
-              labelText: 'Difficulty',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: 'Select difficulty level',
+              labelStyle: const TextStyle(color: AppTheme.textSecondary),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                borderSide:
+                    BorderSide(color: AppTheme.primary.withOpacity(0.3)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                borderSide: BorderSide(color: AppTheme.orange.withOpacity(0.3)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                borderSide: const BorderSide(color: AppTheme.orange, width: 2),
+              ),
             ),
             isExpanded: true,
             items: TaskDifficulty.values
                 .map<DropdownMenuItem<TaskDifficulty>>((difficulty) {
               final points = _getPointsForDifficulty(difficulty);
+              final difficultyColor = difficulty == TaskDifficulty.easy
+                  ? AppTheme.green
+                  : difficulty == TaskDifficulty.medium
+                      ? AppTheme.yellow
+                      : AppTheme.error;
+
               return DropdownMenuItem<TaskDifficulty>(
                 value: difficulty,
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.local_fire_department,
-                      color: difficulty == TaskDifficulty.easy
-                          ? Colors.green
-                          : difficulty == TaskDifficulty.medium
-                              ? Colors.yellow.shade600
-                              : Colors.red,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        '${difficulty.displayName} ($points pts)',
-                        style: const TextStyle(fontWeight: FontWeight.w500),
-                        overflow: TextOverflow.ellipsis,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 3),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: BoxDecoration(
+                          color: difficultyColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Icon(
+                          Icons.local_fire_department,
+                          color: difficultyColor,
+                          size: 16,
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              difficulty.displayName,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.textPrimary,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               );
             }).toList(),
@@ -456,27 +800,57 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
               return null;
             },
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHigh,
-              borderRadius: BorderRadius.circular(8),
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.lavender.withOpacity(0.1),
+                  AppTheme.primary.withOpacity(0.05)
+                ],
+              ),
+              borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+              border: Border.all(color: AppTheme.lavender.withOpacity(0.3)),
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.star,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 20,
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [AppTheme.yellow, AppTheme.orange],
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.star,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  'Points: ${_getPointsForDifficulty(_difficulty)}',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.primary,
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Reward Points',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.textPrimary,
+                            ),
                       ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${_getPointsForDifficulty(_difficulty)} points for completion',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w500,
+                              color: AppTheme.textSecondary,
+                            ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

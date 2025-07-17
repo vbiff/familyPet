@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
 import 'package:jhonny/features/auth/domain/entities/user.dart';
@@ -14,6 +15,10 @@ import 'package:jhonny/features/task/presentation/widgets/task_completion_dialog
 import 'package:jhonny/features/task/presentation/widgets/photo_verification_widget.dart';
 import 'package:jhonny/core/providers/supabase_provider.dart';
 import 'package:jhonny/shared/widgets/confetti_animation.dart';
+import 'package:jhonny/shared/widgets/delightful_button.dart';
+import 'package:jhonny/shared/widgets/animated_interactions.dart';
+import 'package:jhonny/shared/widgets/enhanced_card.dart';
+import 'package:jhonny/core/theme/app_theme.dart';
 
 class TaskDetailPage extends ConsumerWidget {
   final Task task;
@@ -50,22 +55,44 @@ class TaskDetailPage extends ConsumerWidget {
     final isParent = currentUser?.role == UserRole.parent;
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Task Details'),
-        backgroundColor: Theme.of(context).colorScheme.surface,
+        title: Text(
+          'Task Details',
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+              ),
+        ),
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: AnimatedIconButton(
+          icon: Icons.arrow_back,
+          onPressed: () => Navigator.of(context).pop(),
+          color: AppTheme.textPrimary,
+        ),
         actions: [
           // Only show delete option to parents
           if (isParent)
             PopupMenuButton(
+              icon: const Icon(
+                Icons.more_vert,
+                color: AppTheme.textPrimary,
+              ).animate().scale(delay: 200.ms).shake(),
               itemBuilder: (context) => [
                 const PopupMenuItem(
                   value: 'edit',
                   child: Row(
                     children: [
-                      Icon(Icons.edit, color: Colors.blue),
-                      SizedBox(width: 8),
-                      Text('Edit Task', style: TextStyle(color: Colors.blue)),
+                      Icon(Icons.edit, color: AppTheme.accent),
+                      SizedBox(width: 12),
+                      Text(
+                        'Edit Task',
+                        style: TextStyle(
+                          color: AppTheme.accent,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -73,9 +100,15 @@ class TaskDetailPage extends ConsumerWidget {
                   value: 'delete',
                   child: Row(
                     children: [
-                      Icon(Icons.delete, color: Colors.red),
-                      SizedBox(width: 8),
-                      Text('Delete Task', style: TextStyle(color: Colors.red)),
+                      Icon(Icons.delete, color: AppTheme.error),
+                      SizedBox(width: 12),
+                      Text(
+                        'Delete Task',
+                        style: TextStyle(
+                          color: AppTheme.error,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -84,64 +117,99 @@ class TaskDetailPage extends ConsumerWidget {
             ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildTaskHeader(context, currentTask),
-            const SizedBox(height: 24),
-            // Add image section if task has images
-            if (currentTask.hasImages) ...[
-              _buildTaskImages(context, currentTask),
-              const SizedBox(height: 24),
-            ],
-            _buildTaskInfo(context, ref, currentTask),
-            const SizedBox(height: 24),
-            _buildTaskSchedule(context, currentTask),
-            const SizedBox(height: 24),
-            _buildTaskStatus(context, ref, currentTask),
-            const SizedBox(height: 24),
-            TaskCommentsSection(taskId: currentTask.id),
-            const SizedBox(height: 32),
-            _buildActionButtons(context, ref, isUpdating, currentTask),
-          ],
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: AppTheme.backgroundGradient,
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 28, 20, 32),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildTaskHeader(context, currentTask)
+                    .animate()
+                    .fadeIn(delay: 100.ms)
+                    .slideY(begin: 0.2),
+                const SizedBox(height: 28),
+                // Add image section if task has images
+                if (currentTask.hasImages) ...[
+                  _buildTaskImages(context, currentTask)
+                      .animate()
+                      .fadeIn(delay: 200.ms)
+                      .slideY(begin: 0.2),
+                  const SizedBox(height: 28),
+                ],
+                _buildTaskInfo(context, ref, currentTask)
+                    .animate()
+                    .fadeIn(delay: 300.ms)
+                    .slideY(begin: 0.2),
+                const SizedBox(height: 28),
+                _buildTaskSchedule(context, currentTask)
+                    .animate()
+                    .fadeIn(delay: 400.ms)
+                    .slideY(begin: 0.2),
+                const SizedBox(height: 28),
+                _buildTaskStatus(context, ref, currentTask)
+                    .animate()
+                    .fadeIn(delay: 500.ms)
+                    .slideY(begin: 0.2),
+                const SizedBox(height: 28),
+                TaskCommentsSection(taskId: currentTask.id)
+                    .animate()
+                    .fadeIn(delay: 600.ms)
+                    .slideY(begin: 0.2),
+                const SizedBox(height: 32),
+                _buildActionButtons(context, ref, isUpdating, currentTask)
+                    .animate()
+                    .fadeIn(delay: 700.ms)
+                    .slideY(begin: 0.3),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 
   Widget _buildTaskHeader(BuildContext context, Task currentTask) {
-    return Card(
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerLow,
+    return EnhancedCard(
+      type: EnhancedCardType.elevated,
+      backgroundColor: AppTheme.surface,
+      showShimmer: true,
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 _buildStatusIcon(context, currentTask),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Text(
                     currentTask.title,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
+                          color: AppTheme.textPrimary,
+                          height: 1.2,
                         ),
                   ),
                 ),
+                const SizedBox(width: 16),
                 _buildPointsBadge(context, currentTask),
               ],
             ),
-            const SizedBox(height: 12),
-            Text(
-              currentTask.description,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-            ),
+            const SizedBox(height: 16),
+            if (currentTask.description.isNotEmpty)
+              Text(
+                currentTask.description,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: AppTheme.textSecondary,
+                      height: 1.5,
+                    ),
+              ),
           ],
         ),
       ),
@@ -399,43 +467,60 @@ class TaskDetailPage extends ConsumerWidget {
   }
 
   Widget _buildTaskInfo(BuildContext context, WidgetRef ref, Task currentTask) {
-    return Card(
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerLow,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Task Information',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+    return EnhancedCard(
+      type: EnhancedCardType.elevated,
+      backgroundColor: AppTheme.surface,
+      showShimmer: true,
+      titleWidget: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.accent.withOpacity(0.2),
+                  AppTheme.blue.withOpacity(0.1)
+                ],
+              ),
+              borderRadius: BorderRadius.circular(8),
             ),
-            const SizedBox(height: 16),
-            _buildInfoRow(
-              context,
-              Icons.person,
-              'Assigned to',
-              _getMemberName(ref, currentTask.assignedTo),
-            ),
-            const Divider(height: 24),
-            _buildInfoRow(
-              context,
-              Icons.person_add,
-              'Created by',
-              _getMemberName(ref, currentTask.createdBy),
-            ),
-            const Divider(height: 24),
-            _buildInfoRow(
-              context,
-              Icons.repeat,
-              'Frequency',
-              _getFrequencyText(currentTask.frequency),
-            ),
-          ],
-        ),
+            child: const Icon(Icons.info_outline,
+                color: AppTheme.accent, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            'Task Information',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                ),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildInfoRow(
+            context,
+            Icons.person,
+            'Assigned to',
+            _getMemberName(ref, currentTask.assignedTo),
+          ),
+          const SizedBox(height: 20),
+          _buildInfoRow(
+            context,
+            Icons.person_add,
+            'Created by',
+            _getMemberName(ref, currentTask.createdBy),
+          ),
+          const SizedBox(height: 20),
+          _buildInfoRow(
+            context,
+            Icons.repeat,
+            'Frequency',
+            _getFrequencyText(currentTask.frequency),
+          ),
+        ],
       ),
     );
   }
@@ -445,39 +530,56 @@ class TaskDetailPage extends ConsumerWidget {
     final isOverdue = currentTask.dueDate.isBefore(now) &&
         currentTask.status == TaskStatus.pending;
 
-    return Card(
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerLow,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Schedule',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+    return EnhancedCard(
+      type: EnhancedCardType.elevated,
+      backgroundColor: AppTheme.surface,
+      showShimmer: true,
+      titleWidget: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.green.withOpacity(0.2),
+                  AppTheme.blue.withOpacity(0.1)
+                ],
+              ),
+              borderRadius: BorderRadius.circular(8),
             ),
-            const SizedBox(height: 16),
-            _buildInfoRow(
-              context,
-              Icons.calendar_today,
-              'Due Date',
-              DateFormat.yMMMMd().add_jm().format(currentTask.dueDate),
-              textColor: isOverdue ? Theme.of(context).colorScheme.error : null,
-            ),
-            const Divider(height: 24),
-            _buildInfoRow(
-              context,
-              Icons.update,
-              'Last Updated',
-              currentTask.updatedAt != null
-                  ? DateFormat.yMMMMd().add_jm().format(currentTask.updatedAt!)
-                  : 'Not updated yet',
-            ),
-          ],
-        ),
+            child: const Icon(Icons.schedule, color: AppTheme.green, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            'Schedule',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                ),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildInfoRow(
+            context,
+            Icons.calendar_today,
+            'Due Date',
+            DateFormat.yMMMMd().add_jm().format(currentTask.dueDate),
+            textColor: isOverdue ? AppTheme.error : AppTheme.textPrimary,
+          ),
+          const SizedBox(height: 20),
+          _buildInfoRow(
+            context,
+            Icons.update,
+            'Last Updated',
+            currentTask.updatedAt != null
+                ? DateFormat.yMMMMd().add_jm().format(currentTask.updatedAt!)
+                : 'Not updated yet',
+            textColor: AppTheme.textPrimary,
+          ),
+        ],
       ),
     );
   }
@@ -643,22 +745,15 @@ class TaskDetailPage extends ConsumerWidget {
   // Action Buttons
   Widget _buildCompleteButton(
       BuildContext context, WidgetRef ref, bool isUpdating, Task currentTask) {
-    return FilledButton.icon(
+    return DelightfulButton(
+      text: isUpdating ? 'Updating...' : 'Mark as Completed',
+      icon: Icons.check_circle,
+      style: DelightfulButtonStyle.success,
+      width: double.infinity,
+      isLoading: isUpdating,
       onPressed: isUpdating
           ? null
           : () => _showCompletionDialog(context, ref, currentTask),
-      icon: isUpdating
-          ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : const Icon(Icons.check),
-      label: Text(isUpdating ? 'Updating...' : 'Mark as Completed'),
-      style: FilledButton.styleFrom(
-        minimumSize: const Size.fromHeight(52),
-        backgroundColor: Colors.green,
-      ),
     );
   }
 

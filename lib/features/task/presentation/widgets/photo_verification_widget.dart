@@ -104,22 +104,48 @@ class _PhotoVerificationWidgetState
             Row(
               children: [
                 Expanded(
-                  child: EnhancedButton.outline(
-                    text: 'Photo',
-                    leadingIcon: Icons.camera_alt,
-                    onPressed: _isUploading
-                        ? null
-                        : () => _pickImage(ImageSource.camera),
+                  child: SizedBox(
+                    height: 36,
+                    child: OutlinedButton.icon(
+                      onPressed: _isUploading
+                          ? null
+                          : () => _pickImage(ImageSource.camera),
+                      icon: const Icon(Icons.camera_alt, size: 16),
+                      label: const Text(
+                        'Photo',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 Expanded(
-                  child: EnhancedButton.outline(
-                    text: 'Gallery',
-                    leadingIcon: Icons.photo_library,
-                    onPressed: _isUploading
-                        ? null
-                        : () => _pickImage(ImageSource.gallery),
+                  child: SizedBox(
+                    height: 36,
+                    child: OutlinedButton.icon(
+                      onPressed: _isUploading
+                          ? null
+                          : () => _pickImage(ImageSource.gallery),
+                      icon: const Icon(Icons.photo_library, size: 16),
+                      label: const Text(
+                        'Gallery',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ],
