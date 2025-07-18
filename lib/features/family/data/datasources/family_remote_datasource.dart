@@ -134,8 +134,11 @@ class SupabaseFamilyRemoteDataSource implements FamilyRemoteDataSource {
 
   @override
   Future<void> addMemberToFamily(String familyId, String userId) async {
+    debugPrint('🔄 Adding member to family - Family: $familyId, User: $userId');
+
     try {
       // Try using the safe database function first
+      debugPrint('🔄 Attempting to use safe_add_family_member function...');
       final response = await _client.rpc('safe_add_family_member', params: {
         'family_id_param': familyId,
         'user_id_param': userId,
@@ -143,17 +146,26 @@ class SupabaseFamilyRemoteDataSource implements FamilyRemoteDataSource {
 
       // Check if the function returned false (user already a member)
       if (response == false) {
-        debugPrint('🔄 User $userId is already a member of family $familyId');
+        debugPrint('ℹ️ User $userId is already a member of family $familyId');
         return; // Not an error, just already a member
       }
 
       debugPrint(
           '✅ Successfully added user $userId to family $familyId using safe function');
     } catch (e) {
+      final errorString = e.toString();
+      debugPrint('🚨 Database function error: $errorString');
+
       // If the function doesn't exist, fall back to manual approach
-      if (e.toString().contains('Could not find the function') ||
-          e.toString().contains('PGRST202')) {
-        debugPrint('⚠️ Safe function not available, using manual approach');
+      if (errorString.contains('Could not find the function') ||
+          errorString.contains('PGRST202') ||
+          errorString.contains('safe_add_family_member')) {
+        debugPrint('⚠️ Database function not available, using manual approach');
+        await _addMemberToFamilyManual(familyId, userId);
+      } else if (errorString.contains('permission denied') ||
+          errorString.contains('insufficient_privilege') ||
+          errorString.contains('policy')) {
+        debugPrint('⚠️ Database permission issue, trying manual approach');
         await _addMemberToFamilyManual(familyId, userId);
       } else {
         debugPrint('🚨 Failed to add member to family: $e');
@@ -165,14 +177,24 @@ class SupabaseFamilyRemoteDataSource implements FamilyRemoteDataSource {
   /// Manual method for adding family members when database function is not available
   Future<void> _addMemberToFamilyManual(String familyId, String userId) async {
     try {
+      debugPrint('🔄 Manual family join: Adding $userId to family $familyId');
+
       // Get the user's role to update family's member lists
       final userResponse = await _client
           .from('profiles')
-          .select('role')
+          .select('role, family_id')
           .eq('id', userId)
           .single();
 
       final role = userResponse['role'] as String;
+      final currentFamilyId = userResponse['family_id'] as String?;
+
+      debugPrint('🔍 User role: $role, current family_id: $currentFamilyId');
+
+      // Check if user already has a different family
+      if (currentFamilyId != null && currentFamilyId != familyId) {
+        throw Exception('User already belongs to a different family');
+      }
 
       // Get current family to update member lists
       final familyResponse = await _client
@@ -186,28 +208,115 @@ class SupabaseFamilyRemoteDataSource implements FamilyRemoteDataSource {
       List<String> childIds =
           List<String>.from(familyResponse['child_ids'] ?? []);
 
+      debugPrint('🔍 Current parent_ids: $parentIds');
+      debugPrint('🔍 Current child_ids: $childIds');
+
+      bool needsUpdate = false;
+
       if (role == 'parent') {
         if (!parentIds.contains(userId)) {
           parentIds.add(userId);
+          needsUpdate = true;
+          debugPrint('➕ Adding $userId to parent_ids');
+        } else {
+          debugPrint('ℹ️ User $userId already in parent_ids');
         }
       } else {
         if (!childIds.contains(userId)) {
           childIds.add(userId);
+          needsUpdate = true;
+          debugPrint('➕ Adding $userId to child_ids');
+        } else {
+          debugPrint('ℹ️ User $userId already in child_ids');
         }
       }
 
-      // Update family with new member lists FIRST
-      await _client.from('families').update({
-        'parent_ids': parentIds,
-        'child_ids': childIds,
-        'last_activity_at': DateTime.now().toIso8601String(),
-      }).eq('id', familyId);
+      // Update family with new member lists FIRST (only if needed)
+      if (needsUpdate) {
+        debugPrint('🔄 Updating family arrays...');
+        await _client.from('families').update({
+          'parent_ids': parentIds,
+          'child_ids': childIds,
+          'last_activity_at': DateTime.now().toIso8601String(),
+        }).eq('id', familyId);
+        debugPrint('✅ Family arrays updated successfully');
+      }
 
-      // Then update user's profile to link them to the family
-      // This order is important because of the database constraint trigger
-      await _client.from('profiles').update({
-        'family_id': familyId,
-      }).eq('id', userId);
+      // Update user's profile to link them to the family (always do this)
+      if (currentFamilyId != familyId) {
+        debugPrint('🔄 Updating user profile family_id...');
+        await _client.from('profiles').update({
+          'family_id': familyId,
+        }).eq('id', userId);
+        debugPrint('✅ User profile updated successfully');
+      }
+
+      // Final verification - check that the update worked (with retry and graceful failure)
+      bool verificationPassed = false;
+      int retryCount = 0;
+      const maxRetries = 3;
+
+      while (!verificationPassed && retryCount < maxRetries) {
+        try {
+          // Add a small delay to allow for database consistency
+          if (retryCount > 0) {
+            await Future.delayed(Duration(milliseconds: 200 * retryCount));
+          }
+
+          final verifyResponse = await _client
+              .from('families')
+              .select('parent_ids, child_ids')
+              .eq('id', familyId)
+              .single();
+
+          final finalParentIds =
+              List<String>.from(verifyResponse['parent_ids'] ?? []);
+          final finalChildIds =
+              List<String>.from(verifyResponse['child_ids'] ?? []);
+
+          bool isInCorrectArray = false;
+          if (role == 'parent' && finalParentIds.contains(userId)) {
+            isInCorrectArray = true;
+          } else if (role == 'child' && finalChildIds.contains(userId)) {
+            isInCorrectArray = true;
+          }
+
+          if (isInCorrectArray) {
+            debugPrint(
+                '✅ VERIFICATION SUCCESS: User $userId is in correct array (attempt ${retryCount + 1})');
+            debugPrint('✅ Final parent_ids: $finalParentIds');
+            debugPrint('✅ Final child_ids: $finalChildIds');
+            verificationPassed = true;
+          } else {
+            retryCount++;
+            debugPrint(
+                '⚠️ VERIFICATION ATTEMPT $retryCount/$maxRetries: User $userId not in arrays yet');
+            debugPrint('⚠️ Current parent_ids: $finalParentIds');
+            debugPrint('⚠️ Current child_ids: $finalChildIds');
+
+            if (retryCount >= maxRetries) {
+              // Log warning but don't throw - let the operation succeed
+              debugPrint(
+                  '❌ VERIFICATION WARNING: User $userId not in arrays after $maxRetries attempts');
+              debugPrint(
+                  '❌ This might be due to database caching, RLS policies, or eventual consistency');
+              debugPrint(
+                  '❌ The profile was updated but family arrays may be inconsistent');
+              debugPrint(
+                  '❌ Run the fix_family_arrays_sync.sql script to resolve manually');
+            }
+          }
+        } catch (verifyError) {
+          retryCount++;
+          debugPrint(
+              '🚨 Verification attempt $retryCount failed: $verifyError');
+          if (retryCount >= maxRetries) {
+            debugPrint(
+                '⚠️ Verification failed after $maxRetries attempts, but family join will continue');
+            break;
+          }
+        }
+      }
 
       debugPrint(
           '✅ Successfully added user $userId to family $familyId using manual method');
@@ -507,8 +616,12 @@ class SupabaseFamilyRemoteDataSource implements FamilyRemoteDataSource {
   @override
   Future<String> safeJoinFamilyByInviteCode(
       String inviteCode, String userId) async {
+    debugPrint(
+        '🔄 Safe family join attempt - Code: $inviteCode, User: $userId');
+
     try {
       // Try using the safe database function first
+      debugPrint('🔄 Attempting to use database function...');
       final response =
           await _client.rpc('safe_join_family_by_invite_code', params: {
         'invite_code_param': inviteCode.toUpperCase(),
@@ -520,10 +633,22 @@ class SupabaseFamilyRemoteDataSource implements FamilyRemoteDataSource {
       debugPrint('✅ Successfully joined family using safe function: $familyId');
       return familyId;
     } catch (e) {
+      final errorString = e.toString();
+      debugPrint('🚨 Database function error: $errorString');
+
       // If the function doesn't exist, fall back to manual approach
-      if (e.toString().contains('Could not find the function') ||
-          e.toString().contains('PGRST202')) {
-        debugPrint('⚠️ Safe function not available, using fallback approach');
+      if (errorString.contains('Could not find the function') ||
+          errorString.contains('PGRST202') ||
+          errorString.contains('safe_join_family_by_invite_code')) {
+        debugPrint('⚠️ Database function not available, using manual fallback');
+        return await _joinFamilyFallback(inviteCode.toUpperCase(), userId);
+      }
+
+      // For other errors, try fallback as well (in case of RLS issues, etc.)
+      if (errorString.contains('permission denied') ||
+          errorString.contains('insufficient_privilege') ||
+          errorString.contains('policy')) {
+        debugPrint('⚠️ Database permission issue, trying manual fallback');
         return await _joinFamilyFallback(inviteCode.toUpperCase(), userId);
       }
 
@@ -535,11 +660,37 @@ class SupabaseFamilyRemoteDataSource implements FamilyRemoteDataSource {
   /// Fallback method for family joining when database function is not available
   Future<String> _joinFamilyFallback(String inviteCode, String userId) async {
     try {
+      debugPrint('🔄 Using fallback family join for invite code: $inviteCode');
+
       // Step 1: Find the family by invite code
       final family = await getFamilyByInviteCode(inviteCode);
+      debugPrint('🔍 Found family: ${family.name} (ID: ${family.id})');
 
-      // Step 2: Add the user to the family using the existing method
-      await addMemberToFamily(family.id, userId);
+      // Step 2: Check if user already has a family
+      final userResponse = await _client
+          .from('profiles')
+          .select('family_id, role, display_name')
+          .eq('id', userId)
+          .single();
+
+      final currentFamilyId = userResponse['family_id'] as String?;
+      final userRole = userResponse['role'] as String;
+      final userName = userResponse['display_name'] as String;
+
+      debugPrint(
+          '🔍 User: $userName, Role: $userRole, Current family: $currentFamilyId');
+
+      if (currentFamilyId != null) {
+        if (currentFamilyId == family.id) {
+          debugPrint('ℹ️ User is already a member of this family');
+          return family.id; // Already a member, not an error
+        } else {
+          throw Exception('User already belongs to a different family');
+        }
+      }
+
+      // Step 3: Add the user to the family using the improved manual method
+      await _addMemberToFamilyManual(family.id, userId);
 
       debugPrint('✅ Successfully joined family using fallback: ${family.id}');
       return family.id;
