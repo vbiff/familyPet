@@ -24,6 +24,7 @@ class SupabaseAuthRepository implements AuthRepository {
 
       // First create the user account with display name in metadata
       print('🔐 Creating auth user...');
+
       final response = await _client.auth.signUp(
         email: email,
         password: password,
@@ -33,25 +34,28 @@ class SupabaseAuthRepository implements AuthRepository {
         },
       );
 
-      print('🔐 Auth signup response: ${response.user?.id}');
+      print('🔐 Auth signup response received');
+      print('🔐 User: ${response.user?.id}');
       print(
-          '🔐 Auth session: ${response.session?.accessToken != null ? 'exists' : 'null'}');
+          '🔐 Session: ${response.session?.accessToken != null ? 'exists' : 'null'}');
+      print(
+          '🔐 Auth error: ${response.user == null ? 'USER IS NULL' : 'user exists'}');
 
       final user = response.user;
       if (user == null) {
         print('❌ Auth user creation failed - user is null');
         return left(const AuthenticationFailure(
-          message: 'Failed to create user account',
+          message: 'Failed to create user account - auth returned null user',
         ));
       }
 
       print('✅ Auth user created successfully: ${user.id}');
+      print('📧 Auth user email: ${user.email}');
 
       final userId = user.id;
       final now = DateTime.now();
 
-      // Create profile with comprehensive data
-      // Since we removed the auth trigger, we need to handle this client-side
+      // Create profile directly - should work with new RLS policies
       final profileData = {
         'id': userId,
         'email': email,
@@ -63,9 +67,10 @@ class SupabaseAuthRepository implements AuthRepository {
       };
 
       print('📝 Creating profile with data: $profileData');
+      print(
+          '🔐 Current auth session exists: ${_client.auth.currentSession != null}');
       print('🔐 Current auth user: ${_client.auth.currentUser?.id}');
 
-      // Use upsert to handle any potential conflicts gracefully
       try {
         final profileResult =
             await _client.from('profiles').upsert(profileData);
@@ -73,6 +78,7 @@ class SupabaseAuthRepository implements AuthRepository {
       } catch (profileError) {
         print('❌ Profile creation failed: $profileError');
         print('❌ Profile error type: ${profileError.runtimeType}');
+        print('❌ Profile error details: ${profileError.toString()}');
         rethrow;
       }
 
@@ -92,11 +98,15 @@ class SupabaseAuthRepository implements AuthRepository {
 
       return right(createdUser);
     } on supabase.AuthException catch (e) {
+      print('❌ AuthException caught: ${e.message}');
+      print('❌ AuthException code: ${e.statusCode}');
       return left(AuthenticationFailure(
         message: e.message,
         code: e.statusCode,
       ));
     } catch (e) {
+      print('❌ Generic exception caught: $e');
+      print('❌ Exception type: ${e.runtimeType}');
       return left(UnexpectedFailure(
         message: 'Failed to create user profile: ${e.toString()}',
       ));
