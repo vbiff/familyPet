@@ -37,19 +37,23 @@ class SupabaseFamilyRemoteDataSource implements FamilyRemoteDataSource {
   @override
   Future<FamilyModel> createFamily(FamilyModel family) async {
     try {
-      final response = await _client
-          .from('families')
-          .insert(family.toCreateJson())
-          .select()
-          .single();
+      debugPrint('🏗️ Creating family using atomic function: ${family.name}');
 
-      final familyId = response['id'];
+      // Use the new atomic function - handles everything in one transaction
+      final familyId = await _client.rpc('create_family_atomic', params: {
+        'family_name_param': family.name,
+        'creator_id_param': family.createdById,
+      });
 
-      // Add the creator to the family as a member (this also updates their profile)
-      await addMemberToFamily(familyId, family.createdById);
+      debugPrint('✅ Family created atomically: $familyId');
+
+      // Get the created family to return
+      final response =
+          await _client.from('families').select().eq('id', familyId).single();
 
       return FamilyModel.fromJson(response);
     } catch (e) {
+      debugPrint('🚨 Failed to create family: $e');
       throw Exception('Failed to create family: $e');
     }
   }
@@ -134,43 +138,17 @@ class SupabaseFamilyRemoteDataSource implements FamilyRemoteDataSource {
 
   @override
   Future<void> addMemberToFamily(String familyId, String userId) async {
-    debugPrint('🔄 Adding member to family - Family: $familyId, User: $userId');
+    // This method is now only used for family creation, which is handled atomically
+    // For joining, we use safeJoinFamilyByInviteCode instead
+    debugPrint(
+        '⚠️ addMemberToFamily called - this should use atomic functions instead');
 
+    // Fallback to manual method if needed for backward compatibility
     try {
-      // Try using the safe database function first
-      debugPrint('🔄 Attempting to use safe_add_family_member function...');
-      final response = await _client.rpc('safe_add_family_member', params: {
-        'family_id_param': familyId,
-        'user_id_param': userId,
-      });
-
-      // Check if the function returned false (user already a member)
-      if (response == false) {
-        debugPrint('ℹ️ User $userId is already a member of family $familyId');
-        return; // Not an error, just already a member
-      }
-
-      debugPrint(
-          '✅ Successfully added user $userId to family $familyId using safe function');
+      await _addMemberToFamilyManual(familyId, userId);
     } catch (e) {
-      final errorString = e.toString();
-      debugPrint('🚨 Database function error: $errorString');
-
-      // If the function doesn't exist, fall back to manual approach
-      if (errorString.contains('Could not find the function') ||
-          errorString.contains('PGRST202') ||
-          errorString.contains('safe_add_family_member')) {
-        debugPrint('⚠️ Database function not available, using manual approach');
-        await _addMemberToFamilyManual(familyId, userId);
-      } else if (errorString.contains('permission denied') ||
-          errorString.contains('insufficient_privilege') ||
-          errorString.contains('policy')) {
-        debugPrint('⚠️ Database permission issue, trying manual approach');
-        await _addMemberToFamilyManual(familyId, userId);
-      } else {
-        debugPrint('🚨 Failed to add member to family: $e');
-        throw Exception('Failed to add member to family: $e');
-      }
+      debugPrint('🚨 Manual add member fallback failed: $e');
+      throw Exception('Failed to add member to family: $e');
     }
   }
 
@@ -616,35 +594,31 @@ class SupabaseFamilyRemoteDataSource implements FamilyRemoteDataSource {
   @override
   Future<String> safeJoinFamilyByInviteCode(
       String inviteCode, String userId) async {
-    debugPrint(
-        '🔄 Safe family join attempt - Code: $inviteCode, User: $userId');
-
     try {
-      // Try using the safe database function first
-      debugPrint('🔄 Attempting to use database function...');
-      final response =
-          await _client.rpc('safe_join_family_by_invite_code', params: {
+      debugPrint(
+          '🤝 Joining family using atomic function - Code: $inviteCode, User: $userId');
+
+      // Use the new atomic function - handles everything in one transaction
+      final familyId = await _client.rpc('join_family_atomic', params: {
         'invite_code_param': inviteCode.toUpperCase(),
-        'user_id_param': userId,
+        'joiner_id_param': userId,
       });
 
-      // The function returns the family ID UUID as a string
-      final familyId = response as String;
-      debugPrint('✅ Successfully joined family using safe function: $familyId');
-      return familyId;
+      debugPrint('✅ Family joined atomically: $familyId');
+      return familyId.toString();
     } catch (e) {
       final errorString = e.toString();
-      debugPrint('🚨 Database function error: $errorString');
+      debugPrint('🚨 Atomic join failed: $errorString');
 
-      // If the function doesn't exist, fall back to manual approach
+      // If the atomic function doesn't exist, fall back to manual approach
       if (errorString.contains('Could not find the function') ||
           errorString.contains('PGRST202') ||
-          errorString.contains('safe_join_family_by_invite_code')) {
-        debugPrint('⚠️ Database function not available, using manual fallback');
+          errorString.contains('join_family_atomic')) {
+        debugPrint('⚠️ Atomic function not available, using manual fallback');
         return await _joinFamilyFallback(inviteCode.toUpperCase(), userId);
       }
 
-      // For other errors, try fallback as well (in case of RLS issues, etc.)
+      // For other errors, also try fallback (in case of RLS issues, etc.)
       if (errorString.contains('permission denied') ||
           errorString.contains('insufficient_privilege') ||
           errorString.contains('policy')) {
@@ -652,8 +626,21 @@ class SupabaseFamilyRemoteDataSource implements FamilyRemoteDataSource {
         return await _joinFamilyFallback(inviteCode.toUpperCase(), userId);
       }
 
+      // Re-throw with user-friendly message
+      if (errorString.contains('Invalid invite code')) {
+        throw Exception('Invalid invite code. Please check and try again.');
+      } else if (errorString.contains('already has a family')) {
+        throw Exception('You already belong to a family.');
+      } else if (errorString.contains('already a member')) {
+        throw Exception('You are already a member of this family.');
+      } else if (errorString.contains('User not found')) {
+        throw Exception('User account not found.');
+      } else if (errorString.contains('Family not found')) {
+        throw Exception('Family not found with this invite code.');
+      }
+
       debugPrint('🚨 Failed to join family by invite code: $e');
-      throw Exception('Failed to join family by invite code: $e');
+      throw Exception('Failed to join family: $errorString');
     }
   }
 
