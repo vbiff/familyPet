@@ -555,9 +555,10 @@ class _FamilySetupPageState extends ConsumerState<FamilySetupPage>
   // Validate invite code format
   bool _isValidInviteCode(String code) {
     if (code.length != 6) return false;
-    // Check if code contains only allowed characters
-    const allowedChars = 'ACDEFHJKMNPRTUVWXY347';
-    return code.split('').every((char) => allowedChars.contains(char));
+    // Accept alphanumeric characters (more permissive than the strict database constraint)
+    // This handles both old and new invite code formats
+    final alphanumericRegex = RegExp(r'^[A-Z0-9]+$');
+    return alphanumericRegex.hasMatch(code);
   }
 
   // Format error messages for better user experience
