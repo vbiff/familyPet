@@ -20,7 +20,6 @@ import 'package:jhonny/features/task/presentation/providers/task_state.dart';
 import 'package:jhonny/shared/widgets/widgets.dart';
 import 'package:jhonny/shared/widgets/animated_bottom_nav.dart';
 import 'package:jhonny/core/theme/app_theme.dart';
-import 'package:jhonny/main.dart'; // To access themeService
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 import 'package:jhonny/features/task/presentation/pages/archive_page.dart';
@@ -53,11 +52,11 @@ class HomePage extends ConsumerWidget {
             ref.invalidate(taskNotifierProvider);
             ref.invalidate(familyNotifierProvider);
 
-            print('🧹 Cleaned up all providers after logout');
+            Logger().i('🧹 Cleaned up all providers after logout');
           } catch (e) {
             // Silently handle disposal errors during cleanup
             if (!e.toString().contains('disposed')) {
-              print('⚠️ Error during provider cleanup: $e');
+              Logger().e('⚠️ Error during provider cleanup: $e');
             }
           }
         });
@@ -78,7 +77,7 @@ class HomePage extends ConsumerWidget {
         } catch (e) {
           // Handle potential disposed provider during user change
           if (!e.toString().contains('disposed')) {
-            print('⚠️ Error during user change cleanup: $e');
+            Logger().e('⚠️ Error during user change cleanup: $e');
           }
         }
       }
@@ -134,6 +133,7 @@ class HomePage extends ConsumerWidget {
       extendBody: true,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
+        centerTitle: false,
         title: FittedBox(
           child: Text(
             _getGreeting(user?.displayName ?? 'User'),
@@ -153,7 +153,7 @@ class HomePage extends ConsumerWidget {
             onPressed: () => _showProfileMenu(context, ref),
             tooltip: 'Profile',
             style: IconButton.styleFrom(
-              backgroundColor: Colors.white.withOpacity(0.9),
+              backgroundColor: Colors.white.withValues(alpha: 0.9),
               foregroundColor: AppTheme.primary,
             ),
           ),
@@ -165,8 +165,8 @@ class HomePage extends ConsumerWidget {
           gradient: LinearGradient(
             colors: [
               AppTheme.background,
-              AppTheme.primary.withOpacity(0.05),
-              AppTheme.secondary.withOpacity(0.03),
+              AppTheme.primary.withValues(alpha: 0.05),
+              AppTheme.secondary.withValues(alpha: 0.03),
             ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,

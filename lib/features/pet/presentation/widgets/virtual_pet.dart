@@ -4,10 +4,10 @@ import 'package:jhonny/core/config/app_config.dart';
 import 'package:jhonny/features/family/presentation/providers/family_provider.dart';
 import 'package:jhonny/features/pet/domain/entities/pet.dart';
 import 'package:jhonny/features/pet/presentation/providers/pet_provider.dart';
-import 'package:jhonny/features/pet/presentation/widgets/pet_debug_controls.dart';
 import 'package:jhonny/features/auth/presentation/providers/auth_provider.dart';
-import 'package:jhonny/features/auth/domain/entities/user.dart';
 import 'package:jhonny/shared/widgets/animated_interactions.dart';
+
+import '../../../../core/theme/app_theme.dart';
 
 class VirtualPet extends ConsumerWidget {
   const VirtualPet({super.key});
@@ -20,7 +20,6 @@ class VirtualPet extends ConsumerWidget {
     final petStageDisplay = ref.watch(petStageDisplayProvider);
     final petAge = ref.watch(petAgeProvider);
     final petEvolutionStatus = ref.watch(petEvolutionStatusProvider);
-    final currentUser = ref.watch(currentUserProvider);
 
     Color getFeedButtonColor(int? hunger) {
       if (hunger != null) {
@@ -188,14 +187,7 @@ class VirtualPet extends ConsumerWidget {
                         width: 180,
                         height: 180,
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Theme.of(context).colorScheme.primaryContainer,
-                              Theme.of(context).colorScheme.secondaryContainer,
-                            ],
-                          ),
+                          color: AppTheme.primary.withValues(alpha: 0.2),
                           shape: BoxShape.circle,
                         ),
                         child: Stack(
@@ -248,8 +240,7 @@ class VirtualPet extends ConsumerWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 14, vertical: 8),
                           decoration: BoxDecoration(
-                            color:
-                                Theme.of(context).colorScheme.primaryContainer,
+                            color: AppTheme.primary.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(18),
                           ),
                           child: Text(
@@ -268,9 +259,7 @@ class VirtualPet extends ConsumerWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 14, vertical: 8),
                           decoration: BoxDecoration(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .secondaryContainer,
+                            color: AppTheme.primary.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(18),
                           ),
                           child: Text(

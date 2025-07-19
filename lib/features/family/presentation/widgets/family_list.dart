@@ -8,6 +8,8 @@ import 'package:jhonny/features/family/presentation/providers/family_state.dart'
 import 'package:jhonny/features/family/presentation/pages/family_setup_page.dart';
 import 'package:jhonny/features/family/presentation/pages/family_settings_page.dart';
 
+import '../../../../core/theme/app_theme.dart';
+
 class FamilyList extends ConsumerStatefulWidget {
   const FamilyList({super.key});
 
@@ -164,7 +166,7 @@ class _FamilyListState extends ConsumerState<FamilyList> {
             // Family overview card
             Card(
               elevation: 0,
-              color: Theme.of(context).colorScheme.primaryContainer,
+              color: AppTheme.primary.withValues(alpha: 0.2),
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(

@@ -256,10 +256,10 @@ class _EnhancedButtonState extends State<EnhancedButton>
                       BorderRadius.circular(sizeProps.borderRadius),
                   splashColor:
                       (widget.foregroundColor ?? typeStyle.foregroundColor)
-                          .withOpacity(0.1),
+                          .withValues(alpha: 0.1),
                   highlightColor:
                       (widget.foregroundColor ?? typeStyle.foregroundColor)
-                          .withOpacity(0.05),
+                          .withValues(alpha: 0.05),
                   child: Container(
                     padding: sizeProps.padding,
                     child: _buildContent(),
@@ -272,7 +272,7 @@ class _EnhancedButtonState extends State<EnhancedButton>
                   ? [
                       ShimmerEffect(
                         duration: const Duration(seconds: 3),
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                       ),
                     ]
                   : [],
@@ -447,20 +447,20 @@ class _EnhancedButtonState extends State<EnhancedButton>
         );
       case EnhancedButtonType.ghost:
         return _TypeStyle(
-          backgroundColor: AppTheme.primary.withOpacity(0.1),
+          backgroundColor: AppTheme.primary.withValues(alpha: 0.1),
           foregroundColor: AppTheme.primary,
         );
       case EnhancedButtonType.destructive:
         return _TypeStyle(
           gradient: LinearGradient(
-            colors: [AppTheme.error, AppTheme.error.withOpacity(0.8)],
+            colors: [AppTheme.error, AppTheme.error.withValues(alpha: 0.8)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           foregroundColor: Colors.white,
           boxShadow: [
             BoxShadow(
-              color: AppTheme.error.withOpacity(0.3),
+              color: AppTheme.error.withValues(alpha: 0.3),
               offset: const Offset(0, 4),
               blurRadius: 12,
             ),
