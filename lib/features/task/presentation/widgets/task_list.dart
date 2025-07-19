@@ -627,7 +627,9 @@ class TaskCard extends StatelessWidget {
     final bool isCompleted = task.status.isCompleted;
     final bool canComplete =
         task.status == TaskStatus.pending && (user?.id == task.assignedTo);
-    final bool canUncomplete = isCompleted && (user?.id == task.assignedTo);
+    final bool canUncomplete = isCompleted &&
+        (user?.id == task.assignedTo) &&
+        !task.isVerifiedByParent;
 
     if (canComplete) {
       return () => onCompleteTask(task);
@@ -641,6 +643,7 @@ class TaskCard extends StatelessWidget {
     final bool isCompleted = task.status.isCompleted;
     final bool canComplete =
         task.status == TaskStatus.pending && (user?.id == task.assignedTo);
+    final bool isVerified = task.isVerifiedByParent;
 
     return Container(
       width: 40,
@@ -649,7 +652,12 @@ class TaskCard extends StatelessWidget {
         shape: BoxShape.circle,
         gradient: isCompleted
             ? LinearGradient(
-                colors: [AppTheme.success, AppTheme.success.withOpacity(0.8)],
+                colors: isVerified
+                    ? [
+                        Colors.green,
+                        Colors.green.withOpacity(0.8)
+                      ] // Different color for verified tasks
+                    : [AppTheme.success, AppTheme.success.withOpacity(0.8)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               )
@@ -668,7 +676,7 @@ class TaskCard extends StatelessWidget {
             : null,
         border: Border.all(
           color: isCompleted
-              ? AppTheme.success
+              ? (isVerified ? Colors.green : AppTheme.success)
               : canComplete
                   ? AppTheme.primary
                   : Theme.of(context).colorScheme.outline,
@@ -677,7 +685,9 @@ class TaskCard extends StatelessWidget {
         boxShadow: (isCompleted || canComplete) ? AppTheme.softShadow : null,
       ),
       child: Icon(
-        isCompleted ? Icons.check : Icons.circle_outlined,
+        isCompleted
+            ? (isVerified ? Icons.verified : Icons.check)
+            : Icons.circle_outlined,
         color: isCompleted
             ? Colors.white
             : canComplete

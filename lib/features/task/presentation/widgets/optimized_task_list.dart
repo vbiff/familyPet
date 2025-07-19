@@ -646,7 +646,9 @@ class OptimizedTaskCard extends OptimizedStatelessWidget {
     final bool isCompleted = task.status.isCompleted;
     final bool canComplete =
         task.status == TaskStatus.pending && (user?.id == task.assignedTo);
-    final bool canUncomplete = isCompleted && (user?.id == task.assignedTo);
+    final bool canUncomplete = isCompleted &&
+        (user?.id == task.assignedTo) &&
+        !task.isVerifiedByParent;
 
     if (canComplete) {
       return () => onCompleteTask(task);
@@ -657,6 +659,8 @@ class OptimizedTaskCard extends OptimizedStatelessWidget {
   }
 
   Widget _buildCompleteButton(BuildContext context) {
+    final bool isVerified = task.isVerifiedByParent;
+
     return Container(
       width: 28,
       height: 28,
@@ -664,15 +668,15 @@ class OptimizedTaskCard extends OptimizedStatelessWidget {
         shape: BoxShape.circle,
         border: Border.all(
           color: task.status.isCompleted
-              ? Colors.green
+              ? (isVerified ? Colors.green : Colors.green)
               : Theme.of(context).colorScheme.outline,
           width: 2,
         ),
         color: task.status.isCompleted ? Colors.green : Colors.transparent,
       ),
       child: task.status.isCompleted
-          ? const Icon(
-              Icons.check,
+          ? Icon(
+              isVerified ? Icons.verified : Icons.check,
               size: 18,
               color: Colors.white,
             )
