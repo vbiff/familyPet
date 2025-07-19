@@ -255,7 +255,7 @@ class _FamilyListState extends ConsumerState<FamilyList> {
                         Expanded(
                           child: _buildFamilyStat(
                             context,
-                            'Total Points',
+                            'Total Points\n(This Week)',
                             '${members.fold(0, (sum, member) => sum + member.totalPoints)}',
                             Icons.stars,
                           ),
@@ -264,7 +264,7 @@ class _FamilyListState extends ConsumerState<FamilyList> {
                         Expanded(
                           child: _buildFamilyStat(
                             context,
-                            'Tasks Done',
+                            'Tasks Done\n(This Week)',
                             '${members.fold(0, (sum, member) => sum + member.tasksCompleted)}',
                             Icons.task_alt,
                           ),

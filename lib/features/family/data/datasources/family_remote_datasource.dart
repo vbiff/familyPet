@@ -351,50 +351,90 @@ class SupabaseFamilyRemoteDataSource implements FamilyRemoteDataSource {
 
       debugPrint('📊 Database returned ${response.length} profiles');
 
-      // Get task statistics for each member
-      final List<FamilyMemberModel> members = [];
+      // Use the existing get_member_leaderboard function to get all member stats at once
+      try {
+        debugPrint('🔄 Getting member leaderboard for family: $familyId');
 
-      for (final profile in response) {
-        try {
-          final taskStatsResponse =
-              await _client.rpc('get_member_task_stats', params: {
-            'member_id': profile['id'],
-          });
+        final endDate = DateTime.now();
+        final startDate = endDate.subtract(
+            const Duration(days: 7)); // Use weekly period to match Dashboard
 
-          final taskStats =
-              taskStatsResponse.isNotEmpty ? taskStatsResponse[0] : {};
+        final leaderboardResponse =
+            await _client.rpc('get_member_leaderboard', params: {
+          'family_id_param': familyId,
+          'start_date_param': startDate.toIso8601String(),
+          'end_date_param': endDate.toIso8601String(),
+        });
 
-          // Create member model with task stats
+        debugPrint('📈 Leaderboard response: $leaderboardResponse');
+
+        // Create a map of member stats by member ID
+        final Map<String, Map<String, dynamic>> memberStatsMap = {};
+        for (final memberStat in leaderboardResponse) {
+          memberStatsMap[memberStat['member_id']] = {
+            'tasks_completed': memberStat['completed_tasks'] ?? 0,
+            'total_points': memberStat['points_earned'] ?? 0,
+            'current_streak': memberStat['current_streak'] ?? 0,
+            'last_task_completed_at': memberStat['last_completed_at'],
+          };
+        }
+
+        debugPrint('📊 Member stats map: $memberStatsMap');
+
+        // Create family member models with stats
+        final List<FamilyMemberModel> members = [];
+        for (final profile in response) {
+          final memberId = profile['id'] as String;
+          final memberStats = memberStatsMap[memberId] ??
+              {
+                'tasks_completed': 0,
+                'total_points': 0,
+                'current_streak': 0,
+                'last_task_completed_at': null,
+              };
+
           final memberData = Map<String, dynamic>.from(profile);
           memberData.addAll({
-            'tasks_completed': taskStats['tasks_completed'] ?? 0,
-            'total_points': taskStats['total_points'] ?? 0,
-            'current_streak': taskStats['current_streak'] ?? 0,
-            'last_task_completed_at': taskStats['last_task_completed_at'],
+            'tasks_completed': memberStats['tasks_completed'],
+            'total_points': memberStats['total_points'],
+            'current_streak': memberStats['current_streak'],
+            'last_task_completed_at': memberStats['last_task_completed_at'],
             'metadata': null, // Default value since column doesn't exist
           });
 
+          debugPrint(
+              '✅ Member data with stats: ${memberData['display_name']} - ${memberData['tasks_completed']} tasks, ${memberData['total_points']} points');
+
           members.add(FamilyMemberModel.fromJson(memberData));
-        } catch (statsError) {
-          // If task stats fail, create member without stats
-          // TODO: Use proper logging instead of print
-          // print('Task stats failed for member ${profile['id']}: $statsError');
+        }
+
+        debugPrint(
+            '✅ Successfully created ${members.length} family member models using leaderboard');
+        return members;
+      } catch (leaderboardError) {
+        debugPrint('🚨 Leaderboard failed: $leaderboardError');
+        debugPrint('🚨 Error type: ${leaderboardError.runtimeType}');
+        debugPrint('🚨 Error details: ${leaderboardError.toString()}');
+
+        // Fallback: create members without stats
+        final List<FamilyMemberModel> members = [];
+        for (final profile in response) {
           final memberData = Map<String, dynamic>.from(profile);
           memberData.addAll({
             'tasks_completed': 0,
             'total_points': 0,
             'current_streak': 0,
             'last_task_completed_at': null,
-            'metadata': null, // Default value since column doesn't exist
+            'metadata': null,
           });
 
+          debugPrint(
+              '❌ Created member without stats: ${memberData['display_name']}');
           members.add(FamilyMemberModel.fromJson(memberData));
         }
-      }
 
-      debugPrint(
-          '✅ Successfully created ${members.length} family member models');
-      return members;
+        return members;
+      }
     } catch (e) {
       debugPrint('🚨 Exception in getFamilyMembers: $e');
       debugPrint('🚨 Family ID: $familyId');
@@ -498,34 +538,73 @@ class SupabaseFamilyRemoteDataSource implements FamilyRemoteDataSource {
         .stream(primaryKey: ['id'])
         .eq('family_id', familyId)
         .asyncMap((profiles) async {
-          final List<FamilyMemberModel> members = [];
+          try {
+            debugPrint(
+                '🔄 Stream: Getting member leaderboard for family: $familyId');
 
-          for (final profile in profiles) {
-            try {
-              final taskStatsResponse =
-                  await _client.rpc('get_member_task_stats', params: {
-                'member_id': profile['id'],
-              });
+            final endDate = DateTime.now();
+            final startDate = endDate.subtract(const Duration(
+                days: 7)); // Use weekly period to match Dashboard
 
-              final taskStats =
-                  taskStatsResponse.isNotEmpty ? taskStatsResponse[0] : {};
+            final leaderboardResponse =
+                await _client.rpc('get_member_leaderboard', params: {
+              'family_id_param': familyId,
+              'start_date_param': startDate.toIso8601String(),
+              'end_date_param': endDate.toIso8601String(),
+            });
+
+            // Create a map of member stats by member ID
+            final Map<String, Map<String, dynamic>> memberStatsMap = {};
+            for (final memberStat in leaderboardResponse) {
+              memberStatsMap[memberStat['member_id']] = {
+                'tasks_completed': memberStat['completed_tasks'] ?? 0,
+                'total_points': memberStat['points_earned'] ?? 0,
+                'current_streak': memberStat['current_streak'] ?? 0,
+                'last_task_completed_at': memberStat['last_completed_at'],
+              };
+            }
+
+            final List<FamilyMemberModel> members = [];
+
+            for (final profile in profiles) {
+              final memberId = profile['id'] as String;
+              final memberStats = memberStatsMap[memberId] ??
+                  {
+                    'tasks_completed': 0,
+                    'total_points': 0,
+                    'current_streak': 0,
+                    'last_task_completed_at': null,
+                  };
 
               final memberData = Map<String, dynamic>.from(profile);
               memberData.addAll({
-                'tasks_completed': taskStats['tasks_completed'] ?? 0,
-                'total_points': taskStats['total_points'] ?? 0,
-                'current_streak': taskStats['current_streak'] ?? 0,
-                'last_task_completed_at': taskStats['last_task_completed_at'],
+                'tasks_completed': memberStats['tasks_completed'],
+                'total_points': memberStats['total_points'],
+                'current_streak': memberStats['current_streak'],
+                'last_task_completed_at': memberStats['last_task_completed_at'],
+                'metadata': null,
               });
 
               members.add(FamilyMemberModel.fromJson(memberData));
-            } catch (e) {
-              // If stats fail, create member without stats
-              members.add(FamilyMemberModel.fromJson(profile));
             }
-          }
 
-          return members;
+            return members;
+          } catch (e) {
+            debugPrint(
+                '🚨 Stream: Leaderboard failed, creating members without stats: $e');
+            // If leaderboard fails, create members without stats
+            return profiles.map((profile) {
+              final memberData = Map<String, dynamic>.from(profile);
+              memberData.addAll({
+                'tasks_completed': 0,
+                'total_points': 0,
+                'current_streak': 0,
+                'last_task_completed_at': null,
+                'metadata': null,
+              });
+              return FamilyMemberModel.fromJson(memberData);
+            }).toList();
+          }
         });
   }
 
