@@ -7,6 +7,8 @@ import 'package:jhonny/features/task/domain/entities/task_comment.dart';
 import 'package:jhonny/features/task/presentation/providers/task_comment_provider.dart';
 import 'package:jhonny/shared/widgets/enhanced_card.dart';
 
+import '../../../../core/theme/app_theme.dart';
+
 class TaskCommentsSection extends ConsumerStatefulWidget {
   final String taskId;
 
@@ -358,7 +360,7 @@ class _TaskCommentsSectionState extends ConsumerState<TaskCommentsSection> {
                   icon: const Icon(Icons.delete_outline),
                   iconSize: 18,
                   style: IconButton.styleFrom(
-                    foregroundColor: Theme.of(context).colorScheme.error,
+                    foregroundColor: AppTheme.error,
                     minimumSize: const Size(32, 32),
                     padding: EdgeInsets.zero,
                   ),

@@ -110,8 +110,8 @@ class _EnhancedCardState extends State<EnhancedCard>
                     ...AppTheme.softShadow,
                     if (widget.onTap != null)
                       BoxShadow(
-                        color: AppTheme.primary.withOpacity(
-                          0.1 * _elevationAnimation.value / 8.0,
+                        color: AppTheme.primary.withValues(
+                          alpha: 0.1 * _elevationAnimation.value / 8.0,
                         ),
                         offset: Offset(0, _elevationAnimation.value),
                         blurRadius: _elevationAnimation.value * 2,
@@ -133,8 +133,8 @@ class _EnhancedCardState extends State<EnhancedCard>
                 onTapCancel: () => _hoverController.reverse(),
                 borderRadius: widget.borderRadius ??
                     BorderRadius.circular(AppTheme.radiusLarge),
-                splashColor: AppTheme.primary.withOpacity(0.1),
-                highlightColor: AppTheme.primary.withOpacity(0.05),
+                splashColor: AppTheme.primary.withValues(alpha: 0.1),
+                highlightColor: AppTheme.primary.withValues(alpha: 0.05),
                 child: Container(
                   padding: widget.padding ?? const EdgeInsets.all(20),
                   child: Column(
@@ -156,20 +156,6 @@ class _EnhancedCardState extends State<EnhancedCard>
         );
       },
     );
-
-    // Add shimmer effect for primary and elevated cards
-    if (widget.showShimmer &&
-        (widget.type == EnhancedCardType.primary ||
-            widget.type == EnhancedCardType.elevated)) {
-      card = card
-          .animate(
-            onPlay: (controller) => controller.repeat(),
-          )
-          .shimmer(
-            duration: const Duration(seconds: 3),
-            color: Colors.white.withOpacity(0.1),
-          );
-    }
 
     return card
         .animate()
@@ -212,7 +198,7 @@ class _EnhancedCardState extends State<EnhancedCard>
           gradient: LinearGradient(
             colors: [
               Colors.white,
-              AppTheme.primary.withOpacity(0.02),
+              AppTheme.primary.withValues(alpha: 0.02),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -220,9 +206,9 @@ class _EnhancedCardState extends State<EnhancedCard>
         );
       case EnhancedCardType.secondary:
         return _CardStyle(
-          backgroundColor: AppTheme.accent.withOpacity(0.05),
+          backgroundColor: AppTheme.accent.withValues(alpha: 0.05),
           border: Border.all(
-            color: AppTheme.accent.withOpacity(0.2),
+            color: AppTheme.accent.withValues(alpha: 0.2),
             width: 1,
           ),
         );
@@ -230,28 +216,20 @@ class _EnhancedCardState extends State<EnhancedCard>
         return _CardStyle(
           backgroundColor: Colors.transparent,
           border: Border.all(
-            color: AppTheme.primary.withOpacity(0.3),
+            color: AppTheme.primary.withValues(alpha: 0.3),
             width: 2,
           ),
         );
       case EnhancedCardType.elevated:
         return _CardStyle(
           backgroundColor: Colors.white,
-          gradient: LinearGradient(
-            colors: [
-              Colors.white,
-              AppTheme.accent.withOpacity(0.03),
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
         );
       case EnhancedCardType.filled:
         return _CardStyle(
           gradient: LinearGradient(
             colors: [
-              AppTheme.primary.withOpacity(0.1),
-              AppTheme.secondary.withOpacity(0.05),
+              AppTheme.primary.withValues(alpha: 0.1),
+              AppTheme.secondary.withValues(alpha: 0.05),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,

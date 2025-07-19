@@ -130,8 +130,17 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
         ],
       ),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppTheme.backgroundGradient,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppTheme.background,
+              AppTheme.primary.withValues(alpha: 0.05),
+              AppTheme.secondary.withValues(alpha: 0.03),
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            stops: const [0.0, 0.7, 1.0],
+          ),
         ),
         child: SafeArea(
           child: SingleChildScrollView(
@@ -190,7 +199,7 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
       backgroundColor: AppTheme.surface,
       showShimmer: true,
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.only(top: 24, bottom: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -496,8 +505,8 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
               ),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.info_outline,
-                color: AppTheme.accent, size: 20),
+            child:
+                const Icon(Icons.edit_note, color: AppTheme.accent, size: 20),
           ),
           const SizedBox(width: 12),
           Text(
@@ -597,7 +606,7 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
 
     return Card(
       elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      color: AppTheme.surface,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -819,7 +828,7 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
           ),
           style: OutlinedButton.styleFrom(
             minimumSize: const Size.fromHeight(48),
-            foregroundColor: Colors.red,
+            foregroundColor: AppTheme.error,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           ),
         ),

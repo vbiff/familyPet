@@ -110,8 +110,17 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
         ),
       ),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppTheme.backgroundGradient,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppTheme.background,
+              AppTheme.primary.withValues(alpha: 0.05),
+              AppTheme.secondary.withValues(alpha: 0.03),
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            stops: const [0.0, 0.7, 1.0],
+          ),
         ),
         child: SafeArea(
           child: LayoutBuilder(
