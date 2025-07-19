@@ -359,11 +359,14 @@ class VirtualPet extends ConsumerWidget {
             const SizedBox(height: 32),
 
             // Stats section
-            Text(
-              'Pet Stats',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+            Padding(
+              padding: const EdgeInsets.only(left: 4),
+              child: Text(
+                'Pet Stats',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
             ),
             const SizedBox(height: 20),
 

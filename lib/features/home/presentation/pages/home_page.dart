@@ -135,11 +135,14 @@ class HomePage extends ConsumerWidget {
       appBar: AppBar(
         centerTitle: false,
         title: FittedBox(
-          child: Text(
-            _getGreeting(user?.displayName ?? 'User'),
-            style: const TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 20,
+          child: Padding(
+            padding: const EdgeInsets.only(left: 4),
+            child: Text(
+              _getGreeting(user?.displayName ?? 'User'),
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 20,
+              ),
             ),
           ),
         ),

@@ -159,7 +159,7 @@ class _FamilyListState extends ConsumerState<FamilyList> {
       },
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.only(top: 16, bottom: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -280,11 +280,16 @@ class _FamilyListState extends ConsumerState<FamilyList> {
 
             Row(
               children: [
-                Text(
-                  'Family Members',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                Padding(
+                  padding: const EdgeInsets.only(
+                    left: 4,
+                  ),
+                  child: Text(
+                    'Family Members',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
                 ),
                 const Spacer(),
                 if (familyState.isLoadingMembers)

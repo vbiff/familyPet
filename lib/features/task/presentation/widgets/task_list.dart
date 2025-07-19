@@ -113,11 +113,14 @@ class _TaskListState extends ConsumerState<TaskList>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Tasks',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+              Padding(
+                padding: const EdgeInsets.only(left: 4),
+                child: Text(
+                  'Tasks',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
               ),
               Row(
                 children: [
