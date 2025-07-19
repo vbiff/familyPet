@@ -113,6 +113,16 @@ class SupabaseTaskRepository implements TaskRepository {
   }
 
   @override
+  Future<Either<Failure, void>> deletePermanently(String taskId) async {
+    try {
+      await _remoteDataSource.deletePermanently(taskId);
+      return right(null);
+    } catch (e) {
+      return left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, Task>> updateTaskStatus({
     required String taskId,
     required TaskStatus status,

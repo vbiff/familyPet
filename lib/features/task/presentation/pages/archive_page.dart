@@ -576,7 +576,7 @@ class _ArchivePageState extends ConsumerState<ArchivePage>
         // Check mounted again right before async operation
         if (!context.mounted) return;
 
-        await taskNotifier.deleteTask(task.id);
+        await taskNotifier.deleteTaskPermanently(task.id);
 
         // Refresh main task list
         if (context.mounted) {
@@ -681,7 +681,7 @@ class _ArchivePageState extends ConsumerState<ArchivePage>
         if (!context.mounted) return;
 
         for (final task in archivedTasks) {
-          await taskNotifier.deleteTask(task.id);
+          await taskNotifier.deleteTaskPermanently(task.id);
         }
 
         // Refresh main task list

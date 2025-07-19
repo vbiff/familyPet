@@ -19,6 +19,8 @@ abstract class TaskRemoteDataSource {
 
   Future<void> deleteTask(String taskId);
 
+  Future<void> deletePermanently(String taskId);
+
   Future<TaskModel> updateTaskStatus({
     required String taskId,
     required TaskStatus status,
@@ -121,11 +123,28 @@ class SupabaseTaskRemoteDataSource implements TaskRemoteDataSource {
   @override
   Future<void> deleteTask(String taskId) async {
     try {
-      await _client
-          .from(_tableName)
-          .update({'is_archived': true}).eq('id', taskId);
+      final task =
+          await _client.from(_tableName).select().eq('id', taskId).single();
+      final isArchived = TaskModel.fromJson(task).isArchived;
+
+      if (isArchived) {
+        await _client.from(_tableName).delete().eq('id', taskId);
+      } else {
+        await _client
+            .from(_tableName)
+            .update({'is_archived': true}).eq('id', taskId);
+      }
     } catch (e) {
       throw Exception('Failed to delete task: $e');
+    }
+  }
+
+  @override
+  Future<void> deletePermanently(String taskId) async {
+    try {
+      await _client.from(_tableName).delete().eq('id', taskId);
+    } catch (e) {
+      throw Exception('Failed to delete task permanently: $e');
     }
   }
 

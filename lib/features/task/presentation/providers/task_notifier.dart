@@ -6,6 +6,8 @@ import 'package:jhonny/features/task/domain/usecases/delete_task.dart';
 import 'package:jhonny/features/task/domain/usecases/get_tasks.dart';
 import 'package:jhonny/features/task/domain/usecases/update_task.dart';
 import 'package:jhonny/features/task/domain/usecases/update_task_status.dart';
+import 'package:jhonny/features/task/domain/usecases/delete_task_permanently.dart';
+import 'package:jhonny/core/error/failures.dart';
 import 'package:jhonny/features/task/presentation/providers/task_state.dart';
 
 class TaskNotifier extends StateNotifier<TaskState> {
@@ -14,6 +16,7 @@ class TaskNotifier extends StateNotifier<TaskState> {
   final UpdateTaskStatus _updateTaskStatus;
   final DeleteTask _deleteTask;
   final UpdateTask _updateTask;
+  final DeleteTaskPermanently _deleteTaskPermanently;
 
   // Callback to refresh family statistics when tasks are updated
   VoidCallback? _onTaskUpdated;
@@ -28,6 +31,7 @@ class TaskNotifier extends StateNotifier<TaskState> {
     required UpdateTaskStatus updateTaskStatus,
     required DeleteTask deleteTask,
     required UpdateTask updateTask,
+    required DeleteTaskPermanently deleteTaskPermanently,
     VoidCallback? onTaskUpdated,
     Future<void> Function(int experiencePoints, String taskTitle)?
         onTaskCompleted,
@@ -36,6 +40,7 @@ class TaskNotifier extends StateNotifier<TaskState> {
         _updateTaskStatus = updateTaskStatus,
         _deleteTask = deleteTask,
         _updateTask = updateTask,
+        _deleteTaskPermanently = deleteTaskPermanently,
         _onTaskUpdated = onTaskUpdated,
         _onTaskCompleted = onTaskCompleted,
         super(const TaskState());
@@ -217,6 +222,32 @@ class TaskNotifier extends StateNotifier<TaskState> {
     );
 
     final result = await _deleteTask(DeleteTaskParams(taskId: taskId));
+
+    result.fold(
+      (failure) => state = state.copyWith(
+        isUpdating: false,
+        failure: failure,
+      ),
+      (_) {
+        final updatedTasks =
+            state.tasks.where((task) => task.id != taskId).toList();
+        state = state.copyWith(
+          isUpdating: false,
+          tasks: updatedTasks,
+          clearSelectedTask: state.selectedTask?.id == taskId,
+        );
+      },
+    );
+  }
+
+  Future<void> deleteTaskPermanently(String taskId) async {
+    state = state.copyWith(
+      isUpdating: true,
+      clearFailure: true,
+    );
+
+    final result = await _deleteTaskPermanently(
+        DeleteTaskPermanentlyParams(taskId: taskId));
 
     result.fold(
       (failure) => state = state.copyWith(

@@ -34,6 +34,8 @@ abstract class TaskRepository {
 
   Future<Either<Failure, void>> deleteTask(String taskId);
 
+  Future<Either<Failure, void>> deletePermanently(String taskId);
+
   Future<Either<Failure, Task>> updateTaskStatus({
     required String taskId,
     required TaskStatus status,
