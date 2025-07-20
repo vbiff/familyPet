@@ -16,6 +16,7 @@ import 'package:jhonny/shared/widgets/confetti_animation.dart';
 import 'package:jhonny/shared/widgets/animated_task_card.dart';
 import 'package:jhonny/core/theme/app_theme.dart';
 import 'package:jhonny/core/services/task_order_service.dart';
+import 'package:vibration/vibration.dart';
 
 class TaskList extends ConsumerStatefulWidget {
   const TaskList({super.key});
@@ -446,6 +447,14 @@ class _TaskListState extends ConsumerState<TaskList>
     return ReorderableListView.builder(
       itemCount: listItems.length,
       itemBuilder: (context, index) => listItems[index],
+      onReorderStart: (int index) {
+        // Add vibration feedback when drag starts (when card becomes draggable)
+        Vibration.hasVibrator().then((hasVibrator) {
+          if (hasVibrator ?? false) {
+            Vibration.vibrate(duration: 30);
+          }
+        });
+      },
       onReorder: (oldIndex, newIndex) =>
           _onReorder(oldIndex, newIndex, currentTasks, completedTasks),
       padding: const EdgeInsets.only(bottom: 16),
@@ -565,6 +574,11 @@ class _TaskListState extends ConsumerState<TaskList>
 
               await taskNotifier.updateTaskStatus(
                   taskId: task.id, status: TaskStatus.completed);
+
+              // Add vibration feedback for task completion
+              if (await Vibration.hasVibrator() ?? false) {
+                Vibration.vibrate(duration: 70);
+              }
 
               // Reset reordered state since task status changed
               setState(() {

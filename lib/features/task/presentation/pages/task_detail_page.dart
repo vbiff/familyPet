@@ -18,6 +18,7 @@ import 'package:jhonny/shared/widgets/confetti_animation.dart';
 import 'package:jhonny/shared/widgets/delightful_button.dart';
 import 'package:jhonny/shared/widgets/enhanced_card.dart';
 import 'package:jhonny/core/theme/app_theme.dart';
+import 'package:vibration/vibration.dart';
 
 class TaskDetailPage extends ConsumerStatefulWidget {
   final Task task;
@@ -1225,6 +1226,11 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
           status: TaskStatus.completed,
           verifiedById: verifiedById,
         );
+
+        // Add vibration feedback for task verification
+        if (await Vibration.hasVibrator() ?? false) {
+          Vibration.vibrate(duration: 150); // Slightly longer for verification
+        }
 
         // Show confetti when task is verified by parent
         if (context.mounted && mounted && !_isDisposed) {
