@@ -17,6 +17,7 @@ import 'package:jhonny/core/providers/supabase_provider.dart';
 import 'package:jhonny/shared/widgets/confetti_animation.dart';
 import 'package:jhonny/shared/widgets/delightful_button.dart';
 import 'package:jhonny/shared/widgets/enhanced_card.dart';
+import 'package:jhonny/shared/widgets/photo_viewer.dart';
 import 'package:jhonny/core/theme/app_theme.dart';
 import 'package:vibration/vibration.dart';
 
@@ -329,20 +330,24 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
                 scrollDirection: Axis.horizontal,
                 itemCount: currentTask.imageUrls.length,
                 itemBuilder: (context, index) {
-                  return Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: Theme.of(context).colorScheme.outline,
+                  return GestureDetector(
+                    onTap: () =>
+                        _showPhotoViewer(context, currentTask.imageUrls, index),
+                    child: Container(
+                      margin: const EdgeInsets.only(right: 8),
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
                       ),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(7),
-                      child: _buildAuthenticatedImage(
-                        currentTask.imageUrls[index],
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(7),
+                        child: _buildAuthenticatedImage(
+                          currentTask.imageUrls[index],
+                        ),
                       ),
                     ),
                   );
@@ -1509,5 +1514,58 @@ class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
         ],
       ),
     );
+  }
+
+  void _showPhotoViewer(
+      BuildContext context, List<String> imageUrls, int index) async {
+    // Show loading indicator while getting authenticated URLs
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    try {
+      // Get authenticated URLs for all images
+      final authenticatedUrls = <String>[];
+      for (final url in imageUrls) {
+        final authenticatedUrl = await _getAuthenticatedImageUrl(url, ref);
+        authenticatedUrls.add(authenticatedUrl ?? url);
+      }
+
+      // Close loading dialog
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
+
+      // Open photo viewer with authenticated URLs
+      if (context.mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => PhotoViewer(
+              imageUrls: authenticatedUrls,
+              initialIndex: index,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      // Close loading dialog
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
+
+      // Show error
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load images: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }
