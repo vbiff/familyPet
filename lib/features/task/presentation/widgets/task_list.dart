@@ -152,8 +152,13 @@ class _TaskListState extends ConsumerState<TaskList>
       }
     }
 
-    // Add any new tasks that weren't in the saved order
-    reorderedTasks.addAll(taskMap.values);
+    // Add any new tasks that weren't in the saved order at the TOP
+    final newTasks = taskMap.values.toList();
+    // Sort new tasks by creation date (newest first)
+    newTasks.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+    // Insert new tasks at the beginning
+    reorderedTasks.insertAll(0, newTasks);
 
     return reorderedTasks;
   }
@@ -423,7 +428,17 @@ class _TaskListState extends ConsumerState<TaskList>
 
     // Only sort if we don't have reordered tasks (maintain user order)
     if (_reorderedTasks == null) {
-      currentTasks.sort((a, b) => a.dueDate.compareTo(b.dueDate));
+      // Sort current tasks: newest created first, then by due date
+      currentTasks.sort((a, b) {
+        // First sort by creation date (newest first)
+        final createdComparison = b.createdAt.compareTo(a.createdAt);
+        if (createdComparison != 0) return createdComparison;
+
+        // If created at the same time, sort by due date (earliest first)
+        return a.dueDate.compareTo(b.dueDate);
+      });
+
+      // Sort completed tasks: newest completed first
       completedTasks.sort((a, b) =>
           (b.completedAt ?? b.updatedAt ?? b.createdAt)
               .compareTo(a.completedAt ?? a.updatedAt ?? a.createdAt));
