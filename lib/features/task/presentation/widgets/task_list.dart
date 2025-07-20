@@ -15,6 +15,7 @@ import 'package:jhonny/features/task/presentation/widgets/swipe_to_archive_widge
 import 'package:jhonny/shared/widgets/confetti_animation.dart';
 import 'package:jhonny/shared/widgets/animated_task_card.dart';
 import 'package:jhonny/core/theme/app_theme.dart';
+import 'package:jhonny/core/services/task_order_service.dart';
 
 class TaskList extends ConsumerStatefulWidget {
   const TaskList({super.key});
@@ -69,6 +70,9 @@ class _TaskListState extends ConsumerState<TaskList>
       ref.read(taskNotifierProvider.notifier).loadTasks(
             familyId: user.familyId!,
           );
+
+      // Load saved task order after tasks are loaded
+      _loadSavedTaskOrder();
     } else {
       debugPrint('⚠️ TaskList: Cannot load tasks - no user or family ID');
       if (user != null) {
@@ -81,6 +85,95 @@ class _TaskListState extends ConsumerState<TaskList>
               '👶 Child user ${user.displayName} needs to join a family first');
         }
       }
+    }
+  }
+
+  /// Load saved task order from SharedPreferences and apply it
+  Future<void> _loadSavedTaskOrder() async {
+    final user = ref.read(currentUserProvider);
+    if (user == null) return;
+
+    try {
+      final savedTaskIds = await taskOrderService.loadTaskOrder(
+        userId: user.id,
+        isMyTasks: _isMyTasks,
+        familyId: user.familyId,
+      );
+
+      if (savedTaskIds.isNotEmpty && mounted) {
+        final allTasks = ref.read(taskNotifierProvider).tasks;
+        final reorderedTasks = _applyTaskOrder(allTasks, savedTaskIds);
+
+        setState(() {
+          _reorderedTasks = reorderedTasks;
+        });
+
+        debugPrint(
+            '📖 TaskList: Applied saved task order (${savedTaskIds.length} tasks)');
+      }
+    } catch (e) {
+      debugPrint('❌ TaskList: Failed to load saved task order: $e');
+    }
+  }
+
+  /// Apply saved task order to current tasks
+  List<Task> _applyTaskOrder(List<Task> tasks, List<String> savedTaskIds) {
+    final taskMap = {for (var task in tasks) task.id: task};
+    final reorderedTasks = <Task>[];
+
+    // Add tasks in saved order
+    for (final taskId in savedTaskIds) {
+      if (taskMap.containsKey(taskId)) {
+        reorderedTasks.add(taskMap[taskId]!);
+        taskMap.remove(taskId);
+      }
+    }
+
+    // Add any new tasks that weren't in the saved order
+    reorderedTasks.addAll(taskMap.values);
+
+    return reorderedTasks;
+  }
+
+  /// Save current task order to SharedPreferences
+  Future<void> _saveTaskOrder(
+      List<Task> currentTasks, List<Task> completedTasks) async {
+    final user = ref.read(currentUserProvider);
+    if (user == null) return;
+
+    try {
+      // Get task IDs in current display order
+      final taskIds =
+          [...currentTasks, ...completedTasks].map((task) => task.id).toList();
+
+      await taskOrderService.saveTaskOrder(
+        taskIds: taskIds,
+        userId: user.id,
+        isMyTasks: _isMyTasks,
+        familyId: user.familyId,
+      );
+
+      debugPrint('💾 TaskList: Saved task order (${taskIds.length} tasks)');
+    } catch (e) {
+      debugPrint('❌ TaskList: Failed to save task order: $e');
+    }
+  }
+
+  /// Clear saved task order
+  Future<void> _clearSavedTaskOrder() async {
+    final user = ref.read(currentUserProvider);
+    if (user == null) return;
+
+    try {
+      await taskOrderService.clearTaskOrder(
+        userId: user.id,
+        isMyTasks: _isMyTasks,
+        familyId: user.familyId,
+      );
+
+      debugPrint('🗑️ TaskList: Cleared saved task order');
+    } catch (e) {
+      debugPrint('❌ TaskList: Failed to clear saved task order: $e');
     }
   }
 
@@ -100,6 +193,8 @@ class _TaskListState extends ConsumerState<TaskList>
       if (previous?.familyId != next?.familyId) {
         debugPrint('🔄 TaskList: Family ID changed, reloading tasks');
         _reorderedTasks = null; // Reset reordered state
+        // Clear saved order for old family and load tasks for new family
+        _clearSavedTaskOrder();
         _loadTasks();
       }
     });
@@ -114,6 +209,12 @@ class _TaskListState extends ConsumerState<TaskList>
       // Reset reordered state when tasks are reloaded or updated significantly
       if (previous?.tasks.length != next.tasks.length) {
         _reorderedTasks = null;
+        // Reload saved order when task count changes
+        if (next.status == TaskStateStatus.success) {
+          Future.delayed(const Duration(milliseconds: 100), () {
+            _loadSavedTaskOrder();
+          });
+        }
       }
     });
 
@@ -436,6 +537,9 @@ class _TaskListState extends ConsumerState<TaskList>
 
     // Combine in the new order
     _reorderedTasks = [...currentTasks, ...completedTasks, ...otherTasks];
+
+    // Save the order to SharedPreferences
+    _saveTaskOrder(currentTasks, completedTasks);
   }
 
   Future<void> _markAsCompleted(Task task) async {
@@ -466,6 +570,9 @@ class _TaskListState extends ConsumerState<TaskList>
               setState(() {
                 _reorderedTasks = null;
               });
+
+              // Clear saved order since task moved between sections
+              _clearSavedTaskOrder();
 
               // If there are new images, update the task with them
               if (imageUrls.isNotEmpty && mounted) {
@@ -528,6 +635,9 @@ class _TaskListState extends ConsumerState<TaskList>
         _reorderedTasks = null;
       });
 
+      // Clear saved order since task moved between sections
+      _clearSavedTaskOrder();
+
       // No need to update imageUrls here as uncompleting doesn't add new images
     } catch (e) {
       // Check for disposed ref errors specifically
@@ -583,6 +693,12 @@ class _TaskListState extends ConsumerState<TaskList>
                   setState(() {
                     _isMyTasks = !_isMyTasks;
                     _reorderedTasks = null; // Reset reorder when filter changes
+                  });
+                  // Clear saved order for the new filter
+                  _clearSavedTaskOrder();
+                  // Load saved order for the new filter
+                  Future.delayed(const Duration(milliseconds: 100), () {
+                    _loadSavedTaskOrder();
                   });
                 },
               ),
