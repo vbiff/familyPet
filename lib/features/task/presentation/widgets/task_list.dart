@@ -686,8 +686,9 @@ class _TaskListState extends ConsumerState<TaskList>
               // Don't reset reordered state - let the task move naturally between sections
               // The order will be preserved within each section
               Future.delayed(const Duration(milliseconds: 50), () {
-                if (mounted)
-                  _refreshTaskOrder(); // Update task data while preserving order
+                if (mounted) {
+                  _refreshTaskOrder();
+                } // Update task data while preserving order
               });
 
               // If there are new images, update the task with them
@@ -749,8 +750,9 @@ class _TaskListState extends ConsumerState<TaskList>
       // Don't reset reordered state - let the task move naturally between sections
       // The order will be preserved within each section
       Future.delayed(const Duration(milliseconds: 50), () {
-        if (mounted)
-          _refreshTaskOrder(); // Update task data while preserving order
+        if (mounted) {
+          _refreshTaskOrder();
+        } // Update task data while preserving order
       });
 
       // No need to update imageUrls here as uncompleting doesn't add new images
