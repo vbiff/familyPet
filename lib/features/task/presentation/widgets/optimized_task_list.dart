@@ -685,28 +685,38 @@ class OptimizedTaskCard extends OptimizedStatelessWidget {
   }
 
   Widget _buildDifficultyIcon(BuildContext context) {
-    IconData icon;
     Color color;
+    int dotCount;
 
     switch (task.difficulty) {
       case TaskDifficulty.easy:
-        icon = Icons.circle;
         color = Colors.green;
+        dotCount = 1;
         break;
       case TaskDifficulty.medium:
-        icon = Icons.circle;
         color = Colors.orange;
+        dotCount = 2;
         break;
       case TaskDifficulty.hard:
-        icon = Icons.circle;
         color = Colors.red;
+        dotCount = 3;
         break;
     }
 
-    return Icon(
-      icon,
-      size: 16,
-      color: color,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(
+        dotCount,
+        (index) => Container(
+          width: 4,
+          height: 4,
+          margin: EdgeInsets.only(right: index < dotCount - 1 ? 2 : 0),
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+      ),
     );
   }
 }

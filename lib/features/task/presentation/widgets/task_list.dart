@@ -701,19 +701,23 @@ class TaskCard extends StatelessWidget {
   Widget _buildDifficultyIcon(BuildContext context) {
     late Color iconColor;
     late String tooltip;
+    late int dotCount;
 
     switch (task.difficulty) {
       case TaskDifficulty.easy:
         iconColor = AppTheme.success;
         tooltip = 'Easy';
+        dotCount = 1;
         break;
       case TaskDifficulty.medium:
         iconColor = AppTheme.warning;
         tooltip = 'Medium';
+        dotCount = 2;
         break;
       case TaskDifficulty.hard:
         iconColor = AppTheme.error;
         tooltip = 'Hard';
+        dotCount = 3;
         break;
     }
 
@@ -739,10 +743,20 @@ class TaskCard extends StatelessWidget {
             ),
           ],
         ),
-        child: const Icon(
-          Icons.local_fire_department,
-          size: 16,
-          color: Colors.white,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(
+            dotCount,
+            (index) => Container(
+              width: 4,
+              height: 4,
+              margin: EdgeInsets.only(right: index < dotCount - 1 ? 2 : 0),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
         ),
       ),
     );

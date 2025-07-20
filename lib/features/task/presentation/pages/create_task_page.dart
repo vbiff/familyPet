@@ -662,8 +662,21 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
               ),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.local_fire_department,
-                color: AppTheme.orange, size: 20),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(
+                3,
+                (index) => Container(
+                  width: 5,
+                  height: 5,
+                  margin: EdgeInsets.only(right: index < 2 ? 3 : 0),
+                  decoration: const BoxDecoration(
+                    color: AppTheme.orange,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ),
           ),
           const SizedBox(width: 12),
           Text(
@@ -718,10 +731,34 @@ class _CreateTaskPageState extends ConsumerState<CreateTaskPage> {
                           color: difficultyColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: Icon(
-                          Icons.local_fire_department,
-                          color: difficultyColor,
-                          size: 16,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: List.generate(
+                            difficulty == TaskDifficulty.easy
+                                ? 1
+                                : difficulty == TaskDifficulty.medium
+                                    ? 2
+                                    : 3,
+                            (index) => Container(
+                              width: 4,
+                              height: 4,
+                              margin: EdgeInsets.only(
+                                  right: index <
+                                          (difficulty == TaskDifficulty.easy
+                                                  ? 1
+                                                  : difficulty ==
+                                                          TaskDifficulty.medium
+                                                      ? 2
+                                                      : 3) -
+                                              1
+                                      ? 2
+                                      : 0),
+                              decoration: BoxDecoration(
+                                color: difficultyColor,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 10),

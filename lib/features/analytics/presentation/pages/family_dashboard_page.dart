@@ -705,7 +705,7 @@ class _FamilyDashboardPageState extends ConsumerState<FamilyDashboardPage>
       case InsightType.celebration:
         return Icons.celebration;
       case InsightType.streak:
-        return Icons.local_fire_department;
+        return Icons.trending_up;
       case InsightType.warning:
         return Icons.warning;
     }

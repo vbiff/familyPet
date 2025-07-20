@@ -466,7 +466,7 @@ class _FamilyListState extends ConsumerState<FamilyList> {
                                         _buildMemberBadge(
                                           context,
                                           '${member.currentStreak}🔥',
-                                          Icons.local_fire_department,
+                                          Icons.trending_up,
                                           Colors.orange,
                                         ),
                                       ],
