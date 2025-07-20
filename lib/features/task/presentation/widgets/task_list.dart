@@ -26,6 +26,7 @@ class TaskList extends ConsumerStatefulWidget {
 class _TaskListState extends ConsumerState<TaskList>
     with WidgetsBindingObserver {
   bool _isMyTasks = true;
+  List<Task>? _reorderedTasks; // Local state for reordering
 
   @override
   void initState() {
@@ -54,6 +55,11 @@ class _TaskListState extends ConsumerState<TaskList>
 
   void _loadTasks() {
     final user = ref.read(currentUserProvider);
+
+    // Reset reordered state when loading fresh tasks
+    setState(() {
+      _reorderedTasks = null;
+    });
 
     // Only load tasks if user has a real family
     if (user?.familyId != null) {
@@ -93,6 +99,7 @@ class _TaskListState extends ConsumerState<TaskList>
     ref.listen(currentUserProvider, (previous, next) {
       if (previous?.familyId != next?.familyId) {
         debugPrint('🔄 TaskList: Family ID changed, reloading tasks');
+        _reorderedTasks = null; // Reset reordered state
         _loadTasks();
       }
     });
@@ -103,77 +110,17 @@ class _TaskListState extends ConsumerState<TaskList>
         debugPrint(
             '📋 TaskList: Task state changed from ${previous?.status} to ${next.status}');
       }
+
+      // Reset reordered state when tasks are reloaded or updated significantly
+      if (previous?.tasks.length != next.tasks.length) {
+        _reorderedTasks = null;
+      }
     });
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(left: 4),
-                child: Text(
-                  'Tasks',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-              ),
-              Row(
-                children: [
-                  // Filter button for toggling my tasks
-                  IconButton(
-                    icon: Icon(_isMyTasks ? Icons.person : Icons.group),
-                    tooltip: _isMyTasks ? 'Show all tasks' : 'Show my tasks',
-                    onPressed: () {
-                      setState(() {
-                        _isMyTasks = !_isMyTasks;
-                      });
-                    },
-                  ),
-                  EnhancedButton.ghost(
-                    leadingIcon: Icons.add,
-                    text: 'Create',
-                    size: EnhancedButtonSize.small,
-                    onPressed: user?.familyId != null
-                        ? () {
-                            debugPrint(
-                                '🎯 Creating task - User: ${user!.displayName} (${user.role.name}), Family: ${user.familyId}');
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => const CreateTaskPage(),
-                              ),
-                            );
-                          }
-                        : () {
-                            // Show helpful message when family is not set up
-                            final isChild = user?.role == UserRole.child;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(isChild
-                                    ? 'Ask your parent to invite you to the family first'
-                                    : 'Create or join a family to start creating tasks'),
-                                backgroundColor: Colors.orange,
-                                duration: const Duration(seconds: 4),
-                              ),
-                            );
-                          },
-                  ),
-                  const SizedBox(width: 8),
-                  EnhancedButton.ghost(
-                    leadingIcon: Icons.refresh,
-                    size: EnhancedButtonSize.small,
-                    onPressed: _loadTasks,
-                    child: const Text('Refresh'),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
+        _buildHeader(context, user),
         const SizedBox(height: 16),
         Expanded(
           child: buildTaskContent(context, taskState, tasks),
@@ -272,8 +219,11 @@ class _TaskListState extends ConsumerState<TaskList>
       BuildContext context, TaskState taskState, List<Task> tasks) {
     final user = ref.read(currentUserProvider);
 
+    // Use reordered tasks if available, otherwise use original tasks
+    List<Task> displayTasks = _reorderedTasks ?? tasks;
+
     // Filter tasks based on user preferences and archived status
-    List<Task> displayTasks = tasks
+    displayTasks = displayTasks
         .where((task) => !task.isArchived)
         .toList(); // Exclude archived tasks
 
@@ -289,29 +239,36 @@ class _TaskListState extends ConsumerState<TaskList>
     // Separate current tasks from completed tasks
     List<Task> currentTasks = displayTasks
         .where((task) => task.status.isPending || task.status.isInProgress)
-        .toList()
-      ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
+        .toList();
 
-    List<Task> completedTasks = displayTasks
-        .where((task) => task.status.isCompleted)
-        .toList()
-      ..sort((a, b) => (b.completedAt ?? b.updatedAt ?? b.createdAt)
-          .compareTo(a.completedAt ?? a.updatedAt ?? a.createdAt));
+    List<Task> completedTasks =
+        displayTasks.where((task) => task.status.isCompleted).toList();
 
-    // Build list items
+    // Only sort if we don't have reordered tasks (maintain user order)
+    if (_reorderedTasks == null) {
+      currentTasks.sort((a, b) => a.dueDate.compareTo(b.dueDate));
+      completedTasks.sort((a, b) =>
+          (b.completedAt ?? b.updatedAt ?? b.createdAt)
+              .compareTo(a.completedAt ?? a.updatedAt ?? a.createdAt));
+    }
+
+    // Build list items with proper keys
     List<Widget> listItems = [];
 
     // Add current tasks
     for (final task in currentTasks) {
-      listItems.add(SwipeToArchiveWidget(
-        task: task,
-        onArchived: null,
-        child: TaskCard(
+      listItems.add(Container(
+        key: ValueKey('current_${task.id}'),
+        child: SwipeToArchiveWidget(
           task: task,
-          user: user,
-          onTaskTap: onTaskTap,
-          onCompleteTask: _markAsCompleted,
-          onUncompleteTask: _markAsUncompleted,
+          onArchived: null,
+          child: TaskCard(
+            task: task,
+            user: user,
+            onTaskTap: onTaskTap,
+            onCompleteTask: _markAsCompleted,
+            onUncompleteTask: _markAsUncompleted,
+          ),
         ),
       ));
     }
@@ -320,6 +277,7 @@ class _TaskListState extends ConsumerState<TaskList>
     if (currentTasks.isNotEmpty && completedTasks.isNotEmpty) {
       listItems.add(
         Container(
+          key: const ValueKey('divider'),
           margin: const EdgeInsets.symmetric(vertical: 16),
           child: Row(
             children: [
@@ -357,25 +315,115 @@ class _TaskListState extends ConsumerState<TaskList>
 
     // Add completed tasks
     for (final task in completedTasks) {
-      listItems.add(SwipeToArchiveWidget(
-        task: task,
-        onArchived: null,
-        child: TaskCard(
+      listItems.add(Container(
+        key: ValueKey('completed_${task.id}'),
+        child: SwipeToArchiveWidget(
           task: task,
-          user: user,
-          onTaskTap: onTaskTap,
-          onCompleteTask: _markAsCompleted,
-          onUncompleteTask: _markAsUncompleted,
+          onArchived: null,
+          child: TaskCard(
+            task: task,
+            user: user,
+            onTaskTap: onTaskTap,
+            onCompleteTask: _markAsCompleted,
+            onUncompleteTask: _markAsUncompleted,
+          ),
         ),
       ));
     }
 
-    return ListView.separated(
-      itemCount: listItems.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 8),
-      itemBuilder: (context, index) => listItems[index],
+    return ReorderableListView(
+      onReorder: (oldIndex, newIndex) =>
+          _onReorder(oldIndex, newIndex, currentTasks, completedTasks),
       padding: const EdgeInsets.only(bottom: 16),
+      proxyDecorator: (child, index, animation) {
+        return AnimatedBuilder(
+          animation: animation,
+          builder: (context, child) {
+            return Transform.scale(
+              scale: 1.05, // Slightly larger during drag
+              child: Material(
+                elevation: 8.0,
+                shadowColor: Colors.black.withOpacity(0.3),
+                borderRadius:
+                    BorderRadius.circular(16), // Match task card radius
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    color: Theme.of(context).colorScheme.surface,
+                    border: Border.all(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withOpacity(0.3),
+                      width: 2,
+                    ),
+                  ),
+                  child: child,
+                ),
+              ),
+            );
+          },
+          child: child,
+        );
+      },
+      children: listItems,
     );
+  }
+
+  void _onReorder(int oldIndex, int newIndex, List<Task> currentTasks,
+      List<Task> completedTasks) {
+    // Calculate section boundaries
+    final currentTasksEnd = currentTasks.length;
+    final dividerIndex = currentTasks.isNotEmpty && completedTasks.isNotEmpty
+        ? currentTasksEnd
+        : -1;
+    final completedTasksStart =
+        dividerIndex != -1 ? dividerIndex + 1 : currentTasksEnd;
+
+    // Prevent moving the divider or moving between sections
+    if (oldIndex == dividerIndex || newIndex == dividerIndex) return;
+
+    // Determine which section we're reordering in
+    if (oldIndex < currentTasksEnd && newIndex < currentTasksEnd) {
+      // Reordering within current tasks
+      setState(() {
+        final task = currentTasks.removeAt(oldIndex);
+        if (newIndex > oldIndex) newIndex--;
+        currentTasks.insert(newIndex, task);
+        _updateLocalTaskOrder(currentTasks, completedTasks);
+      });
+    } else if (oldIndex >= completedTasksStart &&
+        newIndex >= completedTasksStart) {
+      // Reordering within completed tasks
+      final adjustedOldIndex = oldIndex - completedTasksStart;
+      final adjustedNewIndex = newIndex - completedTasksStart;
+
+      setState(() {
+        final task = completedTasks.removeAt(adjustedOldIndex);
+        final finalNewIndex = adjustedNewIndex > adjustedOldIndex
+            ? adjustedNewIndex - 1
+            : adjustedNewIndex;
+        completedTasks.insert(finalNewIndex, task);
+        _updateLocalTaskOrder(currentTasks, completedTasks);
+      });
+    }
+    // Ignore moves between sections
+  }
+
+  void _updateLocalTaskOrder(
+      List<Task> currentTasks, List<Task> completedTasks) {
+    // Update our local reordered state
+    final user = ref.read(currentUserProvider);
+    final allTasks = ref.read(taskNotifierProvider).tasks;
+
+    // Get all tasks that aren't in our display (archived, other users' tasks if filtered)
+    final displayTaskIds =
+        [...currentTasks, ...completedTasks].map((t) => t.id).toSet();
+    final otherTasks =
+        allTasks.where((task) => !displayTaskIds.contains(task.id)).toList();
+
+    // Combine in the new order
+    _reorderedTasks = [...currentTasks, ...completedTasks, ...otherTasks];
   }
 
   Future<void> _markAsCompleted(Task task) async {
@@ -401,6 +449,11 @@ class _TaskListState extends ConsumerState<TaskList>
 
               await taskNotifier.updateTaskStatus(
                   taskId: task.id, status: TaskStatus.completed);
+
+              // Reset reordered state since task status changed
+              setState(() {
+                _reorderedTasks = null;
+              });
 
               // If there are new images, update the task with them
               if (imageUrls.isNotEmpty && mounted) {
@@ -457,6 +510,12 @@ class _TaskListState extends ConsumerState<TaskList>
 
       await taskNotifier.updateTaskStatus(
           taskId: task.id, status: TaskStatus.pending);
+
+      // Reset reordered state since task status changed
+      setState(() {
+        _reorderedTasks = null;
+      });
+
       // No need to update imageUrls here as uncompleting doesn't add new images
     } catch (e) {
       // Check for disposed ref errors specifically
@@ -483,6 +542,76 @@ class _TaskListState extends ConsumerState<TaskList>
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => TaskDetailPage(task: task),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context, User? user) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 4),
+            child: Text(
+              'Tasks',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+          ),
+          Row(
+            children: [
+              // Filter button for toggling my tasks
+              IconButton(
+                icon: Icon(_isMyTasks ? Icons.person : Icons.group),
+                tooltip: _isMyTasks ? 'Show all tasks' : 'Show my tasks',
+                onPressed: () {
+                  setState(() {
+                    _isMyTasks = !_isMyTasks;
+                    _reorderedTasks = null; // Reset reorder when filter changes
+                  });
+                },
+              ),
+              EnhancedButton.ghost(
+                leadingIcon: Icons.add,
+                text: 'Create',
+                size: EnhancedButtonSize.small,
+                onPressed: user?.familyId != null
+                    ? () {
+                        debugPrint(
+                            '🎯 Creating task - User: ${user!.displayName} (${user.role.name}), Family: ${user.familyId}');
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const CreateTaskPage(),
+                          ),
+                        );
+                      }
+                    : () {
+                        // Show helpful message when family is not set up
+                        final isChild = user?.role == UserRole.child;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(isChild
+                                ? 'Ask your parent to invite you to the family first'
+                                : 'Create or join a family to start creating tasks'),
+                            backgroundColor: Colors.orange,
+                            duration: const Duration(seconds: 4),
+                          ),
+                        );
+                      },
+              ),
+              const SizedBox(width: 8),
+              EnhancedButton.ghost(
+                leadingIcon: Icons.refresh,
+                size: EnhancedButtonSize.small,
+                onPressed: _loadTasks,
+                child: const Text('Refresh'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -655,7 +784,7 @@ class TaskCard extends StatelessWidget {
                 colors: isVerified
                     ? [
                         Colors.green,
-                        Colors.green.withOpacity(0.8)
+                        Colors.green.withValues(alpha: 0.8)
                       ] // Different color for verified tasks
                     : [AppTheme.success, AppTheme.success.withOpacity(0.8)],
                 begin: Alignment.topLeft,
@@ -665,7 +794,7 @@ class TaskCard extends StatelessWidget {
                 ? LinearGradient(
                     colors: [
                       AppTheme.primary,
-                      AppTheme.primary.withOpacity(0.8)
+                      AppTheme.primary.withValues(alpha: 0.8)
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
