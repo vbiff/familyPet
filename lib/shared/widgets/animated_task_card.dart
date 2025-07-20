@@ -38,7 +38,7 @@ class AnimatedTaskCard extends StatelessWidget {
 
   Widget _buildCard(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
         boxShadow: AppTheme.softShadow,
@@ -63,7 +63,7 @@ class AnimatedTaskCard extends StatelessWidget {
           child: AnimatedContainer(
             duration: AppTheme.fastAnimation,
             curve: AppTheme.smoothCurve,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(AppTheme.radiusLarge),

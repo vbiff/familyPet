@@ -278,7 +278,7 @@ class _TaskListState extends ConsumerState<TaskList>
       listItems.add(
         Container(
           key: const ValueKey('divider'),
-          margin: const EdgeInsets.symmetric(vertical: 16),
+          margin: const EdgeInsets.symmetric(vertical: 12),
           child: Row(
             children: [
               Expanded(
@@ -331,7 +331,9 @@ class _TaskListState extends ConsumerState<TaskList>
       ));
     }
 
-    return ReorderableListView(
+    return ReorderableListView.builder(
+      itemCount: listItems.length,
+      itemBuilder: (context, index) => listItems[index],
       onReorder: (oldIndex, newIndex) =>
           _onReorder(oldIndex, newIndex, currentTasks, completedTasks),
       padding: const EdgeInsets.only(bottom: 16),
@@ -366,7 +368,6 @@ class _TaskListState extends ConsumerState<TaskList>
           child: child,
         );
       },
-      children: listItems,
     );
   }
 
@@ -682,7 +683,7 @@ class TaskCard extends StatelessWidget {
   final User? user;
   final void Function(Task) onTaskTap;
   final void Function(Task) onCompleteTask;
-  final void Function(Task) onUncompleteTask; // New callback for uncompleting
+  final void Function(Task) onUncompleteTask;
 
   const TaskCard({
     super.key,
@@ -690,7 +691,7 @@ class TaskCard extends StatelessWidget {
     required this.user,
     required this.onTaskTap,
     required this.onCompleteTask,
-    required this.onUncompleteTask, // Required parameter
+    required this.onUncompleteTask,
   });
 
   @override
@@ -701,10 +702,18 @@ class TaskCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Round complete button on the left
-          BouncyInteraction(
+          // Round complete button on the left - with enhanced gesture handling
+          GestureDetector(
             onTap: _getCompleteAction(),
-            child: _buildCompleteButton(context),
+            onTapDown: (_) {
+              // This helps prioritize the button tap over drag gestures
+              debugPrint('🎯 TaskCard: Button tap down detected');
+            },
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              padding: const EdgeInsets.all(6), // Reduced touch target padding
+              child: _buildCompleteButton(context),
+            ),
           ),
           const SizedBox(width: 16),
           // Task title
@@ -761,9 +770,17 @@ class TaskCard extends StatelessWidget {
         !task.isVerifiedByParent;
 
     if (canComplete) {
-      return () => onCompleteTask(task);
+      return () {
+        debugPrint(
+            '🎯 TaskCard: Complete button tapped for task: ${task.title}');
+        onCompleteTask(task);
+      };
     } else if (canUncomplete) {
-      return () => onUncompleteTask(task);
+      return () {
+        debugPrint(
+            '🎯 TaskCard: Uncomplete button tapped for task: ${task.title}');
+        onUncompleteTask(task);
+      };
     }
     return null;
   }
@@ -775,8 +792,8 @@ class TaskCard extends StatelessWidget {
     final bool isVerified = task.isVerifiedByParent;
 
     return Container(
-      width: 40,
-      height: 40,
+      width: 36,
+      height: 36,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: isCompleted
@@ -784,7 +801,7 @@ class TaskCard extends StatelessWidget {
                 colors: isVerified
                     ? [
                         Colors.green,
-                        Colors.green.withValues(alpha: 0.8)
+                        Colors.green.withOpacity(0.8)
                       ] // Different color for verified tasks
                     : [AppTheme.success, AppTheme.success.withOpacity(0.8)],
                 begin: Alignment.topLeft,
@@ -794,7 +811,7 @@ class TaskCard extends StatelessWidget {
                 ? LinearGradient(
                     colors: [
                       AppTheme.primary,
-                      AppTheme.primary.withValues(alpha: 0.8)
+                      AppTheme.primary.withOpacity(0.8)
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -822,7 +839,7 @@ class TaskCard extends StatelessWidget {
             : canComplete
                 ? Colors.white
                 : Theme.of(context).colorScheme.outline,
-        size: 20,
+        size: 18,
       ),
     );
   }
