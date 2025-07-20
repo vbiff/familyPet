@@ -17,6 +17,7 @@ import 'package:jhonny/shared/widgets/animated_task_card.dart';
 import 'package:jhonny/core/theme/app_theme.dart';
 import 'package:jhonny/core/services/task_order_service.dart';
 import 'package:vibration/vibration.dart';
+import 'dart:async'; // Import Timer
 
 class TaskList extends ConsumerStatefulWidget {
   const TaskList({super.key});
@@ -29,6 +30,7 @@ class _TaskListState extends ConsumerState<TaskList>
     with WidgetsBindingObserver {
   bool _isMyTasks = true;
   List<Task>? _reorderedTasks; // Local state for reordering
+  Timer? _saveTimer; // Debounce timer for saving order
 
   @override
   void initState() {
@@ -42,6 +44,7 @@ class _TaskListState extends ConsumerState<TaskList>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _saveTimer?.cancel(); // Cancel any pending saves
     super.dispose();
   }
 
@@ -94,6 +97,13 @@ class _TaskListState extends ConsumerState<TaskList>
     final user = ref.read(currentUserProvider);
     if (user == null) return;
 
+    // Don't load saved order if we're in the middle of reordering
+    if (_saveTimer?.isActive == true) {
+      debugPrint(
+          '📖 TaskList: Skipping saved order load - reordering in progress');
+      return;
+    }
+
     try {
       final savedTaskIds = await taskOrderService.loadTaskOrder(
         userId: user.id,
@@ -101,7 +111,7 @@ class _TaskListState extends ConsumerState<TaskList>
         familyId: user.familyId,
       );
 
-      if (savedTaskIds.isNotEmpty && mounted) {
+      if (savedTaskIds.isNotEmpty && mounted && _saveTimer?.isActive != true) {
         final allTasks = ref.read(taskNotifierProvider).tasks;
         final reorderedTasks = _applyTaskOrder(allTasks, savedTaskIds);
 
@@ -178,6 +188,37 @@ class _TaskListState extends ConsumerState<TaskList>
     }
   }
 
+  /// Refresh and update the current reordered state to reflect status changes
+  void _refreshTaskOrder() {
+    if (_reorderedTasks == null) return;
+
+    final user = ref.read(currentUserProvider);
+    if (user == null) return;
+
+    // Get the current provider tasks
+    final allTasks = ref.read(taskNotifierProvider).tasks;
+
+    // Create a map for fast lookup
+    final taskMap = {for (var task in allTasks) task.id: task};
+
+    // Update our reordered tasks with the latest task data (including status changes)
+    final updatedReorderedTasks = _reorderedTasks!
+        .map((task) => taskMap[task.id] ?? task)
+        .where((task) => taskMap.containsKey(task.id)) // Remove deleted tasks
+        .toList();
+
+    // Add any new tasks that weren't in our reordered list
+    final reorderedTaskIds = updatedReorderedTasks.map((t) => t.id).toSet();
+    final newTasks =
+        allTasks.where((task) => !reorderedTaskIds.contains(task.id)).toList();
+
+    setState(() {
+      _reorderedTasks = [...updatedReorderedTasks, ...newTasks];
+    });
+
+    debugPrint('🔄 TaskList: Refreshed task order with status updates');
+  }
+
   @override
   Widget build(BuildContext context) {
     final taskState = ref.watch(taskNotifierProvider);
@@ -207,14 +248,25 @@ class _TaskListState extends ConsumerState<TaskList>
             '📋 TaskList: Task state changed from ${previous?.status} to ${next.status}');
       }
 
-      // Reset reordered state when tasks are reloaded or updated significantly
+      // Only reset reordered state when tasks are fundamentally changed (not just updated)
       if (previous?.tasks.length != next.tasks.length) {
-        _reorderedTasks = null;
-        // Reload saved order when task count changes
-        if (next.status == TaskStateStatus.success) {
-          Future.delayed(const Duration(milliseconds: 100), () {
-            _loadSavedTaskOrder();
-          });
+        // Check if it's just a status update vs actually new/removed tasks
+        final prevTaskIds =
+            previous?.tasks.map((t) => t.id).toSet() ?? <String>{};
+        final nextTaskIds = next.tasks.map((t) => t.id).toSet();
+
+        // Only reset if tasks were actually added/removed, not just status changed
+        if (prevTaskIds.length != nextTaskIds.length ||
+            !prevTaskIds.containsAll(nextTaskIds) ||
+            !nextTaskIds.containsAll(prevTaskIds)) {
+          debugPrint('📋 TaskList: Tasks added/removed, resetting order');
+          _reorderedTasks = null;
+          // Reload saved order when tasks are actually added/removed
+          if (next.status == TaskStateStatus.success) {
+            Future.delayed(const Duration(milliseconds: 150), () {
+              if (mounted) _loadSavedTaskOrder();
+            });
+          }
         }
       }
     });
@@ -366,7 +418,7 @@ class _TaskListState extends ConsumerState<TaskList>
           task: task,
           onArchived: null,
           child: ReorderableDelayedDragStartListener(
-            index: i,
+            index: listItems.length, // Use the actual list index
             child: TaskCard(
               task: task,
               user: user,
@@ -422,16 +474,13 @@ class _TaskListState extends ConsumerState<TaskList>
     // Add completed tasks
     for (int i = 0; i < completedTasks.length; i++) {
       final task = completedTasks[i];
-      final globalIndex = currentTasks.length +
-          (currentTasks.isNotEmpty && completedTasks.isNotEmpty ? 1 : 0) +
-          i;
       listItems.add(Container(
         key: ValueKey('completed_${task.id}'),
         child: SwipeToArchiveWidget(
           task: task,
           onArchived: null,
           child: ReorderableDelayedDragStartListener(
-            index: globalIndex,
+            index: listItems.length, // Use the actual list index
             child: TaskCard(
               task: task,
               user: user,
@@ -466,7 +515,7 @@ class _TaskListState extends ConsumerState<TaskList>
               scale: 1.05, // Slightly larger during drag
               child: Material(
                 elevation: 8.0,
-                shadowColor: Colors.black.withOpacity(0.3),
+                shadowColor: Colors.black.withValues(alpha: 0.3),
                 borderRadius:
                     BorderRadius.circular(16), // Match task card radius
                 child: Container(
@@ -477,7 +526,7 @@ class _TaskListState extends ConsumerState<TaskList>
                       color: Theme.of(context)
                           .colorScheme
                           .primary
-                          .withOpacity(0.3),
+                          .withValues(alpha: 0.3),
                       width: 2,
                     ),
                   ),
@@ -536,6 +585,8 @@ class _TaskListState extends ConsumerState<TaskList>
       List<Task> currentTasks, List<Task> completedTasks) {
     // Update our local reordered state
     final user = ref.read(currentUserProvider);
+    if (user == null) return;
+
     final allTasks = ref.read(taskNotifierProvider).tasks;
 
     // Get all tasks that aren't in our display (archived, other users' tasks if filtered)
@@ -545,10 +596,24 @@ class _TaskListState extends ConsumerState<TaskList>
         allTasks.where((task) => !displayTaskIds.contains(task.id)).toList();
 
     // Combine in the new order
-    _reorderedTasks = [...currentTasks, ...completedTasks, ...otherTasks];
+    final newReorderedTasks = [
+      ...currentTasks,
+      ...completedTasks,
+      ...otherTasks
+    ];
 
-    // Save the order to SharedPreferences
-    _saveTaskOrder(currentTasks, completedTasks);
+    // Update state immediately to prevent jumping
+    setState(() {
+      _reorderedTasks = newReorderedTasks;
+    });
+
+    // Debounce saving to SharedPreferences to prevent conflicts during rapid reordering
+    _saveTimer?.cancel();
+    _saveTimer = Timer(const Duration(milliseconds: 300), () {
+      _saveTaskOrder(currentTasks, completedTasks).catchError((e) {
+        debugPrint('❌ TaskList: Failed to save task order during reorder: $e');
+      });
+    });
   }
 
   Future<void> _markAsCompleted(Task task) async {
@@ -580,13 +645,12 @@ class _TaskListState extends ConsumerState<TaskList>
                 Vibration.vibrate(duration: 70);
               }
 
-              // Reset reordered state since task status changed
-              setState(() {
-                _reorderedTasks = null;
+              // Don't reset reordered state - let the task move naturally between sections
+              // The order will be preserved within each section
+              Future.delayed(const Duration(milliseconds: 50), () {
+                if (mounted)
+                  _refreshTaskOrder(); // Update task data while preserving order
               });
-
-              // Clear saved order since task moved between sections
-              _clearSavedTaskOrder();
 
               // If there are new images, update the task with them
               if (imageUrls.isNotEmpty && mounted) {
@@ -644,13 +708,12 @@ class _TaskListState extends ConsumerState<TaskList>
       await taskNotifier.updateTaskStatus(
           taskId: task.id, status: TaskStatus.pending);
 
-      // Reset reordered state since task status changed
-      setState(() {
-        _reorderedTasks = null;
+      // Don't reset reordered state - let the task move naturally between sections
+      // The order will be preserved within each section
+      Future.delayed(const Duration(milliseconds: 50), () {
+        if (mounted)
+          _refreshTaskOrder(); // Update task data while preserving order
       });
-
-      // Clear saved order since task moved between sections
-      _clearSavedTaskOrder();
 
       // No need to update imageUrls here as uncompleting doesn't add new images
     } catch (e) {
@@ -942,9 +1005,12 @@ class TaskCard extends StatelessWidget {
                 colors: isVerified
                     ? [
                         Colors.green,
-                        Colors.green.withOpacity(0.8)
+                        Colors.green.withValues(alpha: 0.8)
                       ] // Different color for verified tasks
-                    : [AppTheme.success, AppTheme.success.withOpacity(0.8)],
+                    : [
+                        AppTheme.success,
+                        AppTheme.success.withValues(alpha: 0.8)
+                      ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               )
@@ -952,7 +1018,7 @@ class TaskCard extends StatelessWidget {
                 ? LinearGradient(
                     colors: [
                       AppTheme.primary,
-                      AppTheme.primary.withOpacity(0.8)
+                      AppTheme.primary.withValues(alpha: 0.8)
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -1016,7 +1082,7 @@ class TaskCard extends StatelessWidget {
           gradient: LinearGradient(
             colors: [
               iconColor,
-              iconColor.withOpacity(0.8),
+              iconColor.withValues(alpha: 0.8),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
