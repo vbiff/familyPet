@@ -256,18 +256,22 @@ class _TaskListState extends ConsumerState<TaskList>
     List<Widget> listItems = [];
 
     // Add current tasks
-    for (final task in currentTasks) {
+    for (int i = 0; i < currentTasks.length; i++) {
+      final task = currentTasks[i];
       listItems.add(Container(
         key: ValueKey('current_${task.id}'),
         child: SwipeToArchiveWidget(
           task: task,
           onArchived: null,
-          child: TaskCard(
-            task: task,
-            user: user,
-            onTaskTap: onTaskTap,
-            onCompleteTask: _markAsCompleted,
-            onUncompleteTask: _markAsUncompleted,
+          child: ReorderableDelayedDragStartListener(
+            index: i,
+            child: TaskCard(
+              task: task,
+              user: user,
+              onTaskTap: onTaskTap,
+              onCompleteTask: _markAsCompleted,
+              onUncompleteTask: _markAsUncompleted,
+            ),
           ),
         ),
       ));
@@ -314,18 +318,25 @@ class _TaskListState extends ConsumerState<TaskList>
     }
 
     // Add completed tasks
-    for (final task in completedTasks) {
+    for (int i = 0; i < completedTasks.length; i++) {
+      final task = completedTasks[i];
+      final globalIndex = currentTasks.length +
+          (currentTasks.isNotEmpty && completedTasks.isNotEmpty ? 1 : 0) +
+          i;
       listItems.add(Container(
         key: ValueKey('completed_${task.id}'),
         child: SwipeToArchiveWidget(
           task: task,
           onArchived: null,
-          child: TaskCard(
-            task: task,
-            user: user,
-            onTaskTap: onTaskTap,
-            onCompleteTask: _markAsCompleted,
-            onUncompleteTask: _markAsUncompleted,
+          child: ReorderableDelayedDragStartListener(
+            index: globalIndex,
+            child: TaskCard(
+              task: task,
+              user: user,
+              onTaskTap: onTaskTap,
+              onCompleteTask: _markAsCompleted,
+              onUncompleteTask: _markAsUncompleted,
+            ),
           ),
         ),
       ));
