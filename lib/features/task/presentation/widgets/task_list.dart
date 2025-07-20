@@ -58,6 +58,18 @@ class _TaskListState extends ConsumerState<TaskList>
     }
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh task order when dependencies change (like coming back from navigation)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _reorderedTasks != null) {
+        _refreshTaskOrder();
+        debugPrint('🔄 TaskList: Dependencies changed, refreshed task order');
+      }
+    });
+  }
+
   void _loadTasks() {
     final user = ref.read(currentUserProvider);
 
@@ -246,6 +258,17 @@ class _TaskListState extends ConsumerState<TaskList>
       if (previous?.status != next.status) {
         debugPrint(
             '📋 TaskList: Task state changed from ${previous?.status} to ${next.status}');
+      }
+
+      // Refresh task order when tasks are updated (including verification status changes)
+      if (_reorderedTasks != null && next.status == TaskStateStatus.success) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _refreshTaskOrder();
+            debugPrint(
+                '🔄 TaskList: Refreshed task order due to provider update');
+          }
+        });
       }
 
       // Only reset reordered state when tasks are fundamentally changed (not just updated)
@@ -738,11 +761,25 @@ class _TaskListState extends ConsumerState<TaskList>
 
   void onTaskTap(Task task) {
     ref.read(taskNotifierProvider.notifier).selectTask(task);
-    Navigator.of(context).push(
+    Navigator.of(context)
+        .push(
       MaterialPageRoute(
         builder: (context) => TaskDetailPage(task: task),
       ),
-    );
+    )
+        .then((_) {
+      // Refresh task order when returning from task detail page
+      if (mounted && _reorderedTasks != null) {
+        // Small delay to ensure provider has been updated
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (mounted) {
+            _refreshTaskOrder();
+            debugPrint(
+                '🔄 TaskList: Refreshed task order after returning from detail');
+          }
+        });
+      }
+    });
   }
 
   Widget _buildHeader(BuildContext context, User? user) {
